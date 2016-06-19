@@ -95,4 +95,4 @@ v = done
 */
 
 -- Major cleaning (useless/unused/obsolete code): -
--- Update transfer local repository: -
+-- Transfer local repository: -

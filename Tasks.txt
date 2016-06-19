@@ -28,12 +28,12 @@ v = done
 
 /*Network*/
 
--- Adapt packets to moveset
+-- Adapt packets to moveset: x
 -- Think about discussion on Slack: x
 
 /*FileSystem*/
 
--- Think about mods config file redirection to baseDir's if NULL: -
+-- Think about extension of mod feature to config files: -
 
 /*Structure*/
 
@@ -87,3 +87,12 @@ v = done
 */
 
 -- Check tools and improve IQM/FFmpeg batches: -
+
+/*
+=====================================
+ Others
+=====================================
+*/
+
+-- Major cleaning (useless/unused/obsolete code): -
+-- Update transfer local repository: -

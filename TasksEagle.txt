@@ -1,0 +1,105 @@
+Tasks for Eagle. Do NOT mind or edit this file.
+
+x = not started
+- = started
+v = done
+? = should be done ?
+
+/*
+=====================================
+ Engine
+=====================================
+*/
+
+/*Audio*/
+
+-- Choose and keep 1 engine: -
+-- Think about Opus sample looping issue: -
+-- Remove obsolete OGG and Vorbis supports (once previous task complete): x
+
+/*Renderer*/
+
+-- Fix lensflare loading/display: x
+-- Think about solution for heavy IQM static meshes: x
+-- Check image formats supports: x
+-- Prepare implementation of RendererGL2/OpenGL(ES)2/GLSL: x
+
+/*Libs*/
+
+-- Check libraries and/or merge closely related: -
+
+/*Network*/
+
+-- Think about discussion on Slack: x
+
+/*FileSystem*/
+
+-- Think about extension of mod feature to config files: -
+
+/*Structure*/
+
+-- Rework names and terms: -
+-- Establish (Zios?) standards: -
+-- Think about divided mesh/animations solution: x
+
+/*Others*/
+
+-- Think about quicker audio/graphic reload method: x
+-- Figure out about implementing extended ASCII: x
+
+/*
+=====================================
+ QVM
+=====================================
+*/
+
+/*CGame*/
+
+-- Fix <part>model commands: ?
+-- Improve Tier system: -
+-- Think about HUD use and design: x
+-- Enhance specific audio lookups: x
+-- Think about accurate footsteps solution: x
+-- Enhence PSYS and GRFX (if possible): x
+-- Check events: x
+-- Think about Alex's aura concept: x
+
+/*Game*/
+
+-- Fix pmove and think about improvements: -
+-- Fix server-side Tier system issues: x
+-- Think about moveset and animations: -
+-- (code not yet parsed)
+
+/*BothGames*/
+
+-- Think about environment destruction method: -
+
+/*UI*/
+
+-- Major redesign: -
+-- Mobile navigation type for camera settings: x
+-- Figure out about audio play during loading screen: -
+-- Move toward new server browser (if needed): x
+
+/*
+
+/*Directory-wise*/
+
+-- Think about baseDir UI design: -
+-- Think about per-directory needs: -
+
+=====================================
+ Tools
+=====================================
+*/
+
+-- Check and/or improve tools: -
+
+/*
+=====================================
+ Others
+=====================================
+*/
+
+-- Major cleaning (irrelevent/unused/obsolete code): -

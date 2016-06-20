@@ -19,10 +19,6 @@ v = done
 
 /*Renderer*/
 
-<<<<<<< HEAD:TasksEagle.txt
-=======
--- Fix lensflare loading/display: x
->>>>>>> experimental:TasksEagle.txt
 -- Think about solution for heavy IQM static meshes: x
 -- Check image formats supports: x
 -- Prepare implementation of RendererGL2/OpenGL(ES)2/GLSL: x
@@ -105,9 +101,5 @@ v = done
 =====================================
 */
 
-<<<<<<< HEAD:TasksEagle.txt
 -- Major cleaning (irrelevent/unused/obsolete code): -
 -- Fix lensflare loading/display: x
-=======
--- Major cleaning (irrelevent/unused/obsolete code): -
->>>>>>> experimental:TasksEagle.txt

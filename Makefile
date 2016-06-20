@@ -214,12 +214,11 @@ CDIR=Engine/client
 SDIR=Engine/server
 RDIR=Engine/renderer
 CMDIR=Shared
-SDLDIR=Engine/sdl
 ASMDIR=Engine/asm
 SYSDIR=Engine/sys
 GDIR=Game/Game
 CGDIR=Game/CGame
-NDIR=Engine/null
+NDIR=Engine/Null
 UIDIR=Game/UI
 JPDIR=Engine/LibJpeg
 OGGDIR=Engine/libogg-1.3.1
@@ -2144,7 +2143,7 @@ $(B)/client/%.o: $(OPUSFILEDIR)/src/%.c
 $(B)/client/%.o: $(ZDIR)/%.c
 	$(DO_CC)
 
-$(B)/client/%.o: $(SDLDIR)/%.c
+$(B)/client/%.o: $(SDLHDIR)/%.c
 	$(DO_CC)
 
 $(B)/client/%.o: $(SYSDIR)/%.c
@@ -2160,7 +2159,7 @@ $(B)/client/%.o: $(SYSDIR)/%.rc
 $(B)/renderer/%.o: $(CMDIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/%.o: $(SDLDIR)/%.c
+$(B)/renderer/%.o: $(SDLHDIR)/%.c
 	$(DO_REF_CC)
 
 $(B)/renderer/%.o: $(JPDIR)/%.c

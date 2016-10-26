@@ -510,7 +510,7 @@ static void CG_Aura_AddDebris( centity_t *player, auraState_t *state, auraConfig
 	// Don't add debris if the aura isn't active
 	if(!state->isActive) return;
 	// Don't add debris could if configuration says we shouldn't.
-	if(!config->generatesDebris) return;
+	if(!config->showDebris) return;
 	// Spawn the debris system if the player has just entered PVS
 	if(!CG_FrameHist_HadAura(player->currentState.number))
 		PSys_SpawnCachedSystem("AuraDebris", player->lerpOrigin, NULL, player, NULL, qtrue, qfalse);
@@ -799,7 +799,7 @@ void parseAura(char *path,auraConfig_t *aura){
 			else if(!Q_stricmp(token,"showDebris")){
 				token = COM_Parse(&parse);
 				if(!token[0]) break;
-				aura->generatesDebris = strlen(token) == 4 ? qtrue : qfalse;
+				aura->showDebris = strlen(token) == 4 ? qtrue : qfalse;
 			}
 			else if(!Q_stricmp(token,"chargeLoop")){
 				token = COM_Parse(&parse);

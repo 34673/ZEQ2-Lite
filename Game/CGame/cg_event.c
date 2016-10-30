@@ -60,7 +60,7 @@ void CG_EntityEvent(centity_t *cent, vec3_t position){
 		break;
 	case EV_CRASH:
 		DEBUGNAME("EV_CRASH");
-		trap_S_StartSound(NULL, es->number, CHAN_AUTO, CG_CustomSound(es->number, "fallHeavy"));
+		trap_S_StartSound(NULL, es->number, CHAN_AUTO, CG_CustomSound(es->number, "landHeavy"));
 		PSys_SpawnCachedSystem("AuraDebris", cent->lerpOrigin, NULL, cent, NULL, qtrue, qfalse);
 		break;
 	case EV_FOOTSTEP:
@@ -113,7 +113,8 @@ void CG_EntityEvent(centity_t *cent, vec3_t position){
 	case EV_STEP_4:
 	case EV_STEP_8:
 	case EV_STEP_12:
-	case EV_STEP_16:		// smooth out step up transitions
+	// smooth out step up transitions
+	case EV_STEP_16:
 		DEBUGNAME("EV_STEP");
 	{
 		float	oldStep;

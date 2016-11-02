@@ -628,7 +628,3 @@ void CG_AddLocalEntities( void ) {
 		}
 	}
 }
-
-
-
-

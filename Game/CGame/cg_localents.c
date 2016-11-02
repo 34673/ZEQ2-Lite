@@ -411,7 +411,7 @@ static void CG_AddStraightBeamFade(localEntity_t *le){
 	refEntity_t	*ent;		// reference entity stored in the local entity
 	float		RGBfade,	// stores the amount of fade to apply to the RGBA values
 				scale_l,	// stores the scale factor for the beam's length
-				scale_w,	// stores the scale factor for the beam's width
+				scale_w;	// stores the scale factor for the beam's width
 	vec3_t		start,		// temporary storage for the beam's start point
 				direction;	// vector used in calculating the shortening of the beam
 	

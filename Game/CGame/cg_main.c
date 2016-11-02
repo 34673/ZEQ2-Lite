@@ -19,14 +19,11 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-//
 // cg_main.c -- initialization and primary entry point for cgame
 #include "cg_local.h"
-int forceModelModificationCount = -1;
-
-void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
-void CG_Shutdown( void );
-
+int		forceModelModificationCount = -1;
+void	CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum),
+		CG_Shutdown(void);
 
 /*
 ================
@@ -36,11 +33,10 @@ This is the only way control passes into the module.
 This must be the very first function compiled into the .q3vm file
 ================
 */
-Q_EXPORT intptr_t vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11  ) {
-
-	switch ( command ) {
+Q_EXPORT intptr_t vmMain(int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11){
+	switch(command){
 	case CG_INIT:
-		CG_Init( arg0, arg1, arg2 );
+		CG_Init(arg0, arg1, arg2);
 		return 0;
 	case CG_SHUTDOWN:
 		CG_Shutdown();
@@ -48,7 +44,7 @@ Q_EXPORT intptr_t vmMain( int command, int arg0, int arg1, int arg2, int arg3, i
 	case CG_CONSOLE_COMMAND:
 		return CG_ConsoleCommand();
 	case CG_DRAW_ACTIVE_FRAME:
-		CG_DrawActiveFrame( arg0, arg1, arg2 );
+		CG_DrawActiveFrame(arg0, arg1, arg2);
 		return 0;
 	case CG_CROSSHAIR_PLAYER:
 		return CG_CrosshairPlayer();
@@ -64,132 +60,131 @@ Q_EXPORT intptr_t vmMain( int command, int arg0, int arg1, int arg2, int arg3, i
 		CG_EventHandling(arg0);
 		return 0;
 	default:
-		CG_Error( "vmMain: unknown command %i", command );
+		CG_Error("CG_vmMain: unknown command %i", command);
 		break;
 	}
 	return -1;
 }
 
-
 cg_t				cg;
 cgs_t				cgs;
 centity_t			cg_entities[MAX_GENTITIES];
 weaponInfo_t		cg_weapons[MAX_WEAPONS];
-
-vmCvar_t	cg_railTrailTime;
-vmCvar_t	cg_centertime;
-vmCvar_t	cg_runpitch;
-vmCvar_t	cg_runroll;
-vmCvar_t	cg_bobup;
-vmCvar_t	cg_bobpitch;
-vmCvar_t	cg_bobroll;
-vmCvar_t	cg_swingSpeed;
-vmCvar_t	cg_shadows;
-vmCvar_t	cg_gibs;
-vmCvar_t	cg_drawTimer;
-vmCvar_t	cg_drawFPS;
-vmCvar_t	cg_drawSnapshot;
-vmCvar_t	cg_draw3dIcons;
-vmCvar_t	cg_drawIcons;
-vmCvar_t	cg_drawCrosshair;
-vmCvar_t	cg_drawCrosshairNames;
-vmCvar_t	cg_crosshairSize;
-vmCvar_t	cg_crosshairMargin;
-vmCvar_t	cg_crosshairBars;
-vmCvar_t	cg_crosshairX;
-vmCvar_t	cg_crosshairY;
-vmCvar_t	cg_crosshairHealth;
-vmCvar_t	cg_scripted2D;
-vmCvar_t	cg_scriptedCamera;
-vmCvar_t	cg_draw2D;
-vmCvar_t	cg_drawStatus;
-vmCvar_t	cg_animSpeed;
-vmCvar_t	cg_debugAnim;
-vmCvar_t	cg_debugPosition;
-vmCvar_t	cg_debugEvents;
-vmCvar_t	cg_errorDecay;
-vmCvar_t	cg_nopredict;
-vmCvar_t	cg_noPlayerAnims;
-vmCvar_t	cg_showmiss;
-vmCvar_t	cg_footsteps;
-vmCvar_t	cg_addMarks;
-vmCvar_t	cg_brassTime;
-vmCvar_t	cg_chatTime;
-vmCvar_t	cg_viewsize;
-vmCvar_t	cg_tracerChance;
-vmCvar_t	cg_tracerWidth;
-vmCvar_t	cg_tracerLength;
-vmCvar_t	cg_displayObituary;
-vmCvar_t	cg_ignore;
-vmCvar_t	cg_fov;
-vmCvar_t	cg_zoomFov;
-vmCvar_t	cg_thirdPerson;
-vmCvar_t	cg_thirdPersonRange;
-vmCvar_t	cg_thirdPersonAngle;
-vmCvar_t	cg_thirdPersonHeight;
-vmCvar_t	cg_thirdPersonSlide;
-vmCvar_t	cg_lockedRange;
-vmCvar_t	cg_lockedAngle;
-vmCvar_t	cg_lockedHeight;
-vmCvar_t	cg_lockedSlide;
-vmCvar_t	cg_advancedFlight;
-vmCvar_t	cg_thirdPersonCameraDamp;
-vmCvar_t	cg_thirdPersonTargetDamp;
-vmCvar_t	cg_thirdPersonMeleeCameraDamp;
-vmCvar_t	cg_thirdPersonMeleeTargetDamp;
-vmCvar_t	cg_synchronousClients;
-vmCvar_t 	cg_teamChatTime;
-vmCvar_t 	cg_teamChatHeight;
-vmCvar_t 	cg_stats;
-vmCvar_t 	cg_buildScript;
-vmCvar_t 	cg_forceModel;
-vmCvar_t	cg_paused;
-vmCvar_t	cg_blood;
-vmCvar_t	cg_deferPlayers;
-vmCvar_t	cg_drawTeamOverlay;
-vmCvar_t	cg_teamOverlayUserinfo;
-vmCvar_t	cg_drawFriend;
-vmCvar_t	cg_teamChatsOnly;
-vmCvar_t	cg_noVoiceChats;
-vmCvar_t	cg_noVoiceText;
-vmCvar_t	cg_hudFiles;
-vmCvar_t 	cg_smoothClients;
-vmCvar_t	pmove_fixed;
-//vmCvar_t	cg_pmove_fixed;
-vmCvar_t	pmove_msec;
-vmCvar_t	cg_pmove_msec;
-vmCvar_t	cg_cameraMode;
-vmCvar_t	cg_cameraOrbit;
-vmCvar_t	cg_cameraOrbitDelay;
-vmCvar_t	cg_timescaleFadeEnd;
-vmCvar_t	cg_timescaleFadeSpeed;
-vmCvar_t	cg_timescale;
-vmCvar_t	cg_smallFont;
-vmCvar_t	cg_bigFont;
-vmCvar_t	cg_trueLightning;
-vmCvar_t	cg_enableDust;
-vmCvar_t	cg_enableBreath;
+vmCvar_t			cg_railTrailTime,
+					cg_centertime,
+					cg_runpitch,
+					cg_runroll,
+					cg_bobup,
+					cg_bobpitch,
+					cg_bobroll,
+					cg_swingSpeed,
+					cg_shadows,
+					cg_gibs,
+					cg_drawTimer,
+					cg_drawFPS,
+					cg_drawSnapshot,
+					cg_draw3dIcons,
+					cg_drawIcons,
+					cg_drawCrosshair,
+					cg_drawCrosshairNames,
+					cg_crosshairSize,
+					cg_crosshairMargin,
+					cg_crosshairBars,
+					cg_crosshairX,
+					cg_crosshairY,
+					cg_crosshairHealth,
+					cg_scripted2D,
+					cg_scriptedCamera,
+					cg_draw2D,
+					cg_drawStatus,
+					cg_animSpeed,
+					cg_debugAnim,
+					cg_debugPosition,
+					cg_debugEvents,
+					cg_errorDecay,
+					cg_nopredict,
+					cg_noPlayerAnims,
+					cg_showmiss,
+					cg_footsteps,
+					cg_addMarks,
+					cg_brassTime,
+					cg_chatTime,
+					cg_viewsize,
+					cg_tracerChance,
+					cg_tracerWidth,
+					cg_tracerLength,
+					cg_displayObituary,
+					cg_ignore,
+					cg_fov,
+					cg_zoomFov,
+					cg_thirdPerson,
+					cg_thirdPersonRange,
+					cg_thirdPersonAngle,
+					cg_thirdPersonHeight,
+					cg_thirdPersonSlide,
+					cg_lockedRange,
+					cg_lockedAngle,
+					cg_lockedHeight,
+					cg_lockedSlide,
+					cg_advancedFlight,
+					cg_thirdPersonCameraDamp,
+					cg_thirdPersonTargetDamp,
+					cg_thirdPersonMeleeCameraDamp,
+					cg_thirdPersonMeleeTargetDamp,
+					cg_synchronousClients,
+					cg_teamChatTime,
+					cg_teamChatHeight,
+					cg_stats,
+					cg_buildScript,
+					cg_forceModel,
+					cg_paused,
+					cg_blood,
+					cg_deferPlayers,
+					cg_drawTeamOverlay,
+					cg_teamOverlayUserinfo,
+					cg_drawFriend,
+					cg_teamChatsOnly,
+					cg_noVoiceChats,
+					cg_noVoiceText,
+					cg_hudFiles,
+					cg_smoothClients,
+					pmove_fixed,
+					//cg_pmove_fixed,
+					pmove_msec,
+					cg_pmove_msec,
+					cg_cameraMode,
+					cg_cameraOrbit,
+					cg_cameraOrbitDelay,
+					cg_timescaleFadeEnd,
+					cg_timescaleFadeSpeed,
+					cg_timescale,
+					cg_smallFont,
+					cg_bigFont,
+					cg_trueLightning,
+					cg_enableDust,
+					cg_enableBreath,
 //ADDING FOR ZEQ2
-vmCvar_t	cg_lockonDistance;
-vmCvar_t	cg_tailDetail;
-vmCvar_t	cg_verboseParse;
-vmCvar_t	r_beamDetail;
-vmCvar_t	cg_soundAttenuation;
-vmCvar_t	cg_thirdPersonCamera;
-vmCvar_t	cg_beamControl;
-vmCvar_t	cg_music;
-vmCvar_t	cg_playTransformTrackToEnd;
-vmCvar_t	cg_particlesQuality;
-vmCvar_t	cg_particlesType;
-vmCvar_t	cg_particlesStop;
-vmCvar_t	cg_particlesMaximum;
-vmCvar_t	cg_drawBBox;
+					cg_lockonDistance,
+					cg_tailDetail,
+					cg_verboseParse,
+					r_beamDetail,
+					cg_soundAttenuation,
+					cg_thirdPersonCamera,
+					cg_beamControl,
+					cg_music,
+					cg_playTransformTrackToEnd,
+					cg_particlesQuality,
+					cg_particlesType,
+					cg_particlesStop,
+					cg_particlesMaximum,
+					cg_drawBBox,
 //END ADDING
+// JUHOX
 #if MAPLENSFLARES
-vmCvar_t	cg_lensFlare;		// JUHOX
-vmCvar_t	cg_mapFlare;		// JUHOX
-vmCvar_t	cg_sunFlare;		// JUHOX
-vmCvar_t	cg_missileFlare;	// JUHOX
+					cg_lensFlare,
+					cg_mapFlare,
+					cg_sunFlare,
+					cg_missileFlare;
 #endif
 
 typedef struct {

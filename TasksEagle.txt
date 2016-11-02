@@ -1,4 +1,4 @@
-Tasks for Eagle. Do NOT mind or edit this file.
+Tasks for Eagle. Do NOT mind and most importantly edit this file.
 
 x = not started
 - = started
@@ -13,38 +13,34 @@ v = done
 
 /*Audio*/
 
--- Choose and keep 1 engine: x
--- Think about Opus sample looping issue: -
--- Remove obsolete OGG and Vorbis supports (once previous task complete): x
+-- Choose and keep 1 engine: -
+-- Figure out workflow for Opus: -
 
 /*Renderer*/
 
--- Think about solution for heavy IQM static meshes: x
+-- Think about IQM static mesh encoding: x
 -- Check image formats supports: x
--- Prepare implementation of RendererGL2/OpenGL(ES)2/GLSL: x
+-- Prepare implementation of RendererGL2/GLSL: x
 
 /*Libs*/
 
 -- Check libraries and/or merge closely related: -
 
-/*Network*/
-
--- Think about discussion on Slack: x
-
 /*FileSystem*/
 
--- Think about extension of mod feature to config files: -
+-- Redirect config.cfg parsing to base directory if file doesn't exist in others: x
 
 /*Structure*/
 
 -- Rework names and terms: -
+-- Rewrite/improve console strings: -
 -- Establish (Zios?) standards: -
--- Think about divided mesh/animations solution: x
+-- Figure out separate mesh/animations solution: x
 
 /*Others*/
 
--- Think about quicker audio/graphic reload method: x
--- Figure out about implementing extended ASCII: x
+-- Figure out quicker module reload method (if possible): x
+-- Figure out extended ASCII implementation: x
 
 /*
 =====================================
@@ -54,20 +50,26 @@ v = done
 
 /*CGame*/
 
--- Fix <part>model commands: ?
+-- Fix <part>model commands: V
 -- Improve Tier system: -
--- Think about HUD use and design: x
+-- Think about HUD use and design: -
 -- Enhance specific audio lookups: x
 -- Think about accurate footsteps solution: x
 -- Enhence PSYS and GRFX (if possible): x
 -- Check events: x
 -- Think about Alex's aura concept: x
+-- Fix 'showLight': v
+-- Rename aura configuration keywords: v
+-- Add pain sounds support: -
 
 /*Game*/
 
 -- Fix pmove and think about improvements: -
+-- Fix ballflip animation: -
 -- Fix server-side Tier system issues: x
+-- Fix animation that comes after releasing a beam and falling: x
 -- Think about moveset and animations: -
+-- Move pain sounds support to CGame: x
 -- (code not yet parsed)
 
 /*BothGames*/
@@ -77,11 +79,9 @@ v = done
 /*UI*/
 
 -- Major redesign: -
--- Mobile navigation type for camera settings: x
--- Figure out about audio play during loading screen: -
+-- Mobile type navigation for camera settings: x
+-- Figure out about audio play during loading screen: x
 -- Move toward new server browser (if needed): x
-
-/*
 
 /*Directory-wise*/
 
@@ -93,7 +93,7 @@ v = done
 =====================================
 */
 
--- Check and/or improve tools: -
+-- Check, add or improve tools: -
 
 /*
 =====================================

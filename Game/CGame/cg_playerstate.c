@@ -263,11 +263,6 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		CG_CheckLocalSounds(ps,ops);
 	}
 	CG_CheckPlayerstateEvents(ps,ops);
-	if(ps->viewheight != ops->viewheight){
-		cg.duckChange = ps->viewheight - ops->viewheight;
-		cg.duckTime = cg.time;
-	}
-
 	cg.tierSelectionMode = 0;
 	cg.tierSelect = -1;
 	if(ps->powerLevel[plTierChanged] == 1 && ops->powerLevel[plTierChanged] != 1) {

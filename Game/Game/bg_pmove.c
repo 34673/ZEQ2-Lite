@@ -1213,7 +1213,7 @@ void PM_CheckJump(void){
 			}
 			truePower = jumpPower * (4 + extra);
 			pm->ps->powerLevel[plUseFatigue] += pm->ps->powerLevel[plMaximum] * 0.005;
-			PM_AddEvent(EV_HIGHJUMP);
+			PM_AddEvent(EV_JUMP_HIGH);
 			pm->ps->baseStats[stJumpTimedPower] = -1;
 		}
 		else{
@@ -1763,9 +1763,9 @@ void PM_NearGroundTrace(void){
 	vec3_t		point;
 	trace_t		trace;
 	if(pm->ps->bitFlags & atopGround){
-		if(pm->ps->timers[tmFall] >= 4000){PM_AddEvent(EV_FALL_FAR);}
-		else if(pm->ps->timers[tmFall] >= 2000){PM_AddEvent(EV_FALL_MEDIUM);}
-		else if(pm->ps->timers[tmFall] >= 500){PM_AddEvent(EV_FALL_SHORT);}
+		if(pm->ps->timers[tmFall] >= 4000){PM_AddEvent(EV_LAND_HEAVY);}
+		else if(pm->ps->timers[tmFall] >= 2000){PM_AddEvent(EV_LAND_MEDIUM);}
+		else if(pm->ps->timers[tmFall] >= 500){PM_AddEvent(EV_LAND_LIGHT);}
 		pm->ps->timers[tmFall] = 0;
 		return;
 	}

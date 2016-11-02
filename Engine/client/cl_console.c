@@ -544,6 +544,78 @@ void Con_DrawInput (void) {
 
 /*
 ================
+Con_DrawNotify
+
+Draws the last few lines of output transparently over the game top
+================
+*/
+void Con_DrawNotify (void)
+{
+	int		x, v;
+	short	*text;
+	int		i;
+	int		time;
+	int		skip;
+	int		currentColor;
+	int 	textSize;
+	vec4_t	background;
+	textSize = 8;
+	currentColor = 7;
+	re.SetColor( g_color_table[currentColor] );
+
+	background[0] = 0.0;
+	background[1] = 0.0;
+	background[2] = 0.0;
+	background[3] = 0.5;
+	v = 0;
+	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
+	{
+		if (i < 0)
+			continue;
+		time = con.times[i % NUM_CON_TIMES];
+		if (time == 0)
+			continue;
+		time = cls.realtime - time;
+		if (time > con_notifytime->value*1000)
+			continue;
+		text = con.text + (i % con.totallines)*con.linewidth;
+
+		if (cl.snap.ps.pm_type != PM_INTERMISSION && Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
+			continue;
+		}
+
+		for (x = 0 ; x < con.linewidth ; x++) {
+			if ( ( text[x] & 0xff ) == ' ' ) {
+				continue;
+			}
+			if ( ( (text[x]>>8)&7 ) != currentColor ) {
+				currentColor = (text[x]>>8)&7;
+				re.SetColor( g_color_table[currentColor] );
+			}
+			//SCR_DrawSmallChar( cl_conXOffset->integer + con.xadjust + (x+1)*SMALLCHAR_WIDTH, v, text[x] & 0xff );
+		}
+
+		v += 60;
+	}
+
+	re.SetColor( NULL );
+
+	if (Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
+		return;
+	}
+
+	// draw the chat line
+	if ( Key_GetCatcher( ) & KEYCATCH_MESSAGE )
+	{
+		SCR_DrawPic(0,365,320,66,cls.chatInputShader);
+		SCR_DrawCustomString(8,22,392,"^3say: ");
+		Field_CustomDraw(6,&chatField,57,392,SCREEN_WIDTH);
+	}
+
+}
+
+/*
+================
 Con_DrawSolidConsole
 
 Draws the console with the solid background
@@ -675,6 +747,11 @@ void Con_DrawConsole( void ) {
 
 	if ( con.displayFrac ) {
 		Con_DrawSolidConsole( con.displayFrac );
+	} else {
+		// draw notify lines
+		if ( clc.state == CA_ACTIVE ) {
+			Con_DrawNotify ();
+		}
 	}
 }
 

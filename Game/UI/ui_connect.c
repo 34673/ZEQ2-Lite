@@ -242,7 +242,6 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 			w = 0;
 			h = 0;
 			break;
-		break;
 	default:
 		return;
 	}

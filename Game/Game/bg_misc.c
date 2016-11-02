@@ -256,12 +256,12 @@ char *eventnames[] = {
 	"EV_MISSILE_MISS",
 	"EV_MISSILE_MISS_METAL",
 	"EV_MISSILE_MISS_AIR",
-	"EV_FALL_SHORT",
-	"EV_FALL_MEDIUM",
-	"EV_FALL_FAR",
-	"EV_JUMP_PAD",			// boing sound at origin", jump sound on player
-	"EV_HIGHJUMP",
+	"EV_LAND_LIGHT",
+	"EV_LAND_MEDIUM",
+	"EV_LAND_HEAVY",
+	"EV_JUMP_PAD",		// boing sound at origin", jump sound on player
 	"EV_JUMP",
+	"EV_JUMP_HIGH",
 	"EV_WATER_TOUCH",	// foot touches
 	"EV_WATER_LEAVE",	// foot leaves
 	"EV_WATER_UNDER",	// head touches

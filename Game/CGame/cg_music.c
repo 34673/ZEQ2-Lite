@@ -211,6 +211,7 @@ void CG_PlayTransformTrack(void){
 	duration = tier->transformMusicLength;
 	if(duration > 300000){duration = 300000;}
 	cgs.music.endTime = cg.time + duration - cgs.music.fadeAmount;
+	trap_S_StopBackgroundTrack();
 	trap_S_StartBackgroundTrack(path,path);
 	trap_Cvar_Set("s_musicvolume",va("%f",cg_music.value));
 }

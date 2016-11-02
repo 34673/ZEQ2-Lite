@@ -83,9 +83,9 @@ Additionaly, we search in several subdirectories:
 current directory is the current mode
 base directory is a variable to allow mods based on other mods
 (such as ZEQ2-Lite + Saiyan Saga content combination in a mod for instance)
-BASEDIR is the hardcoded base directory ("ZEQ2-Lite")
+BASEDIR is the hardcoded base directory ("Base")
 
-e.g. the qpath "sound/newstuff/test.wav" would be searched for in the following places:
+e.g. the qpath "sound/newstuff/test.ogg" would be searched for in the following places:
 
 home path + current directory's zip files
 home path + current directory's directory
@@ -2698,10 +2698,10 @@ void FS_Path_f( void ) {
 	searchPath_t	*s;
 	int				i;
 
-	Com_Printf ("We are looking in the current search path:\n");
+	Com_Printf ("Currently used directories/packs:\n");
 	for (s = fs_searchPaths; s; s = s->next) {
 		if (s->pack) {
-			Com_Printf ("%s (%i files)\n", s->pack->pakFileName, s->pack->numFiles);
+			Com_Printf ("%s (%i elements)\n", s->pack->pakFileName, s->pack->numFiles);
 			if ( fs_numServerPaks ) {
 				if ( !FS_PakIsPure(s->pack) ) {
 					Com_Printf( "    not on the pure list\n" );
@@ -3185,7 +3185,7 @@ static void FS_Startup( const char *dirName )
 {
 	const char *homePath;
 
-	Com_Printf( "----- FS_Startup -----\n" );
+	Com_Printf( "----- FileSystem Startup -----\n" );
 
 	fs_packFiles = 0;
 
@@ -3261,7 +3261,7 @@ static void FS_Startup( const char *dirName )
 		missingFiles = Sys_FOpen( "\\missing.txt", "ab" );
 	}
 #endif
-	Com_Printf( "%d files in pk3 files\n", fs_packFiles );
+	Com_Printf( "Total %d elements in loaded packs\n", fs_packFiles );
 }
 
 /*

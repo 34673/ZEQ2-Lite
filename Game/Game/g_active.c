@@ -209,7 +209,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 
 	if ( client->sess.spectatorState != SPECTATOR_FOLLOW ) {
 		client->ps.pm_type = PM_SPECTATOR;
-		client->ps.baseStats[stSpeed] = 400;	// faster than normal
+		client->ps.baseStats[stSpeed] = 50;	// faster than normal
 
 		// set up for pmove
 		memset (&pm, 0, sizeof(pm));
@@ -329,8 +329,8 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 	for ( i = oldEventSequence ; i < client->ps.eventSequence ; i++ ) {
 		event = client->ps.events[ i & (MAX_PS_EVENTS-1) ];
 		switch ( event ) {
-		case EV_FALL_MEDIUM:
-		case EV_FALL_FAR:
+		case EV_LAND_MEDIUM:
+		case EV_LAND_HEAVY:
 			break;
 		case EV_FIRE_WEAPON:
 			FireWeapon(ent,qfalse);

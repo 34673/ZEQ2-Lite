@@ -2329,17 +2329,17 @@ For controlling environment variables
 ==================
 */
 
-void Com_ExecuteCfg(void)
-{
-	Cbuf_ExecuteText(EXEC_NOW, "exec default.cfg\n");
-	Cbuf_Execute(); // Always execute after exec to prevent text buffer overflowing
-
-	if(!Com_SafeMode())
-	{
-		// skip the q3config.cfg and autoexec.cfg if "safe" is on the command line
-		Cbuf_ExecuteText(EXEC_NOW, "exec " CONFIG_CFG "\n");
-		Cbuf_Execute();
-		Cbuf_ExecuteText(EXEC_NOW, "exec autoexec.cfg\n");
+void Com_ExecuteCfg(void){
+	
+	// exec default.cfg if app runs in 'safe' mode (recursive crashes prevention)
+	if(Com_SafeMode()){ 
+		Cbuf_ExecuteText(EXEC_NOW, "exec default\n");
+		Cbuf_Execute(); // Always execute after exec to prevent text buffer overflowing
+	}
+	Cbuf_ExecuteText(EXEC_NOW, "exec " CONFIG_CFG "\n");
+	Cbuf_Execute();
+	if(!(FS_ReadFile("autoexec.cfg", NULL) <= 0)){
+		Cbuf_ExecuteText(EXEC_NOW, "exec autoexec\n");
 		Cbuf_Execute();
 	}
 }
@@ -2466,7 +2466,7 @@ static void Com_DetectSSE(void)
 #endif
 		Q_VMftol = qvmftolsse;
 
-		Com_Printf("Have SSE support\n");
+		Com_Printf("SSE support: ^2YES^7\n");
 #if !idx64
 	}
 	else
@@ -2475,7 +2475,7 @@ static void Com_DetectSSE(void)
 		Q_VMftol = qvmftolx87;
 		Q_SnapVector = qsnapvectorx87;
 
-		Com_Printf("No SSE support on this machine\n");
+		Com_Printf("SSE support: ^1NO^7\n");
 	}
 #endif
 }
@@ -2511,7 +2511,7 @@ void Com_Init( char *commandLine ) {
 	char	*s;
 	int	qport;
 
-	Com_Printf( "%s %s %s\n", ENGINE_VERSION, PLATFORM_STRING, __DATE__ );
+	Com_Printf("----- Common Initialisation -----\n");
 
 	if ( setjmp (abortframe) ) {
 		Sys_Error ("Error during initialization");
@@ -2629,7 +2629,7 @@ void Com_Init( char *commandLine ) {
 
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
 
-	s = va("%s %s %s", ENGINE_VERSION, PLATFORM_STRING, __DATE__ );
+	s = va("%s, %s, %s", ENGINE_VERSION, PLATFORM_STRING, __DATE__ );
 	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
 	com_dirName = Cvar_Get("com_dirName", NAME_FOR_MASTER, CVAR_SERVERINFO | CVAR_INIT);
 	com_protocol = Cvar_Get("com_protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_INIT);

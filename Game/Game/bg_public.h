@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define EARTHQUAKE_SYSTEM	1	// JUHOX
 #define MAPLENSFLARES		1	// JUHOX
 
-#define	DEFAULT_GRAVITY		3000
+#define	DEFAULT_GRAVITY		800	// 3000
 #define	GIB_HEALTH			-40
 #define	ARMOR_PROTECTION	0.66
 
@@ -533,12 +533,12 @@ typedef enum {
 	EV_STEP_8,
 	EV_STEP_12,
 	EV_STEP_16,
-	EV_FALL_SHORT,
-	EV_FALL_MEDIUM,
-	EV_FALL_FAR,
+	EV_LAND_LIGHT,
+	EV_LAND_MEDIUM,
+	EV_LAND_HEAVY,
 	EV_JUMP_PAD,			// boing sound at origin, jump sound on player
-	EV_HIGHJUMP,
 	EV_JUMP,
+	EV_JUMP_HIGH,
 	EV_WATER_TOUCH,	// foot touches
 	EV_WATER_LEAVE,	// foot leaves
 	EV_WATER_UNDER,	// head touches

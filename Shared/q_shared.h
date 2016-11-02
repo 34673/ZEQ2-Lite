@@ -31,14 +31,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef PRODUCT_VERSION
 	#define PRODUCT_VERSION		"Revision 1917" 		// update before SVN commit (value = head revision + 1)
 #endif
-#define ENGINE_VERSION			"ioQuake3: Commit 2813" 		// value based on ioq3's github commits count
-#define BASEDIR					"ZEQ2-Lite"
+#define ENGINE_VERSION			"ioQ3 commit 2813" 		// value based on ioq3's github commits count
+#define BASEDIR					"Base"
 #define CLIENT_WIN_TITLE     	"ZEQ2-Lite"
 #define CLIENT_WIN_MIN_TITLE 	"ZEQ2-Lite"
-#define HOMEPATH_NAME_UNIX		".ZEQ2-Lite"
+#define HOMEPATH_NAME_UNIX		".z2l"
 #define HOMEPATH_NAME_WIN		"ZEQ2-Lite"
 #define HOMEPATH_NAME_MACOSX	HOMEPATH_NAME_WIN
-#define NAME_FOR_MASTER			"ZEQ2-Lite"	// must NOT contain whitespace
+#define NAME_FOR_MASTER			"Base"	// must NOT contain whitespace
 
 // Heartbeat for dpmaster protocol. You shouldn't change this unless you know what you're doing
 #define HEARTBEAT_FOR_MASTER	"" //DarkPlaces
@@ -46,7 +46,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 #define MAX_TEAMNAME			32
-#define MAX_MASTER_SERVERS      1			// number of supported master servers
+#define MAX_MASTER_SERVERS      5			// number of supported master servers
 
 #define DEMOEXT	"dm_"						// standard demo extension
 

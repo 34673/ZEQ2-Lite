@@ -1,0 +1,1 @@
+@echo off && start Riot/Riot

@@ -114,8 +114,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_cheats, "sv_cheats", "", 0, 0, qfalse },
 
 	// noset vars
-	{ NULL, "dirName", PRODUCT_NAME, CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
-	{ NULL, "dirDate", __DATE__ , CVAR_ROM, 0, qfalse  },
+	{ NULL, "productName", PRODUCT_NAME, CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
+	{ NULL, "productDate", __DATE__ , CVAR_ROM, 0, qfalse  },
 	{ &g_restarted, "g_restarted", "0", CVAR_ROM, 0, qfalse  },
 	{ NULL, "sv_mapname", "", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
 	// latched vars

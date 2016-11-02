@@ -98,8 +98,10 @@ static void UI_CreditMenu_Draw( void ) {
 	y += 1.42 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
 	UI_DrawProportionalString( x, y, "Sounds/Music", UI_LEFT|UI_SMALLFONT|UI_DROPSHADOW, color_white );
 	y += PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
-	UI_DrawProportionalString( x, y, "Circlerun", UI_LEFT|UI_TINYFONT|UI_DROPSHADOW, color_white );}
-
+	UI_DrawProportionalString( x, y, "Circlerun", UI_LEFT|UI_TINYFONT|UI_DROPSHADOW, color_white );
+	y += 2 * PROP_HEIGHT * PROP_SMALL_SIZE_SCALE;
+	UI_DrawProportionalString( 400, y, "+ZEQ2-Lite community", UI_LEFT|UI_TINYFONT|UI_DROPSHADOW, color_yellow );
+}
 
 /*===============
 UI_CreditMenu
@@ -108,7 +110,7 @@ void UI_CreditMenu( void ) {
 
 	uis.menuamount = 0;
 	trap_S_StopBackgroundTrack();
-	trap_S_StartBackgroundTrack("music/credits.ogg", "music/credits.ogg");
+	trap_S_StartBackgroundTrack("music/credits", "music/credits");
 	trap_S_StartLocalSound( menu_exit_sound, CHAN_LOCAL_SOUND );
 
 

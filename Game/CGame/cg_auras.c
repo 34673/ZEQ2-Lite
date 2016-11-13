@@ -859,10 +859,8 @@ void CG_Aura_DrawInnerSpike(vec3_t start, vec3_t end, float width, centity_t *pl
 
 	// Get the aura system corresponding to the player
 	clientNum = player->currentState.clientNum;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
 		CG_Error("Bad clientNum on player entity");
-		return;
-	}
 	state = &auraStates[clientNum];
 	tier = cgs.clientinfo[clientNum].tierCurrent;
 	config = &(state->configurations[tier]);
@@ -910,10 +908,8 @@ localEntity_t *CG_AuraSpike(const vec3_t p, const vec3_t vel, float radius,
 
 	// Get the aura system corresponding to the player
 	clientNum = player->currentState.clientNum;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
 		CG_Error( "Bad clientNum on player entity");
-		return le;
-	}
 	state = &auraStates[clientNum];
 	tier = cgs.clientinfo[clientNum].tierCurrent;
 	config = &(state->configurations[tier]);
@@ -934,7 +930,7 @@ localEntity_t *CG_AuraSpike(const vec3_t p, const vec3_t vel, float radius,
 	le->color[0] = config->auraColor[0];
 	le->color[1] = config->auraColor[1]; 
 	le->color[2] = config->auraColor[2];
-	le->color[3] = 1;
+	le->color[3] = 1.f;
 	le->pos.trType = TR_LINEAR;
 	le->pos.trTime = startTime;
 	VectorCopy(vel, le->pos.trDelta );

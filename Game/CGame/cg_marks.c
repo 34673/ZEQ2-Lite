@@ -876,7 +876,7 @@ void CG_ParticleBubble(qhandle_t pshader, vec3_t origin, vec3_t origin2, int tur
 	p->end = origin2[2];
 	p->pshader = pshader;
 	randsize = (crandom() *.5f) +1;
-	p->height = randsize;randsize;
+	p->height = randsize = randsize;
 	p->vel[2] = 50 +(crandom() *10);
 	if (turb){
 		p->type = P_BUBBLE_TURBULENT;

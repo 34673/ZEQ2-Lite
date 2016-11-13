@@ -925,7 +925,7 @@ void CG_LoadLensFlares(void) {
 	buf = lfbuf;
 	// parse all lens flare effects
 	while(cgs.numLensFlareEffects < MAX_LENSFLARE_EFFECTS && buf){
-		if(!CG_ParseLensFlareEffect(&p, &cgs.lensFlareEffects[cgs.numLensFlareEffects]))
+		if(!CG_ParseLensFlareEffect(&buf, &cgs.lensFlareEffects[cgs.numLensFlareEffects]))
 			break;
 		cgs.numLensFlareEffects++;
 	}
@@ -953,7 +953,7 @@ static void CG_LoadMissileLensFlares(void) {
 	buf = lfbuf;
 	// parse all lens flare effects
 	while (cgs.numMissileLensFlareEffects < MAX_MISSILE_LENSFLARE_EFFECTS && buf) {
-		if (!CG_ParseLensFlareEffect(&p, &cgs.missileLensFlareEffects[cgs.numMissileLensFlareEffects]))
+		if (!CG_ParseLensFlareEffect(&buf, &cgs.missileLensFlareEffects[cgs.numMissileLensFlareEffects]))
 			break;
 		cgs.numMissileLensFlareEffects++;
 	}
@@ -1126,7 +1126,7 @@ void CG_LoadLensFlareEntities(void) {
 	buf = lfbuf;
 	// parse all lens flare entities
 	while (cgs.numLensFlareEntities < MAX_LIGHTS_PER_MAP && buf) {
-		if (!CG_ParseLensFlareEntity(&p, &cgs.lensFlareEntities[cgs.numLensFlareEntities]))
+		if (!CG_ParseLensFlareEntity(&buf, &cgs.lensFlareEntities[cgs.numLensFlareEntities]))
 			break;
 		cgs.numLensFlareEntities++;
 	}

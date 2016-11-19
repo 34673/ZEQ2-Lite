@@ -952,7 +952,7 @@ extern	radar_t			cg_playerOrigins[MAX_CLIENTS];
 //
 const char		*CG_ConfigString(int index),
 				*CG_Argv(int arg);
-void QDECL		CG_Printf(const char *msg, ...) __attribute__ (format(printf, 1, 2)),
+void QDECL		CG_Printf(const char *msg, ...) __attribute__ ((format(printf, 1, 2))),
 				CG_Error(const char *msg, ...) __attribute__ ((noreturn, format (printf, 1, 2)));
 int				CG_CrosshairPlayer(void),
 				CG_LastAttacker(void);
@@ -1197,7 +1197,7 @@ void			CG_InitConsoleCommands(void),
 // print message on the local console
 				trap_Print(const char *fmt),
 // abort the game
-				trap_Error(const char *fmt) __attribute__(noreturn);
+				trap_Error(const char *fmt) __attribute__((noreturn));
 // milliseconds should only be used for performance tuning, never
 // for anything game related.  Get time from the CG_DrawActiveFrame parameter
 int				trap_Milliseconds(void);

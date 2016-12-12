@@ -35,6 +35,7 @@ This is called at startup and for tournement restarts
 */
 void CG_InitLocalEntities(void){
 	int	i;
+
 	memset(cg_localEntities, 0, sizeof(cg_localEntities));
 	cg_activeLocalEntities.next = cg_activeLocalEntities.prev = &cg_activeLocalEntities;
 	cg_freeLocalEntities = cg_localEntities;
@@ -78,7 +79,7 @@ localEntity_t *CG_AllocLocalEntity(void){
 	// link into the active list
 	le->next = cg_activeLocalEntities.next;
 	le->prev = &cg_activeLocalEntities;
-	cg_activeLocalEntities.next->prev = cg_activeLocalEntities.next = le;
+	cg_activeLocalEntities.next = cg_activeLocalEntities.next->prev = le;
 	return le;
 }
 

@@ -324,7 +324,7 @@ CG_Aura_DrawSpike
 ===================
   Draws the polygons for one aura spike
 */
-static void CG_Aura_DrawSpike (vec3_t start, vec3_t end, float width, qhandle_t shader, vec4_t RGBModulate){
+static void CG_Aura_DrawSpike(vec3_t start, vec3_t end, float width, qhandle_t shader, vec4_t RGBModulate){
 	vec3_t		line, offset, viewLine;
 	polyVert_t	verts[4];
 	float		len;
@@ -359,7 +359,7 @@ CG_Aura_LerpSpikeSegment
 ==========================
   Lerps the position the aura spike should have along a segment of the convex hull
 */
-static void CG_Aura_LerpSpikeSegment( auraState_t *state, int spikeNr, int *start, int *end, float *progress_pct){
+static void CG_Aura_LerpSpikeSegment(auraState_t *state, int spikeNr, int *start, int *end, float *progress_pct){
 	float	length_pos, length_sofar;
 	int		i, j;
 	// Map i onto the circumference of the convex hull.
@@ -392,22 +392,22 @@ static void CG_LerpSpike(auraState_t *state, auraConfig_t *config, int spikeNr, 
 
 	// Decide on which type of spike to use.
 	if(!(spikeNr % 3)){
-		lerpTime = (cg.time % 400) / 400.0f;
-		lerpSize = 14. *(lerpTime+1);
+		lerpTime = (cg.time % 400) / 400.f;
+		lerpSize = 14.f *(lerpTime+1.f);
 		lerpBorder = 2.5f *(lerpTime+1.75f);
 		baseBorder = 2.5f *1.75f;
 	} else if(!(spikeNr % 2)){
-		lerpTime = ((cg.time+200) % 400) / 400.0f;
-		lerpSize = 12 *(lerpTime+1);
-		lerpBorder = 3 *(lerpTime+1.75f);
-		baseBorder = 3 *1.75f;
+		lerpTime = ((cg.time+200) % 400) / 400.f;
+		lerpSize = 12.f *(lerpTime+1.f);
+		lerpBorder = 3.f *(lerpTime+1.75f);
+		baseBorder = 3.f *1.75f;
 	} else{
-		lerpTime = (cg.time % 500) / 500.0f;
-		lerpSize = 10 *(lerpTime+1);
+		lerpTime = (cg.time % 500) / 500.f;
+		lerpSize = 10.f *(lerpTime+1.f);
 		lerpBorder = 2.75f *(lerpTime+1.75f);
 		baseBorder = 2.75f *1.75f;
 	}
-	lerpModulate = -4 *lerpTime *lerpTime +4 *lerpTime;
+	lerpModulate = -4.f *lerpTime *lerpTime +4.f *lerpTime;
 	// NOTE: Prepared for a cvar switch between additive and
 	//       blended aura.
 	if(0){
@@ -583,10 +583,8 @@ void CG_AddAuraToScene(centity_t *player){
 
 	// Get the aura system corresponding to the player
 	clientNum = player->currentState.clientNum;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
 		CG_Error("Bad clientNum on player entity");
-		return;
-	}
 	state = &auraStates[clientNum];
 	tier = cgs.clientinfo[clientNum].tierCurrent;
 	config = &(state->configurations[tier]);	
@@ -615,10 +613,8 @@ void CG_AuraStart(centity_t *player){
 
 	// Get the aura system corresponding to the player
 	clientNum = player->currentState.clientNum;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
 		CG_Error( "Bad clientNum on player entity");
-		return;
-	}
 	state = &auraStates[clientNum];
 	tier = cgs.clientinfo[clientNum].tierCurrent;
 	config = &(state->configurations[tier]);	
@@ -844,72 +840,23 @@ void CG_RegisterClientAura(int clientNum,clientInfo_t *ci){
 void CG_CopyClientAura(int from, int to){ memcpy(&auraStates[to], &auraStates[from], sizeof(auraState_t));}
 
 /*
-===================
-CG_Aura_DrawSpike
-===================
-  Draws the polygons for one aura spike
-*/
-void CG_Aura_DrawInnerSpike(vec3_t start, vec3_t end, float width, centity_t *player){
-	vec3_t 		line, offset, viewLine;
-	polyVert_t	verts[4];
-	float		len;
-	int			i, j, clientNum, tier;
-	auraState_t		*state;
-	auraConfig_t	*config;
-
-	// Get the aura system corresponding to the player
-	clientNum = player->currentState.clientNum;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
-		CG_Error("Bad clientNum on player entity");
-	state = &auraStates[clientNum];
-	tier = cgs.clientinfo[clientNum].tierCurrent;
-	config = &(state->configurations[tier]);
-	VectorSubtract(end, start, line);
-	VectorSubtract(start, cg.refdef.vieworg, viewLine);
-	CrossProduct(viewLine, line, offset);
-	len = VectorNormalize (offset);
-	if(!len) return;
-	VectorMA(end, -width, offset, verts[0].xyz);
-	verts[0].st[0] = 1;
-	verts[0].st[1] = 0;
-	VectorMA(end, width, offset, verts[1].xyz);
-	verts[1].st[0] = 0;
-	verts[1].st[1] = 0;
-	VectorMA(start, width, offset, verts[2].xyz);
-	verts[2].st[0] = 0;
-	verts[2].st[1] = 1;
-	VectorMA(start, -width, offset, verts[3].xyz);
-	verts[3].st[0] = 1;
-	verts[3].st[1] = 1;
-	for(i = 0;i < 4;i++)
-		for (j = 0;j < 4;j++)
-			verts[i].modulate[j] = 255 * config->auraColor[j];
-	trap_R_AddPolyToScene( config->auraShader, 4, verts);
-}
-
-/*
 ==================
 CG_AuraSpikes
 
 For inner aura
 ==================
 */
-localEntity_t *CG_AuraSpike(const vec3_t p, const vec3_t vel, float radius,
-							float duration,
-							int startTime,
-							int fadeInTime,
-							int leFlags,
-							centity_t *player){
-	int				clientNum, tier;
+localEntity_t *CG_AuraSpike(const vec3_t p, const vec3_t vel, float radius, float duration, int startTime, int fadeInTime, int leFlags, centity_t *player){
 	localEntity_t	*le;
 	refEntity_t		*re;
 	auraState_t		*state;
 	auraConfig_t	*config;
-
+	int				clientNum, tier;
+	
 	// Get the aura system corresponding to the player
 	clientNum = player->currentState.clientNum;
 	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
-		CG_Error( "Bad clientNum on player entity");
+		CG_Error("Bad clientNum on player entity");
 	state = &auraStates[clientNum];
 	tier = cgs.clientinfo[clientNum].tierCurrent;
 	config = &(state->configurations[tier]);
@@ -933,9 +880,9 @@ localEntity_t *CG_AuraSpike(const vec3_t p, const vec3_t vel, float radius,
 	le->color[3] = 1.f;
 	le->pos.trType = TR_LINEAR;
 	le->pos.trTime = startTime;
-	VectorCopy(vel, le->pos.trDelta );
-	VectorCopy(p, le->pos.trBase );
-	VectorCopy(p, re->origin );
+	VectorCopy(vel, le->pos.trDelta);
+	VectorCopy(p, le->pos.trBase);
+	VectorCopy(p, re->origin);
 	re->customShader = config->auraShader;
 	// rage pro can't alpha fade, so use a different shader
 	re->shaderRGBA[0] = le->color[0] * 0xff;

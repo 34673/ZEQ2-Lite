@@ -1181,7 +1181,6 @@ void CG_UserMissileHitWall( int weapon, int clientNum, int powerups, int number,
 }
 
 void CG_UserMissileHitPlayer( int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, int entityNum ) {
-	CG_Bleed( origin, entityNum );
 	CG_UserMissileHitWall( weapon, clientNum, powerups, number, origin, dir, qtrue );
 }
 /*

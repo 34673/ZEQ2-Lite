@@ -1056,42 +1056,34 @@ CG_InnerAuraSpikes
 ===============
 */
 static void CG_InnerAuraSpikes(centity_t *cent, refEntity_t *head){
-	vec3_t up, origin;
-	float xyzspeed;
-	int r1,r2,r3,r4,r5,r6;
-	clientInfo_t *ci;
+	clientInfo_t	*ci;
+	vec3_t			up, origin;
+	float			xyzspeed;
+	int				r[6];
+	
 	ci = &cgs.clientinfo[cent->currentState.number];
-	if(ci->bubbleTrailTime > cg.time){ return;}
+	if(ci->bubbleTrailTime > cg.time) return;
 	xyzspeed = sqrt(cent->currentState.pos.trDelta[0] * cent->currentState.pos.trDelta[0] +
 					cent->currentState.pos.trDelta[1] * cent->currentState.pos.trDelta[1] + 
 					cent->currentState.pos.trDelta[2] * cent->currentState.pos.trDelta[2]);
 	if(cent->currentState.eFlags & EF_AURA && !xyzspeed){
-			r1 = random() * 32;
-			r2 = random() * 32;
-			r3 = random() * 32;
-			r4 = random() * 32;
-			r5 = random() * 32;
-			r6 = random() * 2;
-			VectorSet(up, 0, 0, 64); // <-- Type 1
-			//VectorMA(head->origin, 0, head->axis[0], up); // <-- Type 2
-			//VectorMA(up, 64, head->axis[2], up); // <-- Type 2
+			r[0] = random() * 32;
+			r[1] = random() * 32;
+			r[2] = random() * 32;
+			r[3] = random() * 32;
+			r[4] = random() * 32;
+			r[5] = random() * 2;
+			VectorSet(up, 0, 0, 64);
 			VectorMA(head->origin, 0, head->axis[0], origin);
 			VectorMA(origin, -40, head->axis[2], origin);
-			origin[0] += r1;
-			origin[1] += r2;
-			origin[2] += r3;
-			origin[0] -= r4;
-			origin[1] -= r5;
-			origin[2] -= r6;
-			//up[0] += r1; // <-- Type 2
-			//up[1] += r2; // <-- Type 2
-			//up[2] += r3; // <-- Type 2
-			//up[0] -= r4; // <-- Type 2
-			//up[1] -= r5; // <-- Type 2
-			//up[2] -= r6; // <-- Type 2
-		CG_AuraSpike(origin, up, 10, 500, cg.time, cg.time + 250, LEF_PUFF_DONT_SCALE, cent); // <-- Type 1
-		//CG_Aura_DrawInnerSpike (origin, up, 25.0f, cent); // <-- Type 2
-		ci->bubbleTrailTime = cg.time + 50;
+			origin[0] += r[0];
+			origin[1] += r[1];
+			origin[2] += r[2];
+			origin[0] -= r[3];
+			origin[1] -= r[4];
+			origin[2] -= r[5];
+			CG_AuraSpike(origin, up, 10, 500, cg.time, cg.time + 250, LEF_PUFF_DONT_SCALE, cent);
+			ci->bubbleTrailTime = cg.time + 50;
 	}
 }
 
@@ -1524,16 +1516,16 @@ void CG_Player(centity_t *cent){
 	ps = &cg.snap->ps;
 	clientNum = cent->currentState.clientNum;
 	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
-		CG_Error( "Bad clientNum on player entity" );
+		CG_Error("Bad clientNum on player entity");
 	ci = &cgs.clientinfo[clientNum];
-	if(!ci->infoValid){ return;}
+	if(!ci->infoValid) return;
 	if(cg.resetValues){
 		ci->damageModelState = 0;
 		ci->damageTextureState = 0;
 		cg.resetValues = qfalse;
 	}
 	onBodyQue = (cent->currentState.number != cent->currentState.clientNum);
-	if(onBodyQue){ tier = 0;}
+	if(onBodyQue) tier = 0;
 	else{
 		tier = cent->currentState.tier;
 		if(ci->tierCurrent != tier){
@@ -1644,7 +1636,7 @@ void CG_Player(centity_t *cent){
 	CG_AddRefEntityWithPowerups(&head, &cent->currentState, ci->team, ci->auraConfig[tier]->auraAlways);
 	CG_BreathPuffs(cent,&head);
 	CG_BubblesTrail(cent,&head);
-	CG_InnerAuraSpikes(cent,&head);
+	CG_InnerAuraSpikes(cent, &head);
 	memcpy(&(cent->pe.cameraRef), &camera , sizeof(refEntity_t));
 	memcpy(&(cent->pe.headRef), &head , sizeof(refEntity_t));
 	memcpy(&(cent->pe.torsoRef), &torso, sizeof(refEntity_t));

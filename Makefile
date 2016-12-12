@@ -2272,26 +2272,26 @@ endif
 
 ifneq ($(BUILD_GAME_SO),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/cgame$(SHLIBNAME) \
-					$(INSTALLDIR)/ZEQ2-Lite/.
+					$(INSTALLDIR)/Base/.
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/game$(SHLIBNAME) \
-					$(INSTALLDIR)/ZEQ2-Lite/.
+					$(INSTALLDIR)/Base/.
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/ui$(SHLIBNAME) \
-					$(INSTALLDIR)/ZEQ2-Lite/.
+					$(INSTALLDIR)/Base/.
 endif
 
 ifneq ($(BUILD_GAME_QVM),0)
 	$(INSTALL)  -m 0755 $(BR)/Base/vm/cgame.qvm \
-					$(INSTALLDIR)/ZEQ2-Lite/vm/
+					$(INSTALLDIR)/Base/vm/
 	$(INSTALL)  -m 0755 $(BR)/Base/vm/game.qvm \
-					$(INSTALLDIR)/ZEQ2-Lite/vm/
+					$(INSTALLDIR)/Base/vm/
 	$(INSTALL)  -m 0755 $(BR)/Base/vm/ui.qvm \
-					$(INSTALLDIR)/ZEQ2-Lite/vm/
+					$(INSTALLDIR)/Base/vm/
 endif
 
 copyfiles: release
-	@if [ ! -d $(COPYDIR)/ZEQ2-Lite ]; then echo "You need to set COPYDIR to where your ZEQ2-Lite data is!"; fi
+	@if [ ! -d $(COPYDIR)/Base ]; then echo "You need to set COPYDIR to where your ZEQ2-Lite data is!"; fi
 ifneq ($(BUILD_GAME_SO),0)
-	-$(MKDIR) -p -m 0755 $(COPYDIR)/ZEQ2-Lite
+	-$(MKDIR) -p -m 0755 $(COPYDIR)/Base
 endif
 
 ifneq ($(BUILD_CLIENT),0)
@@ -2309,11 +2309,11 @@ endif
 
 ifneq ($(BUILD_GAME_SO),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/cgame$(SHLIBNAME) \
-					$(COPYDIR)/ZEQ2-Lite/.
+					$(COPYDIR)/Base/.
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/game$(SHLIBNAME) \
-					$(COPYDIR)/ZEQ2-Lite/.
+					$(COPYDIR)/Base/.
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/Base/ui$(SHLIBNAME) \
-					$(COPYDIR)/ZEQ2-Lite/.
+					$(COPYDIR)/Base/.
 endif
 
 clean: clean-debug clean-release

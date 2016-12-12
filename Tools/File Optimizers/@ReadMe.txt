@@ -7,6 +7,7 @@
 
 /* Ultimate Packer for eXecutable (UPX) */
 Repacks your executable to compress it's size. To use, drop your executable on the tool.
+For advanced settings, see the HTML link in the "UPX" folder.
 /!\ Choose safety and save your executable prior use in the program. /!\
 
 /* Radical Image Optimization Tool (RIOT) */

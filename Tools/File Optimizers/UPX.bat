@@ -1,0 +1,1 @@
+@echo off && start UPX/UPX

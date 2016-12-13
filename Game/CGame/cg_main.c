@@ -1235,7 +1235,6 @@ static void CG_RegisterGraphics(void){
 		if(!modelName[0]) break;
 		cgs.gameModels[i] = trap_R_RegisterModel(modelName);
 	}
-	CG_ClearParticles ();
 }
 
 /*																																			

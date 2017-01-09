@@ -12,35 +12,44 @@ v = done
 */
 
 /*Audio*/
-
--- Choose and keep 1 engine: -
--- Figure out workflow for Opus: -
+    -- Fix OpenAL to work with either ZEQ2-Lite or any context: -
+        Note: more cvars for the latter to enhance flexibility? Might already be possible. Needs deeper investigations.
+    -- Discontinue OGG and Vorbis supports: -
+        Note: will have to change lookup strings to point Opus extension. Only supports left would be lossless audio (WAV)
+        and lossy/compressed audio (Opus).
+    -- Make tracker support: x
+        Note: now that's a crazy thing, but it is also immensely powerful.
 
 /*Renderer*/
-
--- Think about IQM static mesh encoding: x
--- Check image formats supports: x
--- Prepare implementation of RendererGL2/GLSL: x
-
+    -- Think about IQM static mesh encoding: x
+        Note: files containing no rig/animations are heavier than their equivalent in MD3. That's probably due to the storage of additional data in IQM's specifications, such as vertex weight and custom attributes. Ideally, we might want to enhance the
+        encodec modularity-wise.
+    -- Check image formats supports: x
+        Note: PCX and Targa are plain outdated. Probably better to only keep lossless PNG and lossy JPEG format at the moment.
+        Ideally, Flif would be the candidate as the ultimate storage format for images. The decoder would need to be 
+        translated from C++ to Ansi C (C89).
+    -- Prepare implementation of RendererGL2/GLSL: x
+    
 /*Libs*/
-
--- Check libraries and/or merge closely related: -
+    -- Check libraries and/or merge closely related: -
 
 /*FileSystem*/
-
--- Redirect config.cfg parsing to base directory if file doesn't exist in others: x
+    -- Use default config file if null in current directory: x
+        Note: drop error if default can't be found.
+    -- Make certain system cvars portable across directories: x
+        Note: avoiding complex overrides between config files.
 
 /*Structure*/
 
--- Rework names and terms: -
--- Rewrite/improve console strings: -
--- Establish (Zios?) standards: -
--- Figure out separate mesh/animations solution: x
+    -- Rework semantic: -
+    -- Establish (Zios?) coding standards: x
+    -- Figure out separate mesh/animations solution: x
+        Note: assignable animation sets on single mesh
 
 /*Others*/
 
--- Figure out quicker module reload method (if possible): x
--- Figure out extended ASCII implementation: x
+    -- Figure out quicker module reload method (if possible): x
+    -- Implement Unicode: x
 
 /*
 =====================================
@@ -50,23 +59,26 @@ v = done
 
 /*CGame*/
 
--- Fix <part>model commands: V
 -- Improve Tier system: -
--- Think about HUD use and design: -
+    Note: universal reuse of previous tier content and very default content if none in tiers.
+-- Think about HUD use and design: x
 -- Enhance specific audio lookups: x
 -- Think about accurate footsteps solution: x
 -- Enhence PSYS and GRFX (if possible): x
 -- Check events: x
+    Note: cleaning, mainly.
 -- Think about Alex's aura concept: x
--- Fix 'showLight': v
--- Rename aura configuration keywords: v
+    Note: need GL2 renderer.
+-- Fix 'showLight' aura keyword: x
 -- Add pain sounds support: -
 
 /*Game*/
 
 -- Fix pmove and think about improvements: -
 -- Fix ballflip animation: -
+    Note: stay locked in.
 -- Fix server-side Tier system issues: x
+    Note: stuck on tier1 when using state bug.
 -- Fix animation that comes after releasing a beam and falling: x
 -- Think about moveset and animations: -
 -- Move pain sounds support to CGame: x
@@ -81,12 +93,15 @@ v = done
 -- Major redesign: -
 -- Mobile type navigation for camera settings: x
 -- Figure out about audio play during loading screen: x
+    Note: might require C11's threading features for a clean flow.
 -- Move toward new server browser (if needed): x
 
 /*Directory-wise*/
 
 -- Think about baseDir UI design: -
+    Note: entry point for sagas (directory menu).
 -- Think about per-directory needs: -
+    Note: content restructuration, basically.
 
 =====================================
  Tools
@@ -94,6 +109,7 @@ v = done
 */
 
 -- Check, add or improve tools: -
+-- Move to MinGW-w64: x
 
 /*
 =====================================
@@ -103,3 +119,4 @@ v = done
 
 -- Major cleaning (irrelevent/unused/obsolete code): -
 -- Fix lensflare loading/display: x
+    Note: needs investigations. The sun and lensflares aren't drawing anymore for some reasons...

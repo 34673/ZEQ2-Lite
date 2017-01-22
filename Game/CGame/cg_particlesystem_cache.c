@@ -284,7 +284,7 @@ static qboolean PSys_ParseEmitter(char **text_pp, PSys_Emitter_t *cacheEmit){
 				return qfalse;
 			}
 			// Prepare for a new template
-			cacheEmit->++nrTemplates;
+			cacheEmit->nrTemplates++;
 			ptclKey = qfalse;
 		}
 		else if(!Q_stricmp(token, "particle")){

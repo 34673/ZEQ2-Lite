@@ -23,16 +23,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // With normal play, this will be done after local prediction, but when
 // following another player or playing back a demo, it will be checked
 // when the snapshot transitions like all the other entities
-
 #include "cg_local.h"
-/*
-================
-CG_Respawn
-
-A respawn happened this snapshot
-================
-*/
-void CG_Respawn( void ) {
+extern char *eventnames[];
+//A respawn happened this snapshot
+void CG_Respawn(void){
 	// no error decay on player movement
 	cg.thisFrameTeleport = qtrue;
 	cg.resetValues = qtrue;
@@ -46,18 +40,10 @@ void CG_Respawn( void ) {
 	cg.weaponChanged = 0;
 	cg.weaponSelectionMode = 0;
 }
-
-extern char *eventnames[];
-
-/*
-==============
-CG_CheckPlayerstateEvents
-==============
-*/
 void CG_CheckPlayerstateEvents(playerState_t *ps, playerState_t *ops){
 	centity_t	*cent;
-	int			i, event;
-
+	int			i;
+	int			event;
 	if(ps->externalEvent && ps->externalEvent != ops->externalEvent){
 		cent = &cg_entities[ps->clientNum];
 		cent->currentState.event = ps->externalEvent;
@@ -69,12 +55,12 @@ void CG_CheckPlayerstateEvents(playerState_t *ps, playerState_t *ops){
 	for(i = ps->eventSequence -MAX_PS_EVENTS; i < ps->eventSequence; ++i){
 		// if we have a new predictable event or the server told us to play another event instead of a predicted event we already issued
 		// or something the server told us changed our prediction causing a different event
-		if(i >= ops->eventSequence || (i > ops->eventSequence -MAX_PS_EVENTS && ps->events[i &(MAX_PS_EVENTS-1)] != ops->events[i &(MAX_PS_EVENTS-1)])){
-			event = ps->events[i &(MAX_PS_EVENTS-1)];
+		if(i >= ops->eventSequence || (i > ops->eventSequence -MAX_PS_EVENTS && ps->events[i&(MAX_PS_EVENTS-1)] != ops->events[i&(MAX_PS_EVENTS-1)])){
+			event = ps->events[i&(MAX_PS_EVENTS-1)];
 			cent->currentState.event = event;
-			cent->currentState.eventParm = ps->eventParms[i &(MAX_PS_EVENTS-1)];
+			cent->currentState.eventParm = ps->eventParms[i&(MAX_PS_EVENTS-1)];
 			CG_EntityEvent(cent, cent->lerpOrigin);
-			cg.predictableEvents[i &(MAX_PREDICTED_EVENTS-1)] = event;
+			cg.predictableEvents[i&(MAX_PREDICTED_EVENTS-1)] = event;
 			cg.eventSequence++;
 		}
 	}
@@ -87,41 +73,30 @@ CG_CheckChangedPredictableEvents
 */
 void CG_CheckChangedPredictableEvents(playerState_t *ps){
 	centity_t	*cent;
-	int			i, event;
-
+	int			i;
+	int			event;
 	cent = &cg.predictedPlayerEntity;
 	for(i = ps->eventSequence -MAX_PS_EVENTS; i < ps->eventSequence; ++i){
 		if(i >= cg.eventSequence) continue;
 		// if this event is not further back in than the maximum predictable events we remember
 		if(i > cg.eventSequence -MAX_PREDICTED_EVENTS){
 			// if the new playerstate event is different from a previously predicted one
-			if(ps->events[i &(MAX_PS_EVENTS-1)] != cg.predictableEvents[i &(MAX_PREDICTED_EVENTS-1)]){
+			if(ps->events[i &(MAX_PS_EVENTS-1)] != cg.predictableEvents[i&(MAX_PREDICTED_EVENTS-1)]){
 				event = ps->events[i &(MAX_PS_EVENTS-1)];
 				cent->currentState.event = event;
 				cent->currentState.eventParm = ps->eventParms[i &(MAX_PS_EVENTS-1)];
 				CG_EntityEvent(cent, cent->lerpOrigin);
-				cg.predictableEvents[i &(MAX_PREDICTED_EVENTS-1)] = event;
-				if(cg_showmiss.integer) CG_Printf("WARNING: changed predicted event\n");
+				cg.predictableEvents[i&(MAX_PREDICTED_EVENTS-1)] = event;
+				if(cg_showmiss.integer){CG_Printf("WARNING: changed predicted event\n");}
 			}
 		}
 	}
 }
-
-/*
-==================
-CG_CheckLocalSounds
-==================
-*/
 void CG_CheckLocalSounds(playerState_t *ps, playerState_t *ops){
-	// don't play the sounds if the player just changed teams
-	if(ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]) return;
+	// don't play the sounds if the player just changed teams or
 	// if we are going into the intermission, don't start any voices
-	if(cg.intermissionStarted) return;
+	if((ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]) || cg.intermissionStarted){return;}
 }
-
-/*===============
-CG_TransitionPlayerState
-===============*/
 void CG_TransitionPlayerState(playerState_t *ps, playerState_t *ops){
 	if(ps->clientNum != ops->clientNum){
 		cg.thisFrameTeleport = qtrue;

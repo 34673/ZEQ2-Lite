@@ -23,7 +23,7 @@ static qboolean PSys_ParseVector(char **text_pp, int x, float *m, qboolean norma
 		CG_Printf(S_COLOR_RED "ERROR: vector expected\n");
 		return qfalse;
 	}
-	for(i = 0; i < x; ++i){
+	for(i=0;i<x;i++){
 		token = COM_Parse(text_pp);
 		if (!token[0]){
 			CG_Printf(S_COLOR_RED "ERROR: unexpected end of file\n");
@@ -637,10 +637,12 @@ static qboolean PSys_ParseForce(char **text_pp, PSys_Force_t *cacheForce){
 				return qfalse;
 			}
 		}
-		else if(!Q_stricmp(token, "offset"))
-			 if(!PSys_ParseVector(text_pp, 3, cacheForce->orientation.offset, qfalse)) return qfalse;
-		else if(!Q_stricmp(token, "dir"))
-			 if(!PSys_ParseVector(text_pp, 3, cacheForce->orientation.dir, qfalse)) return qfalse;
+		else if(!Q_stricmp(token, "offset")){
+			if(!PSys_ParseVector(text_pp, 3, cacheForce->orientation.offset, qfalse)) return qfalse;
+		}
+		else if(!Q_stricmp(token, "dir")){
+			if(!PSys_ParseVector(text_pp, 3, cacheForce->orientation.dir, qfalse)) return qfalse;
+		}
 		else if(!Q_stricmp(token, "}")) return qtrue;
 		else{
 			CG_Printf(S_COLOR_RED "ERROR: '%s': not a valid keyword\n", token);
@@ -749,7 +751,7 @@ static qboolean PSys_ParseSystem(char **text_pp, PSys_SystemTemplate_t *cacheSys
 			}
 			// Prepare for a new member
 			memberType = MEM_NONE;
-			++num;
+			num++;
 		}
 		else if(!Q_stricmp(token, "emitter")){
 			if(num == MAX_PARTICLESYSTEM_MEMBERS){
@@ -836,7 +838,7 @@ static void PSys_ParseFile(char *filename, int *num){
 				return;
 			}
 			// Check for a name clash
-			for(i = 0; i < *num; ++i){
+			for(i=0;i<*num;i++){
 				if(!Q_stricmp(sysName, PSys_Cache[i].name)){
 					CG_Printf(S_COLOR_RED "ERROR: previous particle system named '%s' exists\n", sysName);
 					return;
@@ -853,7 +855,7 @@ static void PSys_ParseFile(char *filename, int *num){
 			}
 			// Prepare for a new system name
 			isNamed = qfalse;
-			++(*num);
+			(*num)++;
 		}
 		else if(!isNamed){
 			int i;
@@ -866,7 +868,7 @@ static void PSys_ParseFile(char *filename, int *num){
 			// Name the new system
 			Q_strncpyz(sysName, token, MAX_QPATH);
 			// Scan the new name for any non alpha-numerical characters
-			for(i = 0; sysName[i]; ++i){
+			for(i=0;sysName[i];i++){
 				if(!((sysName[i] >= 'a') && (sysName[i] <= 'z')) &&
 				   !((sysName[i] >= 'A') && (sysName[i] <= 'Z')) &&
 				   !((sysName[i] >= '0') && (sysName[i] <= '9'))){
@@ -914,15 +916,15 @@ void PSys_QSortCache(int lowbound, int highbound){
 	high = highbound;
 	mid = PSys_Cache[(low + high) / 2];
 	do{
-		while(Q_stricmp(PSys_Cache[low].name, mid.name) == -1) ++low;
-		while(Q_stricmp(PSys_Cache[high].name, mid.name) == 1) --high;
+		while(Q_stricmp(PSys_Cache[low].name, mid.name) == -1) low++;
+		while(Q_stricmp(PSys_Cache[high].name, mid.name) == 1) high--;
 		if(low <= high){
 			// swap elements
 			tempElem = PSys_Cache[low];
 			PSys_Cache[low] = PSys_Cache[high];
 			PSys_Cache[high] = tempElem;
-			++low;
-			--high;
+			low++;
+			high--;
 		}
 	}
 	while(!(low > high));
@@ -945,7 +947,7 @@ void PSys_InitCache(void){
 	// Parse all files fitting the /effects/*.psys pattern
 	numdirs = trap_FS_GetFileList("effects", ".psys", dirlist, 1024);
 	dirptr  = dirlist;
-	for(i = 0; i < numdirs; ++i, dirptr += dirlen+1){
+	for(i=0;i<numdirs;i++,dirptr += dirlen+1){
 		dirlen = strlen(dirptr);
 		strcpy(filename, "effects/");
 		strcat(filename, dirptr);

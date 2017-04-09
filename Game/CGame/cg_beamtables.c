@@ -111,7 +111,7 @@ void CG_BeamTableUpdate(centity_t *cent, float width, qhandle_t shader, char *ta
 	// Failsafe against arrays running out of bounds.
 	if((cent->currentState.clientNum < 0 ) || (cent->currentState.clientNum >= MAX_CLIENTS)){
 		CG_Error( "Bad clientNum on beamhead entity" );
-		return; // Don't know if return is necessary, but do it anyway.
+		return;
 	}
 	// Do we work on the alternate fire tables, or the primary fire ones?
 	if(cent->currentState.weapon > ALTWEAPON_OFFSET)
@@ -324,9 +324,10 @@ static void CG_DrawBeamTable (int clientNum, qboolean alternate){
 		for(j=0;j<4;j++)
 			verts[i].modulate[j] = 255;
 	// Failsafe against arrays running out of bounds.
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS)
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
 		CG_Error("Bad clientNum in beamtable drawing");
-
+		return;
+	}
 	// Do we work on the alternate fire tables, or the primary fire ones?
 	if(alternate){
 		currentTable = &(beamTableAlternate[clientNum]);

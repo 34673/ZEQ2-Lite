@@ -39,7 +39,7 @@ static void PSys_InitSystems(void){
 	PSys_Systems_inuse.prev = &PSys_Systems_inuse;
 	PSys_Systems_free = PSys_Systems;
 	// singly link the free list
-	for(i=0; i<MAX_PARTICLESYSTEMS-1; ++i)
+	for(i=0;i<MAX_PARTICLESYSTEMS-1;i++)
 		PSys_Systems[i].next = &PSys_Systems[i+1];
 }
 
@@ -51,7 +51,7 @@ static void PSys_InitParticles(void){
 	PSys_Particles_inuse.prev = &PSys_Particles_inuse;
 	PSys_Particles_free = PSys_Particles;
 	// singly link the free list
-	for(i=0; i<MAX_PARTICLES-1; ++i)
+	for(i=0;i<MAX_PARTICLES-1;i++)
 		PSys_Particles[i].next = &PSys_Particles[i+1];
 }
 
@@ -63,7 +63,7 @@ static void PSys_InitEmitters(void){
 	PSys_Emitters_inuse.prev = &PSys_Emitters_inuse;
 	PSys_Emitters_free = PSys_Emitters;
 	// singly link the free list
-	for(i=0; i<MAX_EMITTERS-1; ++i)
+	for(i=0;i<MAX_EMITTERS-1;i++)
 		PSys_Emitters[i].next = &PSys_Emitters[i+1];
 }
 
@@ -75,7 +75,7 @@ static void PSys_InitForces(void){
 	PSys_Forces_inuse.prev = &PSys_Forces_inuse;
 	PSys_Forces_free = PSys_Forces;
 	// singly link the free list
-	for(i=0; i<MAX_FORCES-1; ++i)
+	for(i=0; i<MAX_FORCES-1; i++)
 		PSys_Forces[i].next = &PSys_Forces[i+1];
 }
 
@@ -87,7 +87,7 @@ static void PSys_InitConstraints(void){
 	PSys_Constraints_inuse.prev = &PSys_Constraints_inuse;
 	PSys_Constraints_free = PSys_Constraints;
 	// singly link the free list
-	for(i=0; i<MAX_CONSTRAINTS-1; ++i)
+	for(i=0; i<MAX_CONSTRAINTS-1; i++)
 		PSys_Constraints[i].next = &PSys_Constraints[i+1];
 }
 
@@ -108,7 +108,10 @@ void CG_InitParticleSystems(void){
 -------------------
 */
 static void PSys_FreeParticle(PSys_Particle_t *particle){
-	if(!particle->prev) CG_Error("PSys_FreeParticle: not active");
+	if(!particle->prev){
+		CG_Error("PSys_FreeParticle: not active");
+		return;
+	}
 	// remove from the doubly linked global active list
 	particle->prev->next = particle->next;
 	particle->next->prev = particle->prev;
@@ -148,8 +151,10 @@ static void PSys_FreeEmitter(PSys_Emitter_t *emitter){
 	PSys_Particle_t	*particle,
 					*next_p;
 
-	if(!emitter->prev)
+	if(!emitter->prev){
 		CG_Error("PSys_FreeEmitter: not active");
+		return;
+	}
 	system = emitter->parent;
 	// unlink the local list of particles that are rayParent linked to this emitter
 	particle = system->particles.prev_local;
@@ -195,7 +200,10 @@ static PSys_Emitter_t *PSys_SpawnEmitter(PSys_System_t *system){
 }
 
 static void PSys_FreeForce(PSys_Force_t *force){
-	if(!force->prev) CG_Error( "PSys_FreeForce: not active" );
+	if(!force->prev){
+		CG_Error("PSys_FreeForce: not active");
+		return;
+	}
 	// remove from the doubly linked global active list
 	force->prev->next = force->next;
 	force->next->prev = force->prev;
@@ -231,8 +239,10 @@ static PSys_Force_t *PSys_SpawnForce(PSys_System_t *system){
 }
 
 static void PSys_FreeConstraint(PSys_Constraint_t *constraint){
-	if(!constraint->prev)
+	if(!constraint->prev){
 		CG_Error("PSys_FreeConstraint: not active");
+		return;
+	}
 	// remove from the doubly linked global active list
 	constraint->prev->next = constraint->next;
 	constraint->next->prev = constraint->prev;
@@ -273,7 +283,10 @@ static void PSys_FreeSystem(PSys_System_t *system){
 	PSys_Force_t		*force,		*next_f;
 	PSys_Constraint_t	*constraint,*next_c;
 
-	if(!system->prev) CG_Error("PSys_FreeSystem: not active");
+	if(!system->prev){
+		CG_Error("PSys_FreeSystem: not active");
+		return;
+	}
 	// free the local list of particles
 	particle = system->particles.prev_local;
 	for (;particle != &(system->particles); particle = next_p){
@@ -465,7 +478,7 @@ static void PSys_UpdateEmitters(PSys_System_t *system){
 			vec3_t			tempAxis[3];
 			int				i, templateIndex;
 
-			for(i=0; i<emitter->amount; ++i){
+			for(i=0; i<emitter->amount; i++){
 				particle = PSys_SpawnParticle(system);
 				// Set starting point based on emitter type
 				VectorSet(jitVec,
@@ -1127,7 +1140,7 @@ void PSys_SpawnCachedSystem(char* systemName, vec3_t origin, vec3_t *axis, centi
 	else		AxisClear(system->rootAxis);
 	VectorSet(system->gravity, 0, 0, -1 * cache->gravity);
 	// Start copying in the members
-	for(i=0; i<MAX_PARTICLESYSTEM_MEMBERS; ++i){
+	for(i=0; i<MAX_PARTICLESYSTEM_MEMBERS; i++){
 		// Place a stricter upper bound
 		if(cache->members[i].type == MEM_NONE) break;
 		switch(cache->members[i].type){

@@ -58,7 +58,10 @@ CG_FreeMarkPoly
 ==================
 */
 void CG_FreeMarkPoly(markPoly_t *le){
-	if(!le->prevMark) CG_Error("CG_FreeLocalEntity: inactive");
+	if(!le->prevMark){
+		CG_Error("CG_FreeLocalEntity: inactive");
+		return;
+	}
 	// remove from the doubly linked active list
 	le->prevMark->nextMark = le->nextMark;
 	le->nextMark->prevMark = le->prevMark;
@@ -116,7 +119,10 @@ void CG_ImpactMark(qhandle_t markShader, const vec3_t origin, const vec3_t dir, 
 	int				i, j, numFragments;
 
 	if(!cg_addMarks.integer) return;
-	if(radius <= 0) CG_Error("CG_ImpactMark: radius <= 0");
+	if(radius <= 0){
+		CG_Error("CG_ImpactMark: radius <= 0");
+		return;
+	}
 	//if(markTotal >= MAX_MARK_POLYS) return;
 	// create the texture axis
 	VectorNormalize2(dir, axis[0]);

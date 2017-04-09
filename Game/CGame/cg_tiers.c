@@ -126,7 +126,7 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 		for(partIndex=0;partIndex<3;++partIndex){
 			lastSkinIndex = -1;
 			lastModelIndex = -1;
-			for(damageIndex=9;damageIndex>=0;--damageIndex){
+			for(damageIndex=9;damageIndex>=0;damageIndex--){
 				if(partIndex==0){
 					Com_sprintf(filename, sizeof(filename), "players/%s/tier%i/head_percent%i.md3",headPath,i+1,(damageIndex+1)*10);
 					if(trap_FS_FOpenFile(filename,0,FS_READ)>0){

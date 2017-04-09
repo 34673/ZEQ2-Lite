@@ -679,8 +679,7 @@ localEntity_t *CG_MakeExplosion(vec3_t origin, vec3_t dir,
 	int				offset;
 	vec3_t			tmpVec, newOrigin;
 
-	if(msec <= 0)
-		CG_Error("CG_MakeExplosion: msec <= 0: %i", msec);
+	if(msec <= 0) CG_Error("CG_MakeExplosion: msec <= 0: %i", msec);
 	// skew the time a bit so they aren't all in sync
 	offset = rand() & 63;
 	ex = CG_AllocLocalEntity();

@@ -233,7 +233,7 @@ static void CG_EntityEffects(centity_t *cent){
 		float	i, r, g, b;
 
 		cl = cent->currentState.constantLight;
-		r = (float)(cl & 0xFF) / 255.0;
+		r = (float)(cl & 0xff) / 255.f;
 		g = (float)((cl >> 8) & 0xFF) / 255.f;
 		b = (float)((cl >> 16) & 0xFF) / 255.f;
 		i = (float)((cl >> 24) & 0xFF) *4.f;
@@ -825,8 +825,10 @@ static void CG_InterpolateEntityPosition(centity_t *cent){
 
 	// it would be an internal error to find an entity that interpolates without
 	// a snapshot ahead of the current one
-	if(cg.nextSnap == NULL)
+	if(cg.nextSnap == NULL){
 		CG_Error("CG_InterpolateEntityPosition: missing next snapshot.");
+		return;
+	}
 	f = cg.frameInterpolation;
 	// this will linearize a sine or parabolic curve, but it is important
 	// to not extrapolate player positions if more recent data is available
@@ -892,9 +894,6 @@ static void CG_AddCEntity(centity_t *cent) {
 	// add automatic effects
 	CG_EntityEffects(cent);
 	switch(cent->currentState.eType){
-	default:
-		CG_Error("Invalid entity type: %i\n", cent->currentState.eType );
-		break;
 	case ET_GENERAL:
 		CG_General(cent);
 		break;
@@ -926,6 +925,9 @@ static void CG_AddCEntity(centity_t *cent) {
 	case ET_BEAMHEAD:
 		CG_Missile(cent);
 		break;
+	default:
+		CG_Error("Invalid entity type: %i\n", cent->currentState.eType);
+		return;
 	}
 	//cent->lastPVSTime = cg.time;
 	CG_FrameHist_SetPVS(cent->currentState.number);

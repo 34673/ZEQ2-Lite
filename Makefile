@@ -34,17 +34,6 @@ ifndef BUILD_GAME_QVM
   BUILD_GAME_QVM   =
 endif
 
-
-#############################################################################
-#
-# If you require a different configuration from the defaults below, create a
-# new file named "Makefile.local" in the same directory as this file and define
-# your parameters there. This allows you to change configuration without
-# causing problems with keeping up to date with the repository.
-#
-#############################################################################
--include Makefile.local
-
 ifeq ($(COMPILE_PLATFORM),cygwin)
   PLATFORM=mingw32
 endif
@@ -72,16 +61,16 @@ ifeq ($(COMPILE_ARCH),x64)
   COMPILE_ARCH=x86_64
 endif
 
-ifeq ($(COMPILE_ARCH),powerpc)
-  COMPILE_ARCH=ppc
-endif
-ifeq ($(COMPILE_ARCH),powerpc64)
-  COMPILE_ARCH=ppc64
-endif
+#ifeq ($(COMPILE_ARCH),powerpc)
+#  COMPILE_ARCH=ppc
+#endif
+#ifeq ($(COMPILE_ARCH),powerpc64)
+#  COMPILE_ARCH=ppc64
+#endif
 
-ifeq ($(COMPILE_ARCH),axp)
-  COMPILE_ARCH=alpha
-endif
+#ifeq ($(COMPILE_ARCH),axp)
+#  COMPILE_ARCH=alpha
+#endif
 
 ifndef ARCH
 ARCH=$(COMPILE_ARCH)
@@ -314,14 +303,14 @@ ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu")
     OPTIMIZE = $(OPTIMIZEVM) -ffast-math
     HAVE_VM_COMPILED=true
   else
-  ifeq ($(ARCH),ppc)
-    BASE_CFLAGS += -maltivec
-    HAVE_VM_COMPILED=true
-  endif
-  ifeq ($(ARCH),ppc64)
-    BASE_CFLAGS += -maltivec
-    HAVE_VM_COMPILED=true
-  endif
+#  ifeq ($(ARCH),ppc)
+#    BASE_CFLAGS += -maltivec
+#    HAVE_VM_COMPILED=true
+#  endif
+#  ifeq ($(ARCH),ppc64)
+#    BASE_CFLAGS += -maltivec
+#    HAVE_VM_COMPILED=true
+#  endif
   ifeq ($(ARCH),sparc)
     OPTIMIZE += -mtune=ultrasparc3 -mv8plus
     OPTIMIZEVM += -mtune=ultrasparc3 -mv8plus

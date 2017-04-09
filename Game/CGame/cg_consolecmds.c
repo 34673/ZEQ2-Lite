@@ -161,7 +161,7 @@ static void CG_Draw2D_f(void){
 		return;
 	}
 	Q_strncpyz(shaderName,CG_Argv(1),256);
-	for(index=0;index<16;++index){
+	for(index=0;index<16;index++){
 		if(!cg.scripted2D[index].active) break;
 		if(index == 15){
 			CG_Printf("^3Warning : ^7Cannot add overlay.  Maximum overlay surfaces of [^3%i^7] active.\n",16);

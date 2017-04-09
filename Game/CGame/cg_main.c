@@ -61,9 +61,8 @@ Q_EXPORT intptr_t vmMain(int command, int arg0, int arg1, int arg2, int arg3, in
 		return 0;
 	default:
 		CG_Error("CG_vmMain: unknown command %i", command);
-		break;
+		return -1;
 	}
-	return -1;
 }
 
 cg_t				cg;
@@ -1311,8 +1310,10 @@ void CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum){
 	trap_GetGameState(&cgs.gameState);
 	// check version
 	s = CG_ConfigString(CS_PRODUCT_VERSION);
-	if(strcmp(s, PRODUCT_VERSION))
+	if(strcmp(s, PRODUCT_VERSION)){
 		CG_Error("Client/Server version mismatch: %s/%s", PRODUCT_VERSION, s);
+		return;
+	}
 	s = CG_ConfigString(CS_LEVEL_START_TIME);
 	cgs.levelStartTime = atoi(s);
 	CG_ParseServerinfo();

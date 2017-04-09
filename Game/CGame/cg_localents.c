@@ -49,8 +49,10 @@ CG_FreeLocalEntity
 ==================
 */
 void CG_FreeLocalEntity(localEntity_t *le){
-	if(!le->prev)
+	if(!le->prev){
 		CG_Error("CG_FreeLocalEntity: inactive");
+		return;
+	}
 	// remove from the doubly linked active list
 	le->prev->next = le->next;
 	le->next->prev = le->prev;
@@ -576,9 +578,6 @@ void CG_AddLocalEntities( void ) {
 			continue;
 		}
 		switch(le->leType){
-		default:
-			CG_Error("Invalid leType '%i'.", le->leType);
-			break;
 		case LE_MARK:
 			break;
 		case LE_SPRITE_EXPLOSION:
@@ -626,6 +625,9 @@ void CG_AddLocalEntities( void ) {
 		case LE_FADE_NO:				// teleporters, railtrails
 			CG_AddFadeNo(le);
 			break;
+		default:
+			CG_Error("Invalid leType '%i'.", le->leType);
+			return;
 		}
 	}
 }

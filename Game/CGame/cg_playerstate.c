@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // when the snapshot transitions like all the other entities
 #include "cg_local.h"
 extern char *eventnames[];
+//=======
 //A respawn happened this snapshot
 void CG_Respawn(void){
 	// no error decay on player movement
@@ -65,12 +66,6 @@ void CG_CheckPlayerstateEvents(playerState_t *ps, playerState_t *ops){
 		}
 	}
 }
-
-/*
-==================
-CG_CheckChangedPredictableEvents
-==================
-*/
 void CG_CheckChangedPredictableEvents(playerState_t *ps){
 	centity_t	*cent;
 	int			i;
@@ -123,6 +118,6 @@ void CG_TransitionPlayerState(playerState_t *ps, playerState_t *ops){
 		cg.weaponSelectionMode = 0;
 		cg.weaponDesired = -1;
 		cg.weaponSelect = ps->weapon;
-		if(ps->currentSkill[WPSTAT_CHANGED] != -1) cg.drawWeaponBar = 1;
+		if(ps->currentSkill[WPSTAT_CHANGED] != -1){cg.drawWeaponBar = 1;}
 	}
 }

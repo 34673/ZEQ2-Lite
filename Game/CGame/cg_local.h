@@ -1179,10 +1179,7 @@ void			CG_InitConsoleCommands(void),
 				CG_ExecuteNewServerCommands(int latestSequence),
 				CG_ParseServerinfo(void),
 				CG_SetConfigValues(void),
-				CG_LoadVoiceChats(void),
 				CG_ShaderStateChanged(void),
-				CG_VoiceChatLocal(int mode, qboolean voiceOnly, int clientNum, int color, const char *cmd),
-				CG_PlayBufferedVoiceChats(void),
 //
 // cg_playerstate.c
 //

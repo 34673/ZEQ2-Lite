@@ -90,7 +90,7 @@ static void CG_TransitionSnapshot(void){
 	cg.snap = cg.nextSnap;
 	BG_PlayerStateToEntityState(&cg.snap->ps, &cg_entities[cg.snap->ps.clientNum].currentState, qfalse);
 	cg_entities[cg.snap->ps.clientNum].interpolate = qfalse;
-	for(;i<cg.snap->numEntities;i++){
+	for(i=0;i<cg.snap->numEntities;i++){
 		cent = &cg_entities[cg.snap->entities[i].number];
 		CG_TransitionEntity(cent);
 		// remember time of snapshot this entity was last updated in

@@ -1096,6 +1096,7 @@ void			CG_BuildSolidList(void),
 //
 // cg_tiers.c
 //
+				parseTier(char *path,tierConfig_cg *tier),
 				CG_NextTier_f(void),
 				CG_PrevTier_f(void),
 				CG_Tier_f(void),

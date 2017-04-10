@@ -1,13 +1,9 @@
-//
 // cg_tiers.c -- client side tier system handling
-
 #include "cg_local.h"
-
-void parseTier(char *path,tierConfig_cg *tier);
-	
 qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *modelName, const char *skinName){
-	int	i,index,partIndex,damageIndex,lastSkinIndex,lastModelIndex;
-	char filename[MAX_QPATH * 2];
+	int	i=0,index,partIndex,damageIndex,lastSkinIndex,lastModelIndex;
+	char filename[MAX_QPATH<<1];
+	char filenameIQM[MAX_QPATH<<1];
 	char tierPath[MAX_QPATH];
 	char tempPath[MAX_QPATH];
 	char legsPath[MAX_QPATH];
@@ -40,7 +36,7 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 			if(!CG_ParseAnimationFile(filename,ci,qfalse)){return qfalse;}
 		}
 	}
-	for(i=0;i<8;++i){
+	for(;i<8;++i){
 		// ===================================
 		// Config
 		// ===================================
@@ -54,24 +50,24 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 			ci->tierConfig[i].screenEffect[index] = cgs.media.clearShader;
 		}
 		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformFirst.ogg"),0,FS_READ)>0){
+		if(trap_FS_FOpenFile(strcat(tierPath,"transformFirst.opus"),0,FS_READ)>0){
 			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformFirst = trap_S_RegisterSound(strcat(tierPath,"transformFirst.ogg"),qfalse);
+			ci->tierConfig[i].soundTransformFirst = trap_S_RegisterSound(strcat(tierPath,"transformFirst.opus"),qfalse);
 		}
 		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformUp.ogg"),0,FS_READ)>0){
+		if(trap_FS_FOpenFile(strcat(tierPath,"transformUp.opus"),0,FS_READ)>0){
 			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformUp = trap_S_RegisterSound(strcat(tierPath,"transformUp.ogg"),qfalse);
+			ci->tierConfig[i].soundTransformUp = trap_S_RegisterSound(strcat(tierPath,"transformUp.opus"),qfalse);
 		}
 		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformDown.ogg"),0,FS_READ)>0){
+		if(trap_FS_FOpenFile(strcat(tierPath,"transformDown.opus"),0,FS_READ)>0){
 			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformDown = trap_S_RegisterSound(strcat(tierPath,"transformDown.ogg"),qfalse);
+			ci->tierConfig[i].soundTransformDown = trap_S_RegisterSound(strcat(tierPath,"transformDown.opus"),qfalse);
 		}
 		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"poweringUp.ogg"),0,FS_READ)>0){
+		if(trap_FS_FOpenFile(strcat(tierPath,"poweringUp.opus"),0,FS_READ)>0){
 			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundPoweringUp = trap_S_RegisterSound(strcat(tierPath,"poweringUp.ogg"),qfalse);
+			ci->tierConfig[i].soundPoweringUp = trap_S_RegisterSound(strcat(tierPath,"poweringUp.opus"),qfalse);
 		}
 		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/transformScript.cfg",modelName,i+1);
 		if(trap_FS_FOpenFile(tierPath,0,FS_READ)>0){
@@ -85,15 +81,21 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 		// Models
 		// ===================================
 		Com_sprintf(filename, sizeof(filename), "players/%s/tier%i/lower.md3", legsPath, i+1);
+		Com_sprintf(filenameIQM, sizeof(filenameIQM), "players/%s/tier%i/lower.iqm", legsPath, i+1);
 		if(trap_FS_FOpenFile(filename,0,FS_READ)>0){ci->legsModel[i] = trap_R_RegisterModel(filename);}
-		else if(i!=0){ci->legsModel[i] = ci->legsModel[i - 1];}
+		else if(trap_FS_FOpenFile(filenameIQM,0,FS_READ)>0){ci->legsModel[i] = trap_R_RegisterModel(filenameIQM);}
+		else if(i!=0){ci->legsModel[i] = ci->legsModel[i-1];}
 		else{return qfalse;}
 		Com_sprintf(filename, sizeof(filename), "players/%s/tier%i/upper.md3", modelName, i+1);
+		Com_sprintf(filenameIQM, sizeof(filenameIQM), "players/%s/tier%i/upper.iqm", modelName, i+1);
 		if(trap_FS_FOpenFile(filename,0,FS_READ)>0){ci->torsoModel[i] = trap_R_RegisterModel(filename);}
+		else if(trap_FS_FOpenFile(filenameIQM,0,FS_READ)>0){ci->torsoModel[i] = trap_R_RegisterModel(filenameIQM);}
 		else if(i!=0){ci->torsoModel[i] = ci->torsoModel[i - 1];}
 		else{return qfalse;}
 		Com_sprintf(filename, sizeof(filename), "players/%s/tier%i/head.md3", headPath, i+1);
+		Com_sprintf(filenameIQM, sizeof(filenameIQM), "players/%s/tier%i/head.iqm", headPath, i+1);
 		if(trap_FS_FOpenFile(filename,0,FS_READ)>0){ci->headModel[i] = trap_R_RegisterModel(filename);}
+		else if(trap_FS_FOpenFile(filename,0,FS_READ)>0){ci->headModel[i] = trap_R_RegisterModel(filenameIQM);}
 		else if(i!=0){ci->headModel[i] = ci->headModel[i - 1];}
 		else{return qfalse;}
 		Com_sprintf(filename, sizeof(filename), "players/%s/tier%i/camera.md3", modelName, i+1);
@@ -416,71 +418,26 @@ void parseTier(char *path,tierConfig_cg *tier){
 		}
 	}
 }
-
-
-/*
-===============
-CG_NextTier_f
-===============
-*/
-void CG_NextTier_f( void ) {
-	if ( !cg.snap ) {
-		return;
-	}
-	if ( cg.snap->ps.pm_flags & PMF_FOLLOW ) {
-		return;
-	}
-
-	if(cg.tierSelect == -1)
-	{
+void CG_NextTier_f(void){
+	if(!cg.snap || (cg.snap->ps.pm_flags & PMF_FOLLOW)){return;}
+	if(cg.tierSelect == -1){
 		cg.tierSelectionMode = 2;
 		cg.tierSelect = 0;
 	}
 }
-
-/*
-===============
-CG_PrevTier_f
-===============
-*/
-void CG_PrevTier_f( void ) {
-	if ( !cg.snap ) {
-		return;
+void CG_PrevTier_f(void){
+	if(!cg.snap || (cg.snap->ps.pm_flags & PMF_FOLLOW)){return;}
+	if(cg.tierSelect == -1){
+		cg.tierSelectionMode = 1;
+		cg.tierSelect = 0;
 	}
-	if ( cg.snap->ps.pm_flags & PMF_FOLLOW ) {
-		return;
-	}
-
-	if(cg.tierSelect == -1)
-		{
-			cg.tierSelectionMode = 1;
-			cg.tierSelect = 0;
-		}
 }
-
-
-/*
-===============
-Tier
-===============
-*/
-void CG_Tier_f( void ) {
-	int		num;
-
-	if ( !cg.snap ) {
-		return;
-	}
-	if ( cg.snap->ps.pm_flags & PMF_FOLLOW ) {
-		return;
-	}
-	num = atoi( CG_Argv( 1 ) );
-
-	if ( num < 0 || num > 10 ) {
-		return;
-	}
-
-	if(cg.tierSelect == -1)
-	{
+void CG_Tier_f(void){
+	int num;
+	if(!cg.snap || (cg.snap->ps.pm_flags & PMF_FOLLOW)){return;}
+	num = atoi(CG_Argv(1));
+	if(num < 0 || num > 10) {return;}
+	if(cg.tierSelect == -1){
 		cg.tierSelect = num;
 		cg.tierSelectionMode = 3;
 	}

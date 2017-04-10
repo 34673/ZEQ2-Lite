@@ -1,8 +1,5 @@
-//
 // cg_tiers.h -- client tier system headers
-
-#define TIERNAMELENGTH 15
-
+#define TIERNAMELENGTH 63
 typedef struct{
 	char name[TIERNAMELENGTH];
 	char transformMusic[MAX_QPATH];
@@ -43,4 +40,3 @@ typedef struct{
 	sfxHandle_t soundTransformDown;
 	sfxHandle_t soundPoweringUp;
 }tierConfig_cg;
-

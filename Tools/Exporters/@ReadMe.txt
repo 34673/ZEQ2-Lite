@@ -11,7 +11,8 @@ Noesis converts and previews many data formats. You can get an idea of which one
 Drop a video file in this tool to convert it to ROQ format.
 
 /* OpusEncode */
-See HTML link in "OpusTools/Documentations.
+Drop your WAV files in this folder and run the batch tool. Per extension sorting is advised.
+See HTML link in "OpusTools/Documentations" for more information.
 
 /* OpusSampleInfo */
 See HTML link in "OpusTools/Documentations".

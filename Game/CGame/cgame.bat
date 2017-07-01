@@ -1,11 +1,8 @@
 @echo off
 md vm
 cd vm
-
 set cc=call ..\..\..\Tools\Compiler\Perform.bat -DCGAME
-
 if "%1"=="TA" goto TA
-
 %cc% ../../Game/bg_misc.c
 @if errorlevel 1 goto quit
 %cc% ../../Game/bg_pmove.c
@@ -80,8 +77,6 @@ if "%1"=="TA" goto TA
 @if errorlevel 1 goto quit
 %cc% ../cg_motionblur.c
 @if errorlevel 1 goto quit
-
-
 ..\..\..\Tools\Compiler\q3asm -f ../cgame
 :quit
 del *.asm

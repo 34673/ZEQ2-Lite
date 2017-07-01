@@ -873,9 +873,6 @@ extern	vmCvar_t		cg_centertime,
 						cg_brassTime,
 						cg_chatTime,
 						cg_viewsize,
-						cg_tracerChance,
-						cg_tracerWidth,
-						cg_tracerLength,
 						cg_displayObituary,
 						cg_ignore,
 						cg_fov,
@@ -1124,7 +1121,6 @@ void			CG_BuildSolidList(void),
 				CG_DrawLineRGBA(vec3_t start, vec3_t end, float width, qhandle_t shader, vec4_t RGBA),
 				CG_UserMissileHitWall(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, qboolean inAir),
 				CG_UserMissileHitPlayer(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, int entityNum),
-				CG_UserRailTrail(int weapon, int clientNum, vec3_t start, vec3_t end),
 //
 // cg_marks.c
 //

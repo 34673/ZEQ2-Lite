@@ -78,10 +78,10 @@ void CG_CheckMusic(void){
 }
 
 int CG_GetMilliseconds(char *time){
-	int		compareIndex = 0,
-			index = 0,
-			amount = 0;
-	char	current[8] = {0};
+	int compareIndex = 0;
+	int index = 0;
+	int amount = 0;
+	char current[8] = {0};
 	while(1){
 		if(index > Q_PrintStrlen(time)) break;
 		current[compareIndex] = time[index];

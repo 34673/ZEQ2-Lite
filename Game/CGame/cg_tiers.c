@@ -76,7 +76,7 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 		Com_sprintf(filename,sizeof(filename),"players/tierDefault.cfg",modelName,i+1);
 		parseTier(filename,&ci->tierConfig[i]);
 		Com_sprintf(filename,sizeof(filename),"players/%s/tier%i/tier.cfg",modelName,i+1);
-		//parseTier(filename,&ci->tierConfig[i]);	// useful?
+		parseTier(filename,&ci->tierConfig[i]);
 		// ===================================
 		// Models
 		// ===================================

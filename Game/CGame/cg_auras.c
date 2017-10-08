@@ -473,7 +473,7 @@ static void CG_Aura_ConvexHullRender(centity_t *player, auraState_t *state, aura
 	// For each spike add it to the poly buffer
 	// FIXME: Uses old style direct adding with trap call until buffer system is built
 	for(i=0;i<NR_AURASPIKES;i++)
-		CG_LerpSpike(state, config, i, state->modulate);		
+		CG_LerpSpike(state, config, i, state->modulate);
 }
 // ===================================
 //
@@ -509,12 +509,25 @@ CG_Aura_AddDebris
 static void CG_Aura_AddDebris( centity_t *player, auraState_t *state, auraConfig_t *config){
 	// Don't add debris if the aura isn't active
 	if(!state->isActive) return;
-	// Don't add debris could if configuration says we shouldn't.
+	// Don't add debris if configuration says we shouldn't.
 	if(!config->showDebris) return;
 	// Spawn the debris system if the player has just entered PVS
 	if(!CG_FrameHist_HadAura(player->currentState.number))
 		PSys_SpawnCachedSystem("AuraDebris", player->lerpOrigin, NULL, player, NULL, qtrue, qfalse);
 	CG_FrameHist_SetAura(player->currentState.number);
+}
+
+/*===================
+CG_Aura_AddParticleSystem
+===================*/
+static void CG_Aura_AddParticleSystem(centity_t *player, auraState_t *state, auraConfig_t *config){
+	// Don't add debris if the aura isn't active
+	if (!state->isActive) return;
+	// Don't add debris if configuration says we shouldn't.
+	if (!config->particleSystem[0]) return;
+	// If the entity wasn't previously in the PVS, we need to start a new system
+	// Spawn the particle system if the player has just entered PVS
+	if(!CG_FrameHist_HadAura(player->currentState.number)){PSys_SpawnCachedSystem(config->particleSystem, player->lerpOrigin, NULL, player, NULL, qtrue, qfalse);}
 }
 
 /*===================
@@ -599,6 +612,7 @@ void CG_AddAuraToScene(centity_t *player){
 	CG_Aura_AddTrail(player, state, config);
 	CG_Aura_AddDebris(player, state, config);
 	CG_Aura_AddDLight(player, state, config);
+	CG_Aura_AddParticleSystem(player, state, config);
 	// Render the aura
 	CG_Aura_ConvexHullRender(player, state, config);
 }
@@ -802,6 +816,11 @@ void parseAura(char *path,auraConfig_t *aura){
 				token = COM_Parse(&parse);
 				if(!token[0]) break;
 				aura->showDebris = strlen(token) == 4 ? qtrue : qfalse;
+			}
+			else if(!Q_stricmp(token,"particleSystem")){
+				token = COM_Parse(&parse);
+				if(!token[0]){break;}
+				else{Q_strncpyz(aura->particleSystem, token, sizeof(aura->particleSystem));}
 			}
 			else if(!Q_stricmp(token,"chargeLoop")){
 				token = COM_Parse(&parse);

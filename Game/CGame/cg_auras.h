@@ -3,7 +3,9 @@
 #define AURATAGS_LEGS	0
 #define AURATAGS_TORSO	1
 #define AURATAGS_HEAD	2
-#define MAX_AURATAGS	48	// old md3 limit
+//Eagle: MD3 max tag per file
+//Might be later removed if we are using IQM bones as tags
+#define MAX_AURATAGS	48
 
 typedef struct auraTag_s {
 	vec3_t		normal,
@@ -37,6 +39,7 @@ typedef struct auraConfig_s {
 					chargeLoopSound,
 					boostStartSound,
 					boostLoopSound;
+	char			particleSystem[MAX_QPATH];
 	int				numTags[3]; // 0 = head, 1 = torso, 2 = legs
 }auraConfig_t;
 

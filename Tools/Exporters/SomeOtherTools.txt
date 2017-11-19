@@ -1,0 +1,4 @@
+Noesis file converter:
+	http://richwhitehouse.com/index.php?content=inc_projects.php
+IQM Dev Kit:
+	https://github.com/lsalzman/iqm

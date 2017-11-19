@@ -2,11 +2,6 @@
 
 from inc_noesis import *
 
-import noesis
-
-#rapi methods should only be used during handler callbacks
-import rapi
-
 #registerNoesisTypes is called by Noesis to allow the script to register formats.
 #Do not implement this function in script files unless you want them to be dedicated format modules!
 def registerNoesisTypes():

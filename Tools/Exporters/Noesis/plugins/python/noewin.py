@@ -1,5 +1,5 @@
 import noesis
-from ctypes import windll, Structure, sizeof, WINFUNCTYPE, pointer, byref, c_uint, c_int, c_char, create_unicode_buffer, cast, POINTER
+from ctypes import windll, Structure, sizeof, WINFUNCTYPE, pointer, byref, c_uint, c_int, c_long, c_ushort, c_char, create_unicode_buffer, cast, POINTER
 from ctypes.wintypes import HWND, HANDLE, HBRUSH, LPCWSTR, WPARAM, LPARAM, MSG, RECT
 
 def registerNoesisTypes():
@@ -344,6 +344,12 @@ CBN_CLOSEUP         = 8
 CBN_SELENDOK        = 9
 CBN_SELENDCANCEL    = 10
 
+BST_UNCHECKED      = 0x0000
+BST_CHECKED        = 0x0001
+BST_INDETERMINATE  = 0x0002
+BST_PUSHED         = 0x0004
+BST_FOCUS          = 0x0008
+
 BS_PUSHBUTTON       = 0x00000000
 BS_DEFPUSHBUTTON    = 0x00000001
 BS_CHECKBOX         = 0x00000002
@@ -488,6 +494,13 @@ SBS_SIZEBOXTOPLEFTALIGN     = 0x0002
 SBS_SIZEBOXBOTTOMRIGHTALIGN = 0x0004
 SBS_SIZEBOX                 = 0x0008
 SBS_SIZEGRIP                = 0x0010
+
+BM_GETCHECK                 = 0x00F0
+BM_SETCHECK                 = 0x00F1
+BM_GETSTATE                 = 0x00F2
+BM_SETSTATE                 = 0x00F3
+BM_SETSTYLE                 = 0x00F4
+BM_CLICK                    = 0x00F5
 
 SBM_SETPOS                  = 0x00E0
 SBM_GETPOS                  = 0x00E1
@@ -702,6 +715,65 @@ TRANSPARENT         = 1
 OPAQUE              = 2
 BKMODE_LAST         = 2
 
+MK_LBUTTON          = 0x0001
+MK_RBUTTON          = 0x0002
+MK_SHIFT            = 0x0004
+MK_CONTROL          = 0x0008
+MK_MBUTTON          = 0x0010
+
+VK_BACK             = 0x08
+VK_TAB              = 0x09
+VK_CLEAR            = 0x0C
+VK_RETURN           = 0x0D
+VK_SHIFT            = 0x10
+VK_CONTROL          = 0x11
+VK_MENU             = 0x12
+VK_PAUSE            = 0x13
+VK_CAPITAL          = 0x14
+
+MB_OK                      = 0x00000000
+MB_OKCANCEL                = 0x00000001
+MB_ABORTRETRYIGNORE        = 0x00000002
+MB_YESNOCANCEL             = 0x00000003
+MB_YESNO                   = 0x00000004
+MB_RETRYCANCEL             = 0x00000005
+MB_CANCELTRYCONTINUE       = 0x00000006
+MB_ICONHAND                = 0x00000010
+MB_ICONQUESTION            = 0x00000020
+MB_ICONEXCLAMATION         = 0x00000030
+MB_ICONASTERISK            = 0x00000040
+
+IDOK                = 1
+IDCANCEL            = 2
+IDABORT             = 3
+IDRETRY             = 4
+IDIGNORE            = 5
+IDYES               = 6
+IDNO                = 7
+IDCLOSE             = 8
+IDHELP              = 9
+IDTRYAGAIN          = 10
+IDCONTINUE          = 11
+
+DIB_RGB_COLORS      = 0
+DIB_PAL_COLORS      = 1
+
+SRCCOPY             = 0x00CC0020 #dest = source
+SRCPAINT            = 0x00EE0086 #dest = source OR dest
+SRCAND              = 0x008800C6 #dest = source AND dest
+SRCINVERT           = 0x00660046 #dest = source XOR dest
+SRCERASE            = 0x00440328 #dest = source AND (NOT dest)
+NOTSRCCOPY          = 0x00330008 #dest = (NOT source)
+NOTSRCERASE         = 0x001100A6 #dest = (NOT src) AND (NOT dest)
+MERGECOPY           = 0x00C000CA #dest = (source AND pattern)
+MERGEPAINT          = 0x00BB0226 #dest = (NOT source) OR dest
+PATCOPY             = 0x00F00021 #dest = pattern
+PATPAINT            = 0x00FB0A09 #dest = DPSnoo
+PATINVERT           = 0x005A0049 #dest = pattern XOR dest
+DSTINVERT           = 0x00550009 #dest = (NOT dest)
+BLACKNESS           = 0x00000042 #dest = BLACK
+WHITENESS           = 0x00FF0062 #dest = WHITE
+
 def RGB(r,g,b):
 	return int(r | (g << 8) | (b << 16))
 
@@ -756,6 +828,22 @@ class PAINTSTRUCT(Structure):
 				('fIncUpdate', c_int),
 				('rgbReserved', c_char * 32)]
 
+class BITMAPINFOHEADER(Structure):
+	_fields_ = [("biSize", c_uint),
+				("biWidth", c_long),
+				("biHeight", c_long),
+				("biPlanes", c_ushort),
+				("biBitCount", c_ushort),
+				("biCompression", c_uint),
+				("biSizeImage", c_uint),
+				("biXPelsPerMeter", c_long),
+				("biYPelsPerMeter", c_long),
+				("biClrUsed", c_uint),
+				("biClrImportant", c_uint)]
+
+class BITMAPINFO(Structure):
+	_fields_ = [("bmiHeader", BITMAPINFOHEADER)]
+				
 def destroyAllWindows():
 	global liveWindows
 	for hWnd in liveWindows.keys():
@@ -800,6 +888,10 @@ def defaultWindowProc(hWnd, message, wParam, lParam):
 			if cb.message == message:
 				cb.method(noeWnd, cb.controlIndex, message, wParam, lParam)
 	return r
+	
+def defaultCheckBoxCommandMethod(noeWnd, controlId, wParam, lParam):
+	checkBox = noeWnd.getControlById(controlId)
+	checkBox.setChecked(BST_CHECKED if checkBox.isChecked() == 0 else BST_UNCHECKED)
 
 class NoeUserControlBase:
 	def __init__(self, noeParentWnd, controlId, x, y, width, height, commandMethod):
@@ -826,6 +918,17 @@ class NoeUserButton(NoeUserControlBase):
 			self.style |= BS_DEFPUSHBUTTON
 		self.hWnd = user32.CreateWindowExW(0, "BUTTON", self.name, self.style, x, y, width, height, noeParentWnd.hWnd, self.controlId, noeParentWnd.hInst, 0)
 
+class NoeUserCheckBox(NoeUserControlBase):
+	def __init__(self, noeParentWnd, name, controlId, x, y, width, height, commandMethod):
+		super().__init__(noeParentWnd, controlId, x, y, width, height, commandMethod)
+		self.name = name
+		self.style = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_CHECKBOX
+		self.hWnd = user32.CreateWindowExW(0, "BUTTON", self.name, self.style, x, y, width, height, noeParentWnd.hWnd, self.controlId, noeParentWnd.hInst, 0)
+	def isChecked(self):
+		return user32.SendMessageW(self.hWnd, BM_GETCHECK, 0, 0)
+	def setChecked(self, checkValue):
+		user32.SendMessageW(self.hWnd, BM_SETCHECK, checkValue, 0)
+		
 class NoeUserEditBox(NoeUserControlBase):
 	def __init__(self, noeParentWnd, text, controlId, x, y, width, height, isMultiLine, commandMethod):
 		super().__init__(noeParentWnd, controlId, x, y, width, height, commandMethod)
@@ -847,7 +950,7 @@ class NoeUserComboBox(NoeUserControlBase):
 		self.style = WS_TABSTOP | WS_VISIBLE | WS_CHILD | WS_VSCROLL | style
 		self.hWnd = user32.CreateWindowExW(0, "COMBOBOX", 0, self.style, x, y, width, height, noeParentWnd.hWnd, self.controlId, noeParentWnd.hInst, 0)
 	def addString(self, text):
-		user32.SendMessageW(self.hWnd, CB_ADDSTRING, 0, text)		
+		user32.SendMessageW(self.hWnd, CB_ADDSTRING, 0, text)
 	def removeString(self, text):
 		textIndex = self.getStringIndex(text)
 		if textIndex >= 0:
@@ -1133,6 +1236,12 @@ class NoeUserWindow:
 			return self.addControl(newButton)
 		return -1
 
+	def createCheckBox(self, name, x, y, width, height, commandMethod = defaultCheckBoxCommandMethod):
+		if self.hWnd:
+			newCheckBox = NoeUserCheckBox(self, name, self.currentControlId, x, y, width, height, commandMethod)
+			return self.addControl(newCheckBox)
+		return -1
+		
 	def createEditBox(self, x, y, width, height, text = "", commandMethod = None, isMultiLine = True):
 		if self.hWnd:
 			newEditBox = NoeUserEditBox(self, text, self.currentControlId, x, y, width, height, isMultiLine, commandMethod)

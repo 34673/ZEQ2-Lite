@@ -25,6 +25,7 @@ The following methods are available for the "noesis" module:
 													"readStream (sO) "
 													"writeStream (s) "
 	}, //args=type name, others depending on type name
+	{"deinterleaveBytes", Noesis_DeinterleaveBytes, METH_VARARGS, "pulls flat data out of an interleaved array. (Oiii)"}, //args=bytearray, offset in bytearray, size of element, stride between elements
 	{"validateListType", NoePyMath_ValidateListType, METH_VARARGS, "validates list contains only a given type. does not throw an exception if the list is empty or None. (OO)"}, //args=list, desired type
 	{"validateListTypes", NoePyMath_ValidateListTypes, METH_VARARGS, "validates list contains only types. does not throw an exception if the list is empty or None. (OO)"}, //args=list, list of desired types
 	{"doException", Noesis_DoException, METH_VARARGS, "custom routine to raise an exception. (s)"}, //args=string
@@ -104,6 +105,8 @@ The following methods are available for the "noesis" module:
 	{"nextPow2", NoePyMath_NextPow2, METH_VARARGS, "returns next power of 2 value. (i)"}, //args=int
 	{"getFloat16", NoePyMath_GetFloat16, METH_VARARGS, "returns float from half-float. (H)"}, //args=ushort
 	{"encodeFloat16", NoePyMath_EncodeFloat16, METH_VARARGS, "returns half-float from float. (f)"}, //args=float
+	{"getMFFP", NoePyMath_GetMFFP, METH_VARARGS, "returns float from motorola fast floating point format. (I)"}, //args=uint
+	{"encodeMFFP", NoePyMath_EncodeMFFP, METH_VARARGS, "returns motorola FFP from float. (f)"}, //args=float
 	{"morton2D", NoePyMath_Morton2D, METH_VARARGS, "returns morton index from x,y coordinates. (ii)"}, //args=x, y
 	{"constLerp", NoePyMath_ConstLerp, METH_VARARGS, "constant lerp. (fff)"}, //args=float 1, float 2, fraction
 	{"linLerp", NoePyMath_LinLerp, METH_VARARGS, "linear lerp. (fff)"}, //args=float 1, float 2, fraction
@@ -161,6 +164,7 @@ The following constants are also exposed:
 	PYNOECONSTN(NFORMATFLAG_MODELWRITE),
 	PYNOECONSTN(NFORMATFLAG_ANIMWRITE),
 
+	PYNOECONSTN(NTEXFLAG_WRAP_REPEAT),
 	PYNOECONSTN(NTEXFLAG_ISNORMALMAP),
 	PYNOECONSTN(NTEXFLAG_SEGMENTED),
 	PYNOECONSTN(NTEXFLAG_STEREO),
@@ -169,6 +173,12 @@ The following constants are also exposed:
 	PYNOECONSTN(NTEXFLAG_WRAP_CLAMP),
 	PYNOECONSTN(NTEXFLAG_PREVIEWLOAD),
 	PYNOECONSTN(NTEXFLAG_CUBEMAP),
+	PYNOECONSTN(NTEXFLAG_ISLINEAR),
+	PYNOECONSTN(NTEXFLAG_HDRISLINEAR),
+	PYNOECONSTN(NTEXFLAG_WANTSEAMLESS),
+	PYNOECONSTN(NTEXFLAG_WRAP_MIRROR_REPEAT),
+	PYNOECONSTN(NTEXFLAG_WRAP_MIRROR_CLAMP),
+
 	PYNOECONSTN(NMATFLAG_NMAPSWAPRA),
 	PYNOECONSTN(NMATFLAG_TWOSIDED),
 	PYNOECONSTN(NMATFLAG_PREVIEWLOAD),
@@ -177,6 +187,21 @@ The following constants are also exposed:
 	PYNOECONSTN(NMATFLAG_KAJIYAKAY),
 	PYNOECONSTN(NMATFLAG_SORT01),
 	PYNOECONSTN(NMATFLAG_GAMMACORRECT),
+	PYNOECONSTN(NMATFLAG_VCOLORSUBTRACT),
+	PYNOECONSTN(NMATFLAG_PBR_SPEC),
+	PYNOECONSTN(NMATFLAG_PBR_METAL),
+	PYNOECONSTN(NMATFLAG_NORMALMAP_FLIPY),
+	PYNOECONSTN(NMATFLAG_NORMALMAP_NODERZ),
+	PYNOECONSTN(NMATFLAG_PBR_SPEC_IR_RG),
+	PYNOECONSTN(NMATFLAG_ENV_FLIP),
+	PYNOECONSTN(NMATFLAG_PBR_ALBEDOENERGYCON),
+	PYNOECONSTN(NMATFLAG_PBR_COMPENERGYCON),
+	PYNOECONSTN(NMATFLAG_SPRITE_FACINGXY),
+	PYNOECONSTN(NMATFLAG_NORMAL_UV1),
+	PYNOECONSTN(NMATFLAG_SPEC_UV1),
+
+	PYNOECONSTN(NSEQFLAG_NONLOOPING),
+	PYNOECONSTN(NSEQFLAG_REVERSE),
 
 	PYNOECONSTN(NANIMFLAG_FORCENAMEMATCH),
 	PYNOECONSTN(NANIMFLAG_INVALIDHIERARCHY),
@@ -215,6 +240,7 @@ The following constants are also exposed:
 	PYNOECONSTN(NMSHAREDFL_WANTTANGENTS4),
 	PYNOECONSTN(NMSHAREDFL_WANTTANGENTS4R),
 	PYNOECONSTN(NMSHAREDFL_UNIQUEVERTS),
+	PYNOECONSTN(NMSHAREDFL_BONEPALETTE),
 
 	PYNOECONSTN(SHAREDSTRIP_LIST),
 	PYNOECONSTN(SHAREDSTRIP_STRIP),
@@ -311,6 +337,8 @@ The following constants are also exposed:
 	PYNOECONSTN(NUM_NOEKF_TRANSLATION_TYPES),
 	PYNOECONSTN(NOEKF_SCALE_SCALAR_1),
 	PYNOECONSTN(NOEKF_SCALE_SINGLE),
+	PYNOECONSTN(NOEKF_SCALE_VECTOR_3),
+	PYNOECONSTN(NOEKF_SCALE_TRANSPOSED_VECTOR_3),
 	PYNOECONSTN(NUM_NOEKF_SCALE_TYPES),
 	PYNOECONSTN(NOEKF_INTERPOLATE_LINEAR),
 	PYNOECONSTN(NOEKF_INTERPOLATE_NEAREST),
@@ -321,6 +349,10 @@ The following constants are also exposed:
 	PYNOECONSTN(PVRTC_DECODE_BICUBIC),
 	PYNOECONSTN(PVRTC_DECODE_PVRTC2_ROTATE_BLOCK_PAL),
 	PYNOECONSTN(PVRTC_DECODE_PVRTC2_NO_OR_WITH_0_ALPHA),
+
+	PYNOECONSTN(NOE_ENCODEDXT_BC1),
+	PYNOECONSTN(NOE_ENCODEDXT_BC3),
+	PYNOECONSTN(NOE_ENCODEDXT_BC4),
 
 The "rapi" module exposes the following methods:
 
@@ -338,6 +370,8 @@ The "rapi" module exposes the following methods:
 	{"loadIntoByteArray", Noesis_LoadIntoByteArray, METH_VARARGS, "returns PyByteArray with file. (u)"}, //args=filename
 	{"loadPairedFile", Noesis_LoadPairedFile, METH_VARARGS, "returns PyByteArray with file. (ss)"}, //args=file description, file extension
 	{"loadPairedFileOptional", Noesis_LoadPairedFileOptional, METH_VARARGS, "same as loadPairedFile, but returns None on cancel/fail instead of raising an exception. (ss)"}, //args=file description, file extension
+	{"loadPairedFileGetPath", Noesis_LoadPairedFileGetPath, METH_VARARGS, "same as loadPairedFile, but returns None on cancel/fail instead of raising an exception, and returns a tuple of (data, loadPath). (ss)"}, //args=file description, file extension
+	{"loadFileOnTexturePaths", Noesis_LoadFileOnTexturePaths, METH_VARARGS, "checks all texture paths for files, and returns None or bytearray of loaded data. (s)"}, //args=file name
 	{"simulateDragAndDrop", Noesis_SimulateDragAndDrop, METH_VARARGS, "simulates drag and drop using specified file. (s)"}, //args=file name
 	{"processCommands", Noesis_ParseCommands, METH_VARARGS, "processes given commands in the active rapi module. (s)"}, //args=commands
 
@@ -349,6 +383,7 @@ The "rapi" module exposes the following methods:
 	//swapEndianArray can be useful for things like 360 dxt data (swap count of 2)
 	{"swapEndianArray", Noesis_SwapEndianArray, METH_VARARGS, "returns the entire array endian-swapped at x bytes. (Oi|ii)"}, //args=source array, swap count, (optional) offset (in bytes, into array), stride
 	{"imageResample", Noesis_ImageResample, METH_VARARGS, "returns a resampled rgba/32bpp image in a bytearray. (Oiiii)"}, //args=source image array (must be rgba32), source width, source height, dest width, dest height
+	{"imageResampleBox", Noesis_ImageResampleBox, METH_VARARGS, "returns a resampled rgba/32bpp image in a bytearray. (Oiiii)"}, //args=source image array (must be rgba32), source width, source height, dest width, dest height
 	//imageMedianCut - pixel stride is expected to be 3 for rgb888 or 4 for rgba8888 data. desiredColors can be any number. if useAlpha is true (and pixStride is 4), the alpha channel will be considered in the process.
 	//returned bytearray is in rgba32 form.
 	{"imageMedianCut", Noesis_ImageMedianCut, METH_VARARGS, "returns a median-cut rgba/32bpp image in a bytearray. (Oiiiii)"}, //args=source image array (must be rgba32), pixel stride, width, height, dest width, dest height, desiredColors, alpha flag
@@ -399,6 +434,7 @@ The "rapi" module exposes the following methods:
 	{"imageBlit32", Noesis_ImageBlit32, METH_VARARGS, "image blit between 2 32-bit images. (OiiiiOiiii|ii)"}, //args=destination image, destination width, destination height, destination x offset, destination y offset, source image, source width, source height, source x offset, source y offset, (optional) dest stride, source stride (if not provided, assumed to be width*4)
 	{"imageKernelProcess", Noesis_ImageKernelProcess, METH_VARARGS, "returns a processed image, processed by invoking a provided kernel method which operates on a bytearray containing data for the active pixel. (OiiiO|O)"}, //args=destination image, width, height, bytes per pixel, kernel method (should be implemented as def kernelMethod(imageData (original image), offset (current processing offset into image), kernelData (bytes of data to operate on), userData), (optional) user data
 	{"imageDXTRemoveFlatFractionBlocks", Noesis_ImageRemoveFlatFractionBlocks, METH_VARARGS, "performs processing to turn dxt fraction-only blocks into direct color reference blocks for shitty hardware. (Oi)"}, //args=dxt data, texture format (must be one of the noesis.NOESISTEX_DXT* constants)
+	{"imageEncodeDXT", Noesis_ImageEncodeDXT, METH_VARARGS, "returns encoded dxt from rgba image. (Oiiii)"}, //args=source image array, source pixel stride in bytes, width, height, dxt format (may be one of the noesis.NOE_ENCODEDXT_* constants)
 
 	//data compression/decompression
 	//--
@@ -413,11 +449,16 @@ The "rapi" module exposes the following methods:
 	{"decompXMemLZX", Noesis_DecompXMemLZX, METH_VARARGS, "returns decompressed bytearray. (Oi|iii)"}, //args=source bytes, destination size. optional: window bits (default 17), reset interval (default -1), frame size (default -1)
 	{"decompPRS", Noesis_DecompPRS, METH_VARARGS, "returns decompressed bytearray. (Oi)"}, //args=source bytes, destination size.
 	{"decompLZ4", Noesis_DecompLZ4, METH_VARARGS, "returns decompressed bytearray. (Oi)"}, //args=source bytes, destination size.
+	{"decompLZMA", Noesis_DecompLZMA, METH_VARARGS, "returns decompressed bytearray. (OiO)"}, //args=source bytes, destination size, props bytes.
 	{"getInflatedSize", Noesis_GetInflatedSize, METH_VARARGS, "walks through deflate stream to return final decompressed size. (O|i)"}, //args=source bytes, (optional) window bits
 	{"getLZHMeltSize", Noesis_GetLZHMeltSize, METH_VARARGS, "walks through lzh stream to return final decompressed size. (O)"}, //args=source bytes
 	{"getPRSSize", Noesis_GetPRSSize, METH_VARARGS, "walks through prs stream to return final decompressed size. (O)"}, //args=source bytes
 
 	{"compressDeflate", Noesis_CompressDeflate, METH_VARARGS, "returns compressed bytearray. (O|i)"}, //args=source bytes, (optional) window size
+
+	{"compressHuffmanCanonical", Noesis_CompressHuffmanCanonical, METH_VARARGS, "returns compressed bytearray. (O)"}, //args=source bytes
+	{"decompHuffmanCanonical", Noesis_DecompHuffmanCanonical, METH_VARARGS, "returns decompressed bytearray. (Oi)"}, //args=source bytes, destination size
+	{"decompRNC", Noesis_DecompRNC, METH_VARARGS, "returns decompressed bytearray. (Oi)"}, //args=source bytes, destination size
 
 	//geometry/misc utility
 	//--
@@ -589,8 +630,10 @@ The "rapi" module exposes the following methods:
 
 	{"rpgOptimize", RPGOptimize, METH_NOARGS, "optimizes lists to remove duplicate vertices, sorts triangles by material, etc."}, //args=none
 	{"rpgSmoothNormals", RPGSmoothNormals, METH_NOARGS, "generates smoothed normals."}, //args=none
+	{"rpgFlatNormals", RPGFlatNormals, METH_NOARGS, "generates flat normals."}, //args=none
 	{"rpgSmoothTangents", RPGSmoothTangents, METH_NOARGS, "generates smoothed tangents."}, //args=none
 	{"rpgUnifyBinormals", RPGUnifyBinormals, METH_VARARGS, "unifies tangent binormals. (i)"}, //args=flip (flips binormals if 1)
+	{"rpgCreatePlaneSpaceUVs", RPGCreatePlaneSpaceUVs, METH_NOARGS, "generates plane-space uv's."}, //args=none
 	{"rpgSkinPreconstructedVertsToBones", RPGSkinPreconstructedVertsToBones, METH_VARARGS, "skins all relevant committed (via immEnd/rpgCommitTriangles) vertex components using the provided bone list. must be performed prior to rpgConstructModel. (O|ii)"}, //args=bone list, (optional) vertex start index, (optional) vertex count
 	{"rpgGetVertexCount", RPGGetVertexCount, METH_NOARGS, "returns number of vertices for current rpgeo context."}, //args=none
 	{"rpgGetTriangleCount", RPGGetTriangleCount, METH_NOARGS, "returns number of triangles for current rpgeo context."}, //args=none

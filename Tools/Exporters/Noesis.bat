@@ -1,1 +1,0 @@
-@echo off && start Noesis/Noesis

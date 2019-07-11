@@ -486,7 +486,7 @@ void S_Init( void )
 
 	cv = Cvar_Get( "s_initsound", "1", 0 );
 	if( !cv->integer ) {
-		Com_Printf( "Audio disabled.\n" );
+		Com_Printf( "^3Warning: Audio disabled. Toggle cvar 's_initSound' to enable.^7\n" );
 	} else {
 
 		S_CodecInit( );
@@ -516,9 +516,9 @@ void S_Init( void )
 			}
 
 			S_SoundInfo( );
-			Com_Printf( "Audio initialization successful.\n" );
+			Com_Printf( "Audio initialization: ^2OK^7.\n" );
 		} else {
-			Com_Printf( "Audio initialization failed.\n" );
+			Com_Printf( "^1Audio initialization failed.^7\n" );
 		}
 	}
 

@@ -338,7 +338,7 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 		case EV_CHANGE_WEAPON:
 			break;
 		case EV_ZANZOKEN_START:
-			if(!ps->bitFlags & usingMelee){}
+			if(!(ps->bitFlags & usingMelee)){}
 			break;
 		case EV_ALTFIRE_WEAPON:
 			FireWeapon(ent,qtrue);

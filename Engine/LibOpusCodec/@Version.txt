@@ -1,1 +1,1 @@
-Opus Codec V1.1.3
+Opus Codec V1.2.1

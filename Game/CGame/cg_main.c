@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // cg_main.c -- initialization and primary entry point for cgame
 #include "cg_local.h"
-int		forceModelModificationCount = -1;
-void	CG_Init(int serverMessageNum, int serverCommandSequence, int clientNum),
-		CG_Shutdown(void);
+int forceModelModificationCount = -1;
+void CG_Init(int serverMessageNum,int serverCommandSequence,int clientNum);
+void CG_Shutdown(void);
 
 /*
 ================
@@ -432,7 +432,6 @@ called during a precache command
 =================
 */
 static void CG_RegisterSounds(void){
-	char		name[MAX_QPATH];
 	const char	*soundName;
 	int			i;
 
@@ -444,47 +443,47 @@ static void CG_RegisterSounds(void){
 		cgs.gameSounds[i] = trap_S_RegisterSound(soundName, qfalse);
 	}
 	// ADDING FOR ZEQ2
-	cgs.media.radarwarningSound =		trap_S_RegisterSound("interface/sense/warning.ogg",			qfalse);
-	cgs.media.lightspeedSound1 =		trap_S_RegisterSound("effects/zanzoken/zanzoken1.ogg",		qfalse);
-	cgs.media.lightspeedSound2 =		trap_S_RegisterSound("effects/zanzoken/zanzoken2.ogg",		qfalse);
-	cgs.media.lightspeedSound3 =		trap_S_RegisterSound("effects/zanzoken/zanzoken3.ogg",		qfalse);
-	cgs.media.lightspeedSound4 =		trap_S_RegisterSound("effects/zanzoken/zanzoken4.ogg",		qfalse);
-	cgs.media.lightspeedSound5 =		trap_S_RegisterSound("effects/zanzoken/zanzoken5.ogg",		qfalse);
-	cgs.media.bigLightningSound1 =		trap_S_RegisterSound("effects/melee/lightning1.ogg",		qfalse);
-	cgs.media.bigLightningSound2 =		trap_S_RegisterSound("effects/melee/lightning2.ogg",		qfalse);
-	cgs.media.bigLightningSound3 =		trap_S_RegisterSound("effects/melee/lightning3.ogg",		qfalse);
-	cgs.media.bigLightningSound4 =		trap_S_RegisterSound("effects/melee/lightning4.ogg",		qfalse);
-	cgs.media.bigLightningSound5 =		trap_S_RegisterSound("effects/melee/lightning5.ogg",		qfalse);
-	cgs.media.bigLightningSound6 =		trap_S_RegisterSound("effects/melee/lightning6.ogg",		qfalse);
-	cgs.media.bigLightningSound7 =		trap_S_RegisterSound("effects/melee/lightning7.ogg",		qfalse);
-	cgs.media.blockSound =				trap_S_RegisterSound("effects/melee/block.ogg",				qfalse);
-	cgs.media.knockbackSound =			trap_S_RegisterSound("effects/melee/knockback.ogg",			qfalse);
-	cgs.media.knockbackLoopSound =		trap_S_RegisterSound("effects/melee/knockbackLoop.ogg",		qfalse);
-	cgs.media.speedMeleeSound =			trap_S_RegisterSound("effects/melee/speedHit1.ogg",			qfalse);
-	cgs.media.speedMissSound =			trap_S_RegisterSound("effects/melee/speedMiss1.ogg",		qfalse);
-	cgs.media.speedBlockSound =			trap_S_RegisterSound("effects/melee/speedBlock1.ogg",		qfalse);
-	cgs.media.stunSound =				trap_S_RegisterSound("effects/melee/stun1.ogg",				qfalse);
-	cgs.media.powerStunSound1 =			trap_S_RegisterSound("effects/melee/powerStun1.ogg",		qfalse);
-	cgs.media.powerStunSound2 =			trap_S_RegisterSound("effects/melee/powerStun2.ogg",		qfalse);
-	cgs.media.powerMeleeSound =			trap_S_RegisterSound("effects/melee/powerHit1.ogg",			qfalse);
-	cgs.media.powerMissSound =			trap_S_RegisterSound("effects/melee/powerMiss1.ogg",		qfalse);
-	cgs.media.lockonStart =				trap_S_RegisterSound("effects/powerSense.ogg",				qfalse);
-	cgs.media.nullSound =				trap_S_RegisterSound("effects/null.ogg",					qfalse);
-	cgs.media.airBrake1 =				trap_S_RegisterSound("effects/airBrake1.ogg",				qfalse);
-	cgs.media.airBrake2 =				trap_S_RegisterSound("effects/airBrake2.ogg",				qfalse);
-	cgs.media.hover =					trap_S_RegisterSound("effects/hover.ogg",					qfalse);
-	cgs.media.hoverFast =				trap_S_RegisterSound("effects/hoverFast.ogg",				qfalse);
-	cgs.media.hoverLong =				trap_S_RegisterSound("effects/hoverLong.ogg",				qfalse);
-	cgs.media.waterSplashSmall1 =		trap_S_RegisterSound("effects/water/SplashSmall.ogg",		qfalse);
-	cgs.media.waterSplashSmall2 =		trap_S_RegisterSound("effects/water/SplashSmall2.ogg",		qfalse);
-	cgs.media.waterSplashSmall3 =		trap_S_RegisterSound("effects/water/SplashSmall3.ogg",		qfalse);
-	cgs.media.waterSplashMedium1 =		trap_S_RegisterSound("effects/water/SplashMedium.ogg",		qfalse);
-	cgs.media.waterSplashMedium2 =		trap_S_RegisterSound("effects/water/SplashMedium2.ogg",		qfalse);
-	cgs.media.waterSplashMedium3 =		trap_S_RegisterSound("effects/water/SplashMedium3.ogg",		qfalse);
-	cgs.media.waterSplashMedium4 =		trap_S_RegisterSound("effects/water/SplashMedium4.ogg",		qfalse);
-	cgs.media.waterSplashLarge1 =		trap_S_RegisterSound("effects/water/SplashLarge.ogg",		qfalse);
-	cgs.media.waterSplashExtraLarge1 =	trap_S_RegisterSound("effects/water/SplashExtraLarge.ogg",	qfalse);
-	cgs.media.waterSplashExtraLarge2 =	trap_S_RegisterSound("effects/water/SplashExtraLarge2.ogg",	qfalse);
+	cgs.media.radarwarningSound =		trap_S_RegisterSound("interface/sense/warning.opus",			qfalse);
+	cgs.media.lightspeedSound1 =		trap_S_RegisterSound("effects/zanzoken/zanzoken1.opus",		qfalse);
+	cgs.media.lightspeedSound2 =		trap_S_RegisterSound("effects/zanzoken/zanzoken2.opus",		qfalse);
+	cgs.media.lightspeedSound3 =		trap_S_RegisterSound("effects/zanzoken/zanzoken3.opus",		qfalse);
+	cgs.media.lightspeedSound4 =		trap_S_RegisterSound("effects/zanzoken/zanzoken4.opus",		qfalse);
+	cgs.media.lightspeedSound5 =		trap_S_RegisterSound("effects/zanzoken/zanzoken5.opus",		qfalse);
+	cgs.media.bigLightningSound1 =		trap_S_RegisterSound("effects/melee/lightning1.opus",		qfalse);
+	cgs.media.bigLightningSound2 =		trap_S_RegisterSound("effects/melee/lightning2.opus",		qfalse);
+	cgs.media.bigLightningSound3 =		trap_S_RegisterSound("effects/melee/lightning3.opus",		qfalse);
+	cgs.media.bigLightningSound4 =		trap_S_RegisterSound("effects/melee/lightning4.opus",		qfalse);
+	cgs.media.bigLightningSound5 =		trap_S_RegisterSound("effects/melee/lightning5.opus",		qfalse);
+	cgs.media.bigLightningSound6 =		trap_S_RegisterSound("effects/melee/lightning6.opus",		qfalse);
+	cgs.media.bigLightningSound7 =		trap_S_RegisterSound("effects/melee/lightning7.opus",		qfalse);
+	cgs.media.blockSound =				trap_S_RegisterSound("effects/melee/block.opus",				qfalse);
+	cgs.media.knockbackSound =			trap_S_RegisterSound("effects/melee/knockback.opus",			qfalse);
+	cgs.media.knockbackLoopSound =		trap_S_RegisterSound("effects/melee/knockbackLoop.opus",		qfalse);
+	cgs.media.speedMeleeSound =			trap_S_RegisterSound("effects/melee/speedHit1.opus",			qfalse);
+	cgs.media.speedMissSound =			trap_S_RegisterSound("effects/melee/speedMiss1.opus",		qfalse);
+	cgs.media.speedBlockSound =			trap_S_RegisterSound("effects/melee/speedBlock1.opus",		qfalse);
+	cgs.media.stunSound =				trap_S_RegisterSound("effects/melee/stun1.opus",				qfalse);
+	cgs.media.powerStunSound1 =			trap_S_RegisterSound("effects/melee/powerStun1.opus",		qfalse);
+	cgs.media.powerStunSound2 =			trap_S_RegisterSound("effects/melee/powerStun2.opus",		qfalse);
+	cgs.media.powerMeleeSound =			trap_S_RegisterSound("effects/melee/powerHit1.opus",			qfalse);
+	cgs.media.powerMissSound =			trap_S_RegisterSound("effects/melee/powerMiss1.opus",		qfalse);
+	cgs.media.lockonStart =				trap_S_RegisterSound("effects/powerSense.opus",				qfalse);
+	cgs.media.nullSound =				trap_S_RegisterSound("effects/null.opus",					qfalse);
+	cgs.media.airBrake1 =				trap_S_RegisterSound("effects/airBrake1.opus",				qfalse);
+	cgs.media.airBrake2 =				trap_S_RegisterSound("effects/airBrake2.opus",				qfalse);
+	cgs.media.hover =					trap_S_RegisterSound("effects/hover.opus",					qfalse);
+	cgs.media.hoverFast =				trap_S_RegisterSound("effects/hoverFast.opus",				qfalse);
+	cgs.media.hoverLong =				trap_S_RegisterSound("effects/hoverLong.opus",				qfalse);
+	cgs.media.waterSplashSmall1 =		trap_S_RegisterSound("effects/water/SplashSmall.opus",		qfalse);
+	cgs.media.waterSplashSmall2 =		trap_S_RegisterSound("effects/water/SplashSmall2.opus",		qfalse);
+	cgs.media.waterSplashSmall3 =		trap_S_RegisterSound("effects/water/SplashSmall3.opus",		qfalse);
+	cgs.media.waterSplashMedium1 =		trap_S_RegisterSound("effects/water/SplashMedium.opus",		qfalse);
+	cgs.media.waterSplashMedium2 =		trap_S_RegisterSound("effects/water/SplashMedium2.opus",		qfalse);
+	cgs.media.waterSplashMedium3 =		trap_S_RegisterSound("effects/water/SplashMedium3.opus",		qfalse);
+	cgs.media.waterSplashMedium4 =		trap_S_RegisterSound("effects/water/SplashMedium4.opus",		qfalse);
+	cgs.media.waterSplashLarge1 =		trap_S_RegisterSound("effects/water/SplashLarge.opus",		qfalse);
+	cgs.media.waterSplashExtraLarge1 =	trap_S_RegisterSound("effects/water/SplashExtraLarge.opus",	qfalse);
+	cgs.media.waterSplashExtraLarge2 =	trap_S_RegisterSound("effects/water/SplashExtraLarge2.opus",	qfalse);
 	// END ADDING
 }
 
@@ -644,7 +643,7 @@ static qboolean CG_PopFile(void){
 		goto PopFile;
 	}
 	if(len >= sizeof(lfbuf)){
-		CG_Printf(S_COLOR_YELLOW "file too large: '%s' > %d\n", name, sizeof(lfbuf)-1);
+		CG_Printf(S_COLOR_YELLOW "file too large: '%s' > %I64d\n", name, sizeof(lfbuf)-1);
 #if LFDEBUG
 		CG_LoadingString(va("LF: CG_PopFile(%s): file too large", name));
 #endif
@@ -1105,7 +1104,7 @@ void CG_LoadLensFlareEntities(void) {
 		return;
 	}
 	if(len >= sizeof(lfbuf)){
-		CG_Printf(S_COLOR_YELLOW "file too large: '%s' > %d\n", name, sizeof(lfbuf)-1);
+		CG_Printf(S_COLOR_YELLOW "file too large: '%s' > %I64d\n", name, sizeof(lfbuf)-1);
 		return;
 	}
 	CG_Printf("reading '%s'...\n", name);
@@ -1171,7 +1170,6 @@ static void CG_RegisterGraphics(void){
 		cgs.media.crosshairShader[i] =				trap_R_RegisterShader(va("crosshair%c", 'a'+i));
 	cgs.media.speedLineShader =						trap_R_RegisterShaderNoMip("speedLines");
 	cgs.media.speedLineSpinShader =					trap_R_RegisterShaderNoMip("speedLinesSpin");
-	cgs.media.globalCelLighting =					trap_R_RegisterShader("GlobalCelLighting");
 	cgs.media.waterSplashSkin =						trap_R_RegisterSkin("effects/water/waterSplash.skin");
 	cgs.media.waterSplashModel =					trap_R_RegisterModel("effects/water/waterSplash.md3");
 	cgs.media.waterRippleSkin =						trap_R_RegisterSkin("effects/water/waterRipple.skin");

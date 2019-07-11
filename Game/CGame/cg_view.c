@@ -117,10 +117,10 @@ void CG_Camera(centity_t *cent){
 	cameraHeight = cg_thirdPersonHeight.value + ci->tierConfig[ci->tierCurrent].cameraOffset[1];
 	cameraRange = cg_thirdPersonRange.value + ci->tierConfig[ci->tierCurrent].cameraOffset[2];
 	if(cg_thirdPersonCamera.value <= 0){
-		if(CG_GetTagOrientationFromPlayerEntity(cent,"tag_eyes",&tagOrient)){
+		if(CG_TryLerpPlayerTag(cent,"tag_eyes",&tagOrient)){
 			VectorCopy(tagOrient.origin, cg.refdef.vieworg);
 		}
-		else if(CG_GetTagOrientationFromPlayerEntity(cent,"tag_head",&tagOrient)){
+		if(CG_TryLerpPlayerTag(cent,"tag_head",&tagOrient)){
 			VectorCopy(tagOrient.origin, cg.refdef.vieworg);
 			cg.refdef.vieworg[2] -= NECK_LENGTH;
 			AngleVectors(cg.refdefViewAngles, forward, NULL, up);
@@ -130,13 +130,13 @@ void CG_Camera(centity_t *cent){
 		else{cg.refdef.vieworg[2] += cg.predictedPlayerState.viewheight;}
 	}
 	else if(cg_thirdPersonCamera.value >= 1){
-		if(CG_GetTagOrientationFromPlayerEntity(cent, "tag_cam", &tagOrient)){
-			if(!cent->pe.camera.animation->continuous){
+		if(CG_TryLerpPlayerTag(cent,"tag_cam",&tagOrient)){
+			if(!cent->pe.modelLerpFrames[3].animation->continuous){
 				VectorCopy(cent->lerpOrigin,tagOrient.origin);
 				tagOrient.origin[2] += cg.predictedPlayerState.viewheight;
 			}
 			else if(!((cent->currentState.weaponstate == WEAPON_GUIDING) || (cent->currentState.weaponstate == WEAPON_ALTGUIDING) || (cent->currentState.playerBitFlags & usingSoar))){
-				if(CG_GetTagOrientationFromPlayerEntity(cent, "tag_camTar", &tagOrient2)){
+				if(CG_TryLerpPlayerTag(cent,"tag_camTar",&tagOrient2)){
 					VectorSubtract(tagOrient2.origin, tagOrient.origin, forward);
 					VectorNormalize(forward);
 					vectoangles(forward, tagForwardAngles);
@@ -162,7 +162,7 @@ void CG_Camera(centity_t *cent){
 			VectorMA(tagOrient.origin, 512, forward, focusPoint);
 			VectorCopy(tagOrient.origin, view);	
 			AngleVectors(cg.refdefViewAngles, forward, right, up);
-			if(!cent->pe.camera.animation->continuous){
+			if(!cent->pe.modelLerpFrames[3].animation->continuous){
 				VectorMA(view,cameraSlide,right,view);
 				view[2] += cameraHeight;
 				forwardScale = cos(cameraAngle / 180 * M_PI);	

@@ -234,6 +234,7 @@ Build a client snapshot structure
 
 =============================================================================
 */
+
 typedef struct {
 	int		numSnapshotEntities;
 	int		snapshotEntities[MAX_SNAPSHOT_ENTITIES];	
@@ -546,7 +547,7 @@ static void SV_WriteVoipToClient(client_t *cl, msg_t *msg)
 	        		if (totalbytes > (msg->maxsize - msg->cursize) / 2)
 		        		break;
 
-        			MSG_WriteByte(msg, svc_voip);
+        			MSG_WriteByte(msg, svc_voipOpus);
         			MSG_WriteShort(msg, packet->sender);
 	        		MSG_WriteByte(msg, (byte) packet->generation);
 		        	MSG_WriteLong(msg, packet->sequence);
@@ -646,6 +647,9 @@ void SV_SendClientMessages(void)
 		if(!c->state)
 			continue;		// not connected
 
+		if(svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timeScale->value)
+			continue;		// It's not time yet
+
 		if(*c->downloadName)
 			continue;		// Client is downloading, don't send snapshots
 
@@ -659,10 +663,6 @@ void SV_SendClientMessages(void)
 		     (sv_lanForceRate->integer && Sys_IsLANAddress(c->netchan.remoteAddress))))
 		{
 			// rate control for clients not on LAN 
-			
-			if(svs.time - c->lastSnapshotTime < c->snapshotMsec * com_timeScale->value)
-				continue;		// It's not time yet
-
 			if(SV_RateMsec(c) > 0)
 			{
 				// Not enough time since last packet passed through the line

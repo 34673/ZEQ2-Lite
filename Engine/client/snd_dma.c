@@ -269,6 +269,11 @@ static sfx_t *S_FindName( const char *name ) {
 		return NULL;
 	}
 
+	if (name[0] == '*') {
+		Com_Printf( S_COLOR_YELLOW "WARNING: Tried to load player sound directly: %s\n", name );
+		return NULL;
+	}
+
 	hash = S_HashSFXName(name);
 
 	sfx = sfxHash[hash];
@@ -393,7 +398,7 @@ void S_Base_BeginRegistration( void ) {
 		Com_Memset(s_knownSfx, '\0', sizeof(s_knownSfx));
 		Com_Memset(sfxHash, '\0', sizeof(sfx_t *) * LOOP_HASH);
 
-		S_Base_RegisterSound("effects/null.ogg", qfalse);		// changed to a sound in baseq3
+		S_Base_RegisterSound("effects/null.opus", qfalse);
 	}
 }
 
@@ -979,7 +984,6 @@ void S_Base_RawSamples( int stream, int samples, int rate, int width, int s_chan
 	int		intVolumeLeft, intVolumeRight;
 	portable_samplepair_t *rawsamples;
 	channel_t *ch;
-
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
 	}
@@ -988,6 +992,7 @@ void S_Base_RawSamples( int stream, int samples, int rate, int width, int s_chan
 		return;
 	}
 
+	ch = s_channels;
 	rawsamples = s_rawsamples[stream];
 
 	if ( s_muted->integer ) {
@@ -1392,6 +1397,10 @@ static void S_OpenBackgroundStream( const char *filename ) {
 	if(!s_backgroundStream) {
 		Com_Printf( S_COLOR_YELLOW "WARNING: couldn't open music file %s\n", filename );
 		return;
+	}
+
+	if(s_backgroundStream->info.channels != 2 || s_backgroundStream->info.rate != 22050) {
+		Com_Printf(S_COLOR_YELLOW "WARNING: music file %s is not 22k stereo\n", filename );
 	}
 }
 

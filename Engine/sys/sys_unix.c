@@ -61,7 +61,7 @@ char *Sys_DefaultHomePath(void)
 		if( ( p = getenv( "HOME" ) ) != NULL )
 		{
 			Com_sprintf(homePath, sizeof(homePath), "%s%c", p, PATH_SEP);
-#ifdef MACOS_X
+#ifdef __APPLE__
 			Q_strcat(homePath, sizeof(homePath),
 				"Library/Application Support/");
 
@@ -94,7 +94,7 @@ char *Sys_SteamPath( void )
 
 	if( ( p = getenv( "HOME" ) ) != NULL )
 	{
-#ifdef MACOS_X
+#ifdef __APPLE__
 		char *steamPathEnd = "/Library/Application Support/Steam/SteamApps/common/" STEAMPATH_NAME;
 #else
 		char *steamPathEnd = "/.steam/steam/SteamApps/common/" STEAMPATH_NAME;
@@ -577,7 +577,7 @@ void Sys_ErrorDialog( const char *error )
 	close( f );
 }
 
-#ifndef MACOS_X
+#ifndef __APPLE__
 static char execBuffer[ 1024 ];
 static char *execBufferPointer;
 static char *execArgv[ 16 ];
@@ -897,4 +897,45 @@ Sys_PIDIsRunning
 qboolean Sys_PIDIsRunning( int pid )
 {
 	return kill( pid, 0 ) == 0;
+}
+
+/*
+=================
+Sys_DllExtension
+
+Check if filename should be allowed to be loaded as a DLL.
+=================
+*/
+qboolean Sys_DllExtension( const char *name ) {
+	const char *p;
+	char c = 0;
+
+	if ( COM_CompareExtension( name, DLL_EXT ) ) {
+		return qtrue;
+	}
+
+	// Check for format of filename.so.1.2.3
+	p = strstr( name, DLL_EXT "." );
+
+	if ( p ) {
+		p += strlen( DLL_EXT );
+
+		// Check if .so is only followed for periods and numbers.
+		while ( *p ) {
+			c = *p;
+
+			if ( !isdigit( c ) && c != '.' ) {
+				return qfalse;
+			}
+
+			p++;
+		}
+
+		// Don't allow filename to end in a period. file.so., file.so.0., etc
+		if ( c != '.' ) {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
 }

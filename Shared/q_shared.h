@@ -31,22 +31,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef PRODUCT_VERSION
 	#define PRODUCT_VERSION		"Revision 1917" 		// update before SVN commit (value = head revision + 1)
 #endif
-#define ENGINE_VERSION			"ioQ3 commit 2813" 		// value based on ioq3's github commits count
+#define ENGINE_VERSION			"ioQ3 commit 3162" 		// value based on ioq3's github commits count
 #define BASEDIR					"Base"
-#define CLIENT_WIN_TITLE     	"ZEQ2-Lite"
-#define CLIENT_WIN_MIN_TITLE 	"ZEQ2-Lite"
+#define CLIENT_WINDOW_TITLE     	"ZEQ2-Lite"
+#define CLIENT_WINDOW_MIN_TITLE 	"ZEQ2-Lite"
 #define HOMEPATH_NAME_UNIX		".z2l"
 #define HOMEPATH_NAME_WIN		"ZEQ2-Lite"
 #define HOMEPATH_NAME_MACOSX	HOMEPATH_NAME_WIN
-#define NAME_FOR_MASTER			"Base"	// must NOT contain whitespace
+//Eagle: I think the current directory must be sent to the master to find related servers
+#define DIRNAME_FOR_MASTER			"Base"	// must NOT contain whitespace
 
 // Heartbeat for dpmaster protocol. You shouldn't change this unless you know what you're doing
-#define HEARTBEAT_FOR_MASTER	"" //DarkPlaces
+#define HEARTBEAT_FOR_MASTER	"DarkPlaces"
 
 
 
 #define MAX_TEAMNAME			32
 #define MAX_MASTER_SERVERS      5			// number of supported master servers
+#ifndef PRODUCT_DATE
+#  define PRODUCT_DATE __DATE__
+#endif
 
 #define DEMOEXT	"dm_"						// standard demo extension
 
@@ -262,7 +266,7 @@ typedef enum {
 
 // parameters to the main Error routine
 typedef enum {
-	ERR_FATAL,					// integral shutdown plus crash popup window
+	ERR_FATAL,					// integral shutdown with a crash popup window
 	ERR_DROP,					// print to console and disconnect from server
 	ERR_SERVERDISCONNECT,		// don't kill server
 	ERR_DISCONNECT,				// client disconnected from the server
@@ -648,7 +652,6 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out );
 int Q_log2(int val);
 
 float Q_acos(float c);
-float Q_asin(float c);
 
 int		Q_rand( int *seed );
 float	Q_random( int *seed );
@@ -659,7 +662,6 @@ float	Q_crandom( int *seed );
 
 void vectoangles( const vec3_t value1, vec3_t angles);
 void AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
-void AxisToAngles( vec3_t axis[3], vec3_t angles );
 
 void AxisClear( vec3_t axis[3] );
 void AxisCopy( vec3_t in[3], vec3_t out[3] );
@@ -1319,7 +1321,7 @@ typedef struct entityState_s {
 	vec3_t	dashDir;
 	int		otherEntityNum;	// shotgun sources, etc
 	int		otherEntityNum2;
-	int		groundEntityNum;	// -1 = in air
+	int		groundEntityNum;	// ENTITYNUM_NONE = in air
 	int		constantLight;	// r + (g<<8) + (b<<16) + (intensity<<24)
 	int		loopSound;		// constantly loop this sound
 	int		modelindex;

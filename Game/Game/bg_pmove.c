@@ -363,7 +363,7 @@ void PM_CheckZanzoken(void){
 /*===============
 POWER LEVEL
 ===============*/
-void PM_UsePowerLevel(){
+void PM_UsePowerLevel(void){
 	int newValue,amount,stat,useType,limit;
 	useType = 0;
 	limit = pm->ps->powerLevel[plLimit];
@@ -409,7 +409,7 @@ void PM_UsePowerLevel(){
 		useType += 1;
 	}
 }
-void PM_BurnPowerLevel(){
+void PM_BurnPowerLevel(void){
 	float percent;
 	int defense;
 	int burn,initial;
@@ -831,7 +831,7 @@ void PM_CheckPowerLevel(void){
 			pm->ps->eFlags |= EF_AURA;
 			timers[tmPowerRaise] += pml.msec;
 			while(timers[tmPowerRaise] >= 25){
-				if(!pm->ps->options & canBreakLimit){break;}
+				if(!(pm->ps->options & canBreakLimit)){break;}
 				timers[tmPowerRaise] -= 25;
 				raise = powerLevel[plMaximum] * 0.009;
 				if(powerLevel[plCurrent] > powerLevel[plFatigue]){raise *= 0.6;}
@@ -1177,7 +1177,7 @@ void PM_CheckJump(void){
 		if(pm->ps->bitFlags & nearGround && pm->ps->velocity[2] < 0){
 			PM_ContinueLegsAnim(ANIM_FLY_DOWN);
 		}
-		else if(pm->ps->velocity[2] < 200 && !pm->ps->bitFlags & usingBallFlip){
+		else if(pm->ps->velocity[2] < 200 && !(pm->ps->bitFlags & usingBallFlip)){
 			if(pm->ps->pm_flags & PMF_BACKWARDS_JUMP){PM_ForceLegsAnim(ANIM_LAND_BACK);}
 			else if(pm->ps->pm_flags & PMF_FORWARDS_JUMP){PM_ForceLegsAnim(ANIM_LAND_UP);}
 			else{PM_ForceLegsAnim(ANIM_LAND_UP);}

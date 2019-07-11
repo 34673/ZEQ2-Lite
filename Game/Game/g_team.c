@@ -255,33 +255,6 @@ order.
 */
 void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker){}
 
-/*
-================
-Team_CheckHurtCarrier
-
-Check to see if attacker hurt the flag carrier.  Needed when handing out bonuses for assistance to flag
-carrier defense.
-================
-*/
-void Team_CheckHurtCarrier(gentity_t *targ, gentity_t *attacker)
-{
-	int flag_pw;
-
-	if (!targ->client || !attacker->client)
-		return;
-
-	// flags
-	if (targ->client->ps.powerups[flag_pw] &&
-		targ->client->sess.sessionTeam != attacker->client->sess.sessionTeam)
-		attacker->client->pers.teamState.lasthurtcarrier = level.time;
-
-	// skulls
-	if (targ->client->ps.generic1 &&
-		targ->client->sess.sessionTeam != attacker->client->sess.sessionTeam)
-		attacker->client->pers.teamState.lasthurtcarrier = level.time;
-}
-
-
 gentity_t *Team_ResetFlag( int team ){return NULL;}
 void Team_ResetFlags( void ) {}
 void Team_ReturnFlagSound( gentity_t *ent, int team ) {}

@@ -94,7 +94,8 @@ markPoly_t *CG_AllocMark(void){
 	// link into the active list
 	le->nextMark = cg_activeMarkPolys.nextMark;
 	le->prevMark = &cg_activeMarkPolys;
-	cg_activeMarkPolys.nextMark->prevMark = cg_activeMarkPolys.nextMark = le;
+	cg_activeMarkPolys.nextMark->prevMark = le;
+	cg_activeMarkPolys.nextMark = le;
 	return le;
 }
 

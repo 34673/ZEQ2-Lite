@@ -369,7 +369,7 @@ static qboolean PSys_UpdateOrientation(PSys_System_t *system, PSys_Orientation_t
 			// If we switched weaponstate (aka stopped charging or stopped firing)
 			if(CG_FrameHist_IsWeaponState(orient->entity->currentState.number) != orient->weaponState) return qfalse;
 		}
-		if(!CG_GetTagOrientationFromPlayerEntity(orient->entity, orient->tagName, &(orient->geometry))){
+		if(!CG_TryLerpPlayerTag(orient->entity,orient->tagName,&orient->geometry)){
 			VectorCopy(orient->entity->lerpOrigin, orient->geometry.origin);
 			AnglesToAxis(orient->entity->lerpAngles, orient->geometry.axis);
 		}

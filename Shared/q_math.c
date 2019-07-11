@@ -148,7 +148,7 @@ vec3_t	bytedirs[NUMVERTEXNORMALS] =
 //==============================================================
 
 int		Q_rand( int *seed ) {
-	*seed = (69069 * *seed + 1);
+	*seed = (69069U * *seed + 1U);
 	return *seed;
 }
 
@@ -405,58 +405,6 @@ void vectoangles( const vec3_t value1, vec3_t angles ) {
 	angles[PITCH] = -pitch;
 	angles[YAW] = yaw;
 	angles[ROLL] = 0;
-}
-
-/*
-=================
-AxisToAngles
-
-Takes an axis (forward + right + up)
-and returns angles -- including a roll
-=================
-*/
-void AxisToAngles( vec3_t axis[3], vec3_t angles ) {
-	float length1;
-	float yaw, pitch, roll = 0.0f;
-
-	if ( axis[0][1] == 0 && axis[0][0] == 0 ) {
-		yaw = 0;
-		if ( axis[0][2] > 0 ) {
-			pitch = 90;
-		}
-		else {
-			pitch = 270;
-		}
-	}
-	else {
-		if ( axis[0][0] ) {
-			yaw = ( atan2 ( axis[0][1], axis[0][0] ) * 180 / M_PI );
-		}
-		else if ( axis[0][1] > 0 ) {
-			yaw = 90;
-		}
-		else {
-			yaw = 270;
-		}
-		if ( yaw < 0 ) {
-			yaw += 360;
-		}
-
-		length1 = sqrt ( axis[0][0]*axis[0][0] + axis[0][1]*axis[0][1] );
-		pitch = ( atan2(axis[0][2], length1) * 180 / M_PI );
-		if ( pitch < 0 ) {
-			pitch += 360;
-		}
-
-		roll = ( atan2( axis[1][2], axis[2][2] ) * 180 / M_PI );
-		if ( roll < 0 ) {
-			roll += 360;
-		}
-	}
-
-	angles[PITCH] = -pitch;
-	angles[YAW] = yaw;
-	angles[ROLL] = roll;
 }
 
 /*
@@ -1079,6 +1027,7 @@ void Matrix4Multiply(const float a[16], const float b[16], float out[16])
 		out[15] = b[12]*a[ 3] + b[13]*a[ 7] + b[14]*a[11] + b[15]*a[15];
 #endif
 }
+
 
 /*
 ================

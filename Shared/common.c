@@ -39,7 +39,7 @@ int demo_protocols[] =
 #define MIN_DEDICATED_COMHUNKMEGS 1
 #define MIN_COMHUNKMEGS		256
 #define DEF_COMHUNKMEGS		512
-#define DEF_COMZONEMEGS		24
+#define DEF_COMZONEMEGS		96
 #define DEF_COMHUNKMEGS_S	XSTRING(DEF_COMHUNKMEGS)
 #define DEF_COMZONEMEGS_S	XSTRING(DEF_COMZONEMEGS)
 
@@ -72,7 +72,9 @@ cvar_t	*com_showTrace;
 cvar_t	*com_version;
 cvar_t	*com_blood;
 cvar_t	*com_buildScript;	// for automated data building scripts
+#ifdef CINEMATICS_INTRO
 cvar_t	*com_introPlayed;
+#endif
 cvar_t	*cl_paused;
 cvar_t	*sv_paused;
 cvar_t  *cl_packetDelay;
@@ -92,6 +94,9 @@ cvar_t	*com_legacyprotocol;
 cvar_t	*com_baseDir;
 cvar_t  *com_homePath;
 cvar_t	*com_busyWait;
+#ifndef DEDICATED
+cvar_t  *con_autochat;
+#endif
 
 #if idx64
 	int (*Q_VMftol)(void);
@@ -111,7 +116,8 @@ int			com_frameNumber;
 
 qboolean	com_errorEntered = qfalse;
 qboolean	com_fullyInitialized = qfalse;
-qboolean	com_appRestarting = qfalse;
+qboolean	com_dirRestarting = qfalse;
+qboolean	com_dirClientRestarting = qfalse;
 
 char	com_errorMessage[MAXPRINTMSG];
 
@@ -261,6 +267,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	static int	lastErrorTime;
 	static int	errorCount;
 	int			currentTime;
+	qboolean	restartClient;
 
 	if(com_errorEntered)
 		Sys_Error("recursive error after: %s", com_errorMessage);
@@ -293,9 +300,17 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	if (code != ERR_DISCONNECT)
 		Cvar_Set("com_errorMessage", com_errorMessage);
 
+	restartClient = com_dirClientRestarting && !( com_cl_running && com_cl_running->integer );
+
+	com_dirRestarting = qfalse;
+	com_dirClientRestarting = qfalse;
+
 	if (code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT) {
 		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
+		if ( restartClient ) {
+			CL_Init();
+		}
 		CL_Disconnect( qtrue );
 		CL_FlushMemory( );
 		VM_Forced_Unload_Done();
@@ -307,6 +322,9 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		Com_Printf ("********************\nERROR: %s\n********************\n", com_errorMessage);
 		VM_Forced_Unload_Start();
 		SV_Shutdown (va("Server crashed: %s",  com_errorMessage));
+		if ( restartClient ) {
+			CL_Init();
+		}
 		CL_Disconnect( qtrue );
 		CL_FlushMemory( );
 		VM_Forced_Unload_Done();
@@ -364,9 +382,9 @@ command lines.
 
 All of these are valid:
 
-ZEQ2-Lite +set test blah +map test
-ZEQ2-Lite set test blah+map test
-ZEQ2-Lite set test blah + map test
+<appName> +set test blah +map test
+<appName> set test blah+map test
+<appName> set test blah + map test
 
 ============================================================================
 */
@@ -391,7 +409,7 @@ void Com_ParseCommandLine( char *commandLine ) {
         if (*commandLine == '"') {
             inq = !inq;
         }
-        // look for a + seperating character
+        // look for a + separating character
         // if commandLine came from a file, we might have real line seperators
         if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
             if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
@@ -455,9 +473,9 @@ void Com_StartupVariable( const char *match ) {
 		if(!match || !strcmp(s, match))
 		{
 			if(Cvar_Flags(s) == CVAR_NONEXISTENT)
-				Cvar_Get(s, Cmd_Argv(2), CVAR_USER_CREATED);
+				Cvar_Get(s, Cmd_ArgsFrom(2), CVAR_USER_CREATED);
 			else
-				Cvar_Set2(s, Cmd_Argv(2), qfalse);
+				Cvar_Set2(s, Cmd_ArgsFrom(2), qfalse);
 		}
 	}
 }
@@ -486,7 +504,7 @@ qboolean Com_AddStartupCommands( void ) {
 		}
 
 		// set commands already added with Com_StartupVariable
-		if ( !Q_stricmpn( com_consoleLines[i], "set", 3 ) ) {
+		if ( !Q_stricmpn( com_consoleLines[i], "set ", 4 ) ) {
 			continue;
 		}
 
@@ -685,22 +703,6 @@ int Com_FilterPath(char *filter, char *name, int casesensitive)
 }
 
 /*
-============
-Com_HashKey
-============
-*/
-int Com_HashKey( char *string, int maxlen ) {
-	int register hash, i;
-
-	hash = 0;
-	for ( i = 0; i < maxlen && string[i] != '\0'; i++ ) {
-		hash += string[i] * ( 119 + i );
-	}
-	hash = ( hash ^ ( hash >> 10 ) ^ ( hash >> 20 ) );
-	return hash;
-}
-
-/*
 ================
 Com_RealTime
 ================
@@ -885,9 +887,6 @@ void Z_Free( void *ptr ) {
 		block->size += other->size;
 		block->next = other->next;
 		block->next->prev = block;
-		if (other == zone->rover) {
-			zone->rover = block;
-		}
 	}
 }
 
@@ -898,7 +897,6 @@ Z_FreeTags
 ================
 */
 void Z_FreeTags( int tag ) {
-	int			count;
 	memzone_t	*zone;
 
 	if ( tag == TAG_SMALL ) {
@@ -907,13 +905,11 @@ void Z_FreeTags( int tag ) {
 	else {
 		zone = mainzone;
 	}
-	count = 0;
 	// use the rover as our pointer, because
 	// Z_Free automatically adjusts it
 	zone->rover = zone->blocklist.next;
 	do {
 		if ( zone->rover->tag == tag ) {
-			count++;
 			Z_Free( (void *)(zone->rover + 1) );
 			continue;
 		}
@@ -1267,7 +1263,7 @@ Com_Meminfo_f
 void Com_Meminfo_f( void ) {
 	memblock_t	*block;
 	int			zoneBytes, zoneBlocks;
-	int			smallZoneBytes, smallZoneBlocks;
+	int			smallZoneBytes;
 	int			rendererBytes;
 	int			unused;
 
@@ -1282,7 +1278,9 @@ void Com_Meminfo_f( void ) {
 		if ( block->tag ) {
 			zoneBytes += block->size;
 			zoneBlocks++;
-			rendererBytes += block->size;
+			if ( block->tag == TAG_RENDERER ) {
+				rendererBytes += block->size;
+			}
 		}
 
 		if (block->next == &mainzone->blocklist) {
@@ -1300,11 +1298,9 @@ void Com_Meminfo_f( void ) {
 	}
 
 	smallZoneBytes = 0;
-	smallZoneBlocks = 0;
 	for (block = smallzone->blocklist.next ; ; block = block->next) {
 		if ( block->tag ) {
 			smallZoneBytes += block->size;
-			smallZoneBlocks++;
 		}
 
 		if (block->next == &smallzone->blocklist) {
@@ -1406,8 +1402,6 @@ void Com_InitSmallZoneMemory( void ) {
 		Com_Error( ERR_FATAL, "Small zone data failed to allocate %1.1f megs", (float)s_smallZoneTotal / (1024*1024) );
 	}
 	Z_ClearZone( smallzone, s_smallZoneTotal );
-	
-	return;
 }
 
 void Com_InitZoneMemory( void ) {
@@ -1935,12 +1929,25 @@ Com_QueueEvent
 
 A time of 0 will get the current time
 Ptr should either be null, or point to a block of data that can
-be freed by the system later.
+be freed by the game later.
 ================
 */
 void Com_QueueEvent( int time, sysEventType_t type, int value, int value2, int ptrLength, void *ptr )
 {
 	sysEvent_t  *ev;
+
+	// combine mouse movement with previous mouse event
+	if ( type == SE_MOUSE && eventHead != eventTail )
+	{
+		ev = &eventQueue[ ( eventHead + MAX_QUEUED_EVENTS - 1 ) & MASK_QUEUED_EVENTS ];
+
+		if ( ev->evType == SE_MOUSE )
+		{
+			ev->evValue += value;
+			ev->evValue2 += value2;
+			return;
+		}
+	}
 
 	ev = &eventQueue[ eventHead & MASK_QUEUED_EVENTS ];
 
@@ -2346,27 +2353,25 @@ void Com_ExecuteCfg(void){
 
 /*
 ==================
-Com_AppRestart
+Com_DirRestart
 
 Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
 
-void Com_AppRestart(int checksumFeed, qboolean disconnect)
+void Com_DirRestart(int checksumFeed, qboolean disconnect)
 {
 	// make sure no recursion can be triggered
-	if(!com_appRestarting && com_fullyInitialized)
-	{
-		int clWasRunning;
-		
-		com_appRestarting = qtrue;
-		clWasRunning = com_cl_running->integer;
-		
+	if(!com_dirRestarting && com_fullyInitialized)
+	{	
+		com_dirRestarting = qtrue;
+		com_dirClientRestarting = com_cl_running->integer;
+
 		// Kill server if we have one
 		if(com_sv_running->integer)
 			SV_Shutdown("FileSystem Directory changed");
 
-		if(clWasRunning)
+		if(com_dirClientRestarting)
 		{
 			if(disconnect)
 				CL_Disconnect(qfalse);
@@ -2382,36 +2387,36 @@ void Com_AppRestart(int checksumFeed, qboolean disconnect)
 
 		if(disconnect)
 		{
-			// We don't want to change any network settings if gamedir
+			// We don't want to change any network settings if the directory
 			// change was triggered by a connect to server because the
 			// new network settings might make the connection fail.
 			NET_Restart_f();
 		}
 
-		if(clWasRunning)
+		if(com_dirClientRestarting)
 		{
 			CL_Init();
 			CL_StartHunkUsers(qfalse);
 		}
 		
-		com_appRestarting = qfalse;
-	}
+		com_dirRestarting = qfalse;
+		com_dirClientRestarting = qfalse;	}
 }
 
 /*
 ==================
-Com_AppRestart_f
+Com_DirRestart_f
 
 Expose possibility to change current running mod to the user
 ==================
 */
 
-void Com_AppRestart_f(void)
+void Com_DirRestart_f(void)
 {
 	if(!FS_FilenameCompare(Cmd_Argv(1), com_baseDir->string))
 	{
-		// This is the standard base dir. Servers and clients should
-		// use "" and not the standard baseDir name because this messes
+		// This is the standard base directory. Servers and clients should
+		// use "" and not the standard base directory name because this messes
 		// up pak file negotiation and lots of other stuff
 		
 		Cvar_Set("fs_dir", "");
@@ -2419,7 +2424,7 @@ void Com_AppRestart_f(void)
 	else
 		Cvar_Set("fs_dir", Cmd_Argv(1));
 
-	Com_AppRestart(0, qtrue);
+	Com_DirRestart(0, qtrue);
 }
 
 static void Com_DetectAltivec(void)
@@ -2572,7 +2577,7 @@ void Com_Init( char *commandLine ) {
 	Cmd_AddCommand ("changeVectors", MSG_ReportChangeVectors_f );
 	Cmd_AddCommand ("writeconfig", Com_WriteConfig_f );
 	Cmd_SetCommandCompletionFunc( "writeconfig", Cmd_CompleteCfgName );
-	Cmd_AddCommand("app_restart", Com_AppRestart_f);
+	Cmd_AddCommand("dir_restart", Com_DirRestart_f);
 
 	Com_ExecuteCfg();
 
@@ -2627,11 +2632,13 @@ void Com_Init( char *commandLine ) {
 	com_busyWait = Cvar_Get("com_busyWait", "0", CVAR_ARCHIVE);
 	Cvar_Get("com_errorMessage", "", CVAR_ROM | CVAR_NORESTART);
 
+#ifdef CINEMATICS_INTRO
 	com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
+#endif
 
-	s = va("%s, %s, %s", ENGINE_VERSION, PLATFORM_STRING, __DATE__ );
+	s = va("%s, %s, %s", ENGINE_VERSION, PLATFORM_STRING, PRODUCT_DATE );
 	com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
-	com_dirName = Cvar_Get("com_dirName", NAME_FOR_MASTER, CVAR_SERVERINFO | CVAR_INIT);
+	com_dirName = Cvar_Get("com_dirName", DIRNAME_FOR_MASTER, CVAR_SERVERINFO | CVAR_INIT);
 	com_protocol = Cvar_Get("com_protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_INIT);
 #ifdef LEGACY_PROTOCOL
 	com_legacyprotocol = Cvar_Get("com_legacyprotocol", va("%i", PROTOCOL_LEGACY_VERSION), CVAR_INIT);
@@ -2643,19 +2650,13 @@ void Com_Init( char *commandLine ) {
 #endif
 		Cvar_Get("protocol", com_protocol->string, CVAR_ROM);
 
+#ifndef DEDICATED
+	con_autochat = Cvar_Get("con_autochat", "1", CVAR_ARCHIVE);
+#endif
+
 	Sys_Init();
 
-	if( Sys_WritePIDFile( ) ) {
-#ifndef DEDICATED
-		const char *message = "The last time " CLIENT_WIN_TITLE " ran, "
-			"it didn't exit properly. This may be due to inappropriate video "
-			"settings. Would you like to start with \"safe\" video settings?";
-
-		if( Sys_Dialog( DT_YES_NO, message, "Abnormal Exit" ) == DR_YES ) {
-			Cvar_Set( "com_abnormalExit", "1" );
-		}
-#endif
-	}
+	Sys_InitPIDFile( FS_GetCurrentDir() );
 
 	// Pick a random port value
 	Com_RandomBytes( (byte*)&qport, sizeof(int) );
@@ -2678,11 +2679,15 @@ void Com_Init( char *commandLine ) {
 	if ( !Com_AddStartupCommands() ) {
 		// if the user didn't give any commands, run default action
 		if ( !com_dedicated->integer ) {
-			Cbuf_AddText("cinematic intro.roq\n");
+#ifdef CINEMATICS_LOGO
+			Cbuf_AddText ("cinematic " CINEMATICS_LOGO "\n");
+#endif
+#ifdef CINEMATICS_INTRO
 			if( !com_introPlayed->integer ) {
-				Cvar_Set(com_introPlayed->name,"1");
-				Cvar_Set("nextmap","cinematic zeq2intro.roq" ); // unused ?
+				Cvar_Set( com_introPlayed->name, "1" );
+				Cvar_Set( "nextmap", "cinematic " CINEMATICS_INTRO );
 			}
+#endif
 		}
 	}
 
@@ -2773,7 +2778,7 @@ void Com_WriteConfigToFile( const char *filename ) {
 		return;
 	}
 
-	FS_Printf (f, "// generated by ZEQ2-Lite, do not modify\n");
+	FS_Printf (f, "// Generated by the engine. Edit at your own risk!\n");
 	Key_WriteBindings (f);
 	Cvar_WriteVariables (f);
 	FS_FCloseFile( f );
@@ -2822,6 +2827,13 @@ void Com_WriteConfig_f( void ) {
 
 	Q_strncpyz( filename, Cmd_Argv(1), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".cfg" );
+
+	if (!COM_CompareExtension(filename, ".cfg"))
+	{
+		Com_Printf("Com_WriteConfig_f: Only the \".cfg\" extension is supported by this command!\n");
+		return;
+	}
+
 	Com_Printf( "Writing %s.\n", filename );
 	Com_WriteConfigToFile( filename );
 }
@@ -2985,6 +2997,8 @@ void Com_Frame( void ) {
 			NET_Sleep(timeVal - 1);
 	} while(Com_TimeVal(minMsec));
 	
+	IN_Frame();
+
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();
 	
@@ -3314,8 +3328,8 @@ void Field_CompleteCommand( char *cmd,
 		completionString = Cmd_Argv( completionArgument - 1 );
 
 #ifndef DEDICATED
-	// Unconditionally add a '\' to the start of the buffer
-	if( completionField->buffer[ 0 ] &&
+	// add a '\' to the start of the buffer if it might be sent as chat otherwise
+	if( con_autochat->integer && completionField->buffer[ 0 ] &&
 			completionField->buffer[ 0 ] != '\\' )
 	{
 		if( completionField->buffer[ 0 ] != '/' )

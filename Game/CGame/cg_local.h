@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 #include "../../Shared/q_shared.h" 
-#include "../../Engine/renderer/tr_types.h"
+#include "../../Engine/renderercommon/tr_types.h"
 #include "../Game/bg_public.h"
 // ADDING FOR ZEQ2
 #include "../Game/bg_userweapons.h"
@@ -119,10 +119,10 @@ typedef struct{
 } lerpFrame_t;
 
 typedef struct{
-	lerpFrame_t		legs, torso, head, camera, flag;
+	lerpFrame_t		modelLerpFrames[4]; //0 = Legs, 1 = Torse, 2 = Head, 3 = Camera
 	// needed to obtain tag positions after player entity has been processed.
 	// For linking beam attacks, particle systems, etc.
-	refEntity_t		legsRef, torsoRef, headRef, cameraRef;
+	refEntity_t		modelEntities[4]; //0 = Legs, 1 = Torso, 2 = Head, 3 = Camera
 } playerEntity_t;
 
 //=================================================
@@ -639,7 +639,6 @@ typedef struct{
 					tracerShader,
 					crosshairShader[NUM_CROSSHAIRS],
 					backTileShader,
-					globalCelLighting,
 					waterSplashSkin,
 					waterSplashModel,
 					waterRippleSkin,
@@ -1018,6 +1017,7 @@ void			CG_TileClear(void),
 extern int		sortedTeamPlayers[TEAM_MAXOVERLAY],
 				numSortedTeamPlayers;
 void			CG_DrawChat(char *text),
+				CG_DrawScreenEffects(void),
 				CG_CenterPrint(const char *str, int y, int charWidth),
 				CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headAngles),
 				CG_DrawActive(stereoFrame_t stereoView),
@@ -1051,12 +1051,10 @@ void			CG_Player(centity_t *cent),
 				CG_NewClientInfo(int clientNum),
 				CG_SpawnLightSpeedGhost(centity_t *cent);
 sfxHandle_t		CG_CustomSound(int clientNum, const char *soundName);
-qboolean		CG_ParseAnimationFile(const char *filename, clientInfo_t *ci, qboolean isCamera),
-				CG_GetTagOrientationFromPlayerEntity(centity_t *cent, char *tagName, orientation_t *tagOrient),
-				CG_GetTagOrientationFromPlayerEntityCameraModel(centity_t *cent, char *tagName, orientation_t *tagOrient),
-				CG_GetTagOrientationFromPlayerEntityHeadModel(centity_t *cent, char *tagName, orientation_t *tagOrient),
-				CG_GetTagOrientationFromPlayerEntityTorsoModel(centity_t *cent, char *tagName, orientation_t *tagOrient),
-				CG_GetTagOrientationFromPlayerEntityLegsModel(centity_t *cent, char *tagName, orientation_t *tagOrient);
+qboolean		CG_ParseAnimationFile(const char *filename, clientInfo_t *ci, qboolean isCamera);
+clientInfo_t*	CG_GetClientInfo(centity_t* clientEntity);
+qboolean		CG_TryLerpPlayerTag(centity_t* clientEntity,char *tagName,orientation_t* out);
+
 //
 // cg_predict.c
 //
@@ -1338,30 +1336,29 @@ extern qboolean	initparticles;
 //
 // cg_auras.c
 //
-void			CG_AuraStart(centity_t *player),
-				CG_AuraEnd(centity_t *player),
-				CG_RegisterClientAura(int clientNum,clientInfo_t *ci),
-				CG_AddAuraToScene(centity_t *player),
-				CG_CopyClientAura(int from, int to),
+void				CG_AuraStart(centity_t *player);
+void				CG_AuraEnd(centity_t *player);
+void				CG_RegisterClientAura(int clientNum,clientInfo_t *ci);
+void				CG_AddAuraToScene(centity_t *player);
 //
 // cg_beamtables.c
 //
-				CG_InitBeamTables(void),
-				CG_AddBeamTables(void),
-				CG_BeamTableUpdate(centity_t *cent, float width, qhandle_t shader, char *tagName),
+void				CG_InitBeamTables(void);
+void				CG_AddBeamTables(void);
+void				CG_BeamTableUpdate(centity_t *cent, float width, qhandle_t shader, char *tagName);
 //
 // cg_trails.c
 //
-				CG_InitTrails(void),
-				CG_ResetTrail(int entityNum, vec3_t origin, float baseSpeed, float width, qhandle_t shader, vec3_t color),
-				CG_UpdateTrailHead(int entityNum, vec3_t origin),
-				CG_AddTrailsToScene(void),
+void				CG_InitTrails(void);
+void				CG_ResetTrail(int entityNum, vec3_t origin, float baseSpeed, float width, qhandle_t shader, vec3_t color);
+void				CG_UpdateTrailHead(int entityNum, vec3_t origin);
+void				CG_AddTrailsToScene(void);
 //
 // cg_radar.c
 //
-				CG_InitRadarBlips(void),
-				CG_DrawRadar(void),
-				CG_UpdateRadarBlips(char *cmd);
+void				CG_InitRadarBlips(void);
+void				CG_DrawRadar(void);
+void				CG_UpdateRadarBlips(char *cmd);
 //
 // cg_weapGfxParser.c
 //

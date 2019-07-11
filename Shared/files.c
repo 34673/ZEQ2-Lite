@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 /*****************************************************************************
  * name:		files.c
  *
- * desc:		handle based filesystem for ZEQ2-Lite
+ * desc:		handle based filesystem
  *
  *****************************************************************************/
 
@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 FILESYSTEM
 
-All of ZEQ2-Lite's data access is through a hierarchical file system, but the contents of 
+All data access is through a hierarchical file system, but the contents of 
 the file system can be transparently merged from several sources.
 
 A "qpath" is a reference to file data.  MAX_ZPATH is 256 characters, which must include
@@ -44,20 +44,20 @@ a terminating zero. "..", "\\", and ":" are explicitly illegal in qpaths to prev
 references outside the directory system.
 
 The "base path" is the path to the directory holding all the build directories and usually
-the executable.  It defaults to ".", but can be overridden with a "+set fs_basePath c:\ZEQ2-Lite"
+the executable.  It defaults to ".", but can be overridden with a "+set fs_basePath c:\myProduct"
 command line to allow code debugging in a different directory.  Basepath cannot
 be modified at all after startup.  Any files that are created (demos, screenshots,
 etc) will be created relative to the base path, so base path should usually be writable.
 
 The "home path" is the path used for all write access. On win32 systems we have "base path"
-== "home path", but on Unix systems the base installation is usually read-only, and
-"home path" points to ~/.ZEQ2-Lite or similar
+== "home path", but on *nix systems the base installation is usually read-only, and
+"home path" points to ~/.myProduct or similar
 
 The user can also install custom mods and content in "home path", so it should be searched
 along with "home path" for build content.
 
 
-The "base directory" is the directory under the paths where data comes from by default, it holds the name of "ZEQ2-Lite".
+The "base directory" is the directory under the paths where data comes from by default, it holds the name set in the BASEDIR macro in q_shared.h.
 
 The "current directory" may be the same as the base directory, or it may be the name of another
 directory under the paths that should be searched for files before looking in the base directory.
@@ -66,7 +66,7 @@ This is the basis for addons.
 Clients automatically set the build directory after receiving a status from a server,
 so only servers need to worry about +set fs_dir.
 
-No other directories outside of the base and current will ever be referenced by
+No other directories outside of the base and current directories will ever be referenced by
 filesystem functions.
 
 To save disk space and speed loading, directory trees can be collapsed into zip files.
@@ -82,10 +82,10 @@ calls to FS_AddDirectory
 Additionaly, we search in several subdirectories:
 current directory is the current mode
 base directory is a variable to allow mods based on other mods
-(such as ZEQ2-Lite + Saiyan Saga content combination in a mod for instance)
-BASEDIR is the hardcoded base directory ("Base")
+(such as myProduct + myMod content combination in a mod for instance)
+BASEDIR is the hardcoded base directory
 
-e.g. the qpath "sound/newstuff/test.ogg" would be searched for in the following places:
+e.g. the qpath "sound/newstuff/test.opus" would be searched for in the following places:
 
 home path + current directory's zip files
 home path + current directory's directory
@@ -102,7 +102,7 @@ home path + BASEDIR's directory
 base path + BASEDIR's zip file
 base path + BASEDIR's directory
 
-server download, to be written to home path + current dir's directory
+server download, to be written to home path + current directory
 
 
 The filesystem can be safely shutdown and reinitialized with different
@@ -116,7 +116,7 @@ so any models that are going to be referenced by both subsystems should alternat
 between the CM_ load function and the ref load function.
 
 TODO: A qpath that starts with a leading slash will always refer to the base directory, even if another
-directory is currently active.  This allows character models, skins, and sounds to be downloaded
+is currently active.  This allows character models, skins, and sounds to be downloaded
 to a common directory no matter which directory is active.
 
 How to prevent downloading zip files?
@@ -127,7 +127,7 @@ Aborting a download disconnects the client from the server.
 How to mark files as downloadable?  Commercial add-ons won't be downloadable.
 
 Non-commercial downloads will want to download the entire zip file.
-the application would have to be reset to actually read the zip in
+the directory would have to be reset to actually read the zip in
 
 Auto-update information
 
@@ -135,15 +135,18 @@ Path separators
 
 Casing
 
-  separate server and client dirs, so if the user starts
-  a local host after having connected to an online server, it won't stick
-  with the network dir.
+  separate server and client directories, so if the user starts
+  a local server after having connected to an online one, it won't stick
+  with the network directory.
 
   allow menu options for mod selection?
 
 Read / write config to floppy option.
 
 Different version coexistance?
+
+When building a pak file, make sure a config.cfg isn't present in it,
+or configs will never get loaded from disk!
 
   todo:
 
@@ -166,10 +169,10 @@ typedef struct fileInPack_s {
 } fileInPack_t;
 
 typedef struct {
-    char			pakPathName[MAX_OSPATH];	// c:\<build>\ZEQ2-Lite
-	char			pakFileName[MAX_OSPATH];	// c:\<build>\ZEQ2-Lite\pak0.pk3
+    char			pakPathName[MAX_OSPATH];	// c:\<build>\<directory>
+	char			pakFileName[MAX_OSPATH];	// c:\<build>\<directory>\pak0.pk3
 	char			pakBaseName[MAX_OSPATH];	// <name>
-	char			pakDirName[MAX_OSPATH];		// ZEQ2-Lite
+	char			pakDirName[MAX_OSPATH];		// <directory>
 	unzFile			handle;						// handle to zip file
 	int				checksum;					// regular checksum
 	int				pure_checksum;				// checksum for pure
@@ -182,8 +185,8 @@ typedef struct {
 
 typedef struct {
 	char		path[MAX_OSPATH];			// c:\<build>
-	char		fullPath[MAX_OSPATH];		// c:\<build>\ZEQ2-Lite
-	char		dir[MAX_OSPATH];			// ZEQ2-Lite
+	char		fullPath[MAX_OSPATH];		// c:\<build>\<directory>
+	char		dir[MAX_OSPATH];			// <directory>
 } directory_t;
 
 typedef struct searchPath_s {
@@ -230,7 +233,6 @@ typedef struct {
 	int			zipFilePos;
 	int			zipFileLen;
 	qboolean	zipFile;
-	qboolean	streamed;
 	char		name[MAX_ZPATH];
 } fileHandleData_t;
 
@@ -253,6 +255,8 @@ static char		*fs_serverReferencedPakNames[MAX_SEARCH_PATHS];		// pk3 names
 
 // last valid directory used
 char lastValidBase[MAX_OSPATH];
+char lastValidComBaseDir[MAX_OSPATH];
+char lastValidFsBaseDir[MAX_OSPATH];
 char lastValidDir[MAX_OSPATH];
 
 #ifdef FS_MISSING
@@ -514,7 +518,7 @@ static void FS_CheckFilenameIsMutable( const char *filename,
 		const char *function )
 {
 	// Check if the filename ends with the library, QVM, or pk3 extension
-	if( COM_CompareExtension( filename, DLL_EXT )
+	if( Sys_DllExtension( filename )
 		|| COM_CompareExtension( filename, ".qvm" )
 		|| COM_CompareExtension( filename, ".pk3" ) )
 	{
@@ -574,9 +578,9 @@ qboolean FS_FileInPathExists(const char *testpath)
 ================
 FS_FileExists
 
-Tests if the file exists in the current dir, this DOES NOT
+Tests if the file exists in the current directory, this DOES NOT
 search the paths.  This is to determine if opening a file to write
-(which always goes into the current dir) will cause any overwrites.
+(which always goes into the current directory) will cause any overwrites.
 NOTE TTimo: this goes with FS_FOpenFileWrite for opening the file afterwards
 ================
 */
@@ -1189,7 +1193,7 @@ long FS_FOpenFileReadDir(const char *filename, searchPath_t *search, fileHandle_
 					}
 
 					if(strstr(filename, "game.qvm"))
-						pak->referenced |= fs_dir_REF;
+						pak->referenced |= fs_GAME_REF;
 					if(strstr(filename, "cgame.qvm"))
 						pak->referenced |= FS_CGAME_REF;
 					if(strstr(filename, "ui.qvm"))
@@ -1297,12 +1301,18 @@ long FS_FOpenFileRead(const char *filename, fileHandle_t *file, qboolean uniqueF
 {
 	searchPath_t *search;
 	long len;
+	qboolean isLocalConfig;
 
 	if(!fs_searchPaths)
 		Com_Error(ERR_FATAL, "Filesystem call made without initialization");
 
+	isLocalConfig = !strcmp(filename, "autoexec.cfg") || !strcmp(filename, CONFIG_CFG);
 	for(search = fs_searchPaths; search; search = search->next)
 	{
+		// autoexec.cfg and config.cfg can only be loaded outside of pk3 files.
+		if (isLocalConfig && search->pack)
+			continue;
+
 		len = FS_FOpenFileReadDir(filename, search, file, uniqueFILE, qfalse);
 
 		if(file == NULL)
@@ -1406,7 +1416,7 @@ int FS_FindVM(void **startSearch, char *found, int foundlen, const char *name, i
 
 			if(lastSearch && lastSearch->pack)
 			{
-				// make sure we only try loading one VM file per dir
+				// make sure we only try loading one VM file per directory
 				// i.e. if VM from pak7.pk3 fails we won't try one from pak6.pk3
 
 				if(!FS_FilenameCompare(lastSearch->pack->pakPathName, pack->pakPathName))
@@ -1437,25 +1447,6 @@ FS_Read
 Properly handles partial reads
 =================
 */
-int FS_Read2( void *buffer, int len, fileHandle_t f ) {
-	if ( !fs_searchPaths ) {
-		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
-	}
-
-	if ( !f ) {
-		return 0;
-	}
-	if (fsh[f].streamed) {
-		int r;
-		fsh[f].streamed = qfalse;
-		r = FS_Read( buffer, len, f );
-		fsh[f].streamed = qtrue;
-		return r;
-	} else {
-		return FS_Read( buffer, len, f);
-	}
-}
-
 int FS_Read( void *buffer, int len, fileHandle_t f ) {
 	int		block, remaining;
 	int		read;
@@ -1580,14 +1571,6 @@ int FS_Seek( fileHandle_t f, long offset, int origin ) {
 	if ( !fs_searchPaths ) {
 		Com_Error( ERR_FATAL, "Filesystem call made without initialization" );
 		return -1;
-	}
-
-	if (fsh[f].streamed) {
-		int r;
-		fsh[f].streamed = qfalse;
-		r = FS_Seek( f, offset, origin );
-		fsh[f].streamed = qtrue;
-		return r;
 	}
 
 	if (fsh[f].zipFile == qtrue) {
@@ -2143,7 +2126,7 @@ static int FS_AddFileToList( char *name, char *list[MAX_FOUND_FILES], int nfiles
 	}
 	for ( i = 0 ; i < nfiles ; i++ ) {
 		if ( !Q_stricmp( name, list[i] ) ) {
-			return nfiles;		// allready in list
+			return nfiles;		// already in list
 		}
 	}
 	list[nfiles] = CopyString( name );
@@ -2419,112 +2402,124 @@ static char** Sys_ConcatenateFileLists( char **list0, char **list1 )
 
 /*
 ================
+FS_GetModDescription
+================
+*/
+void FS_GetModDescription( const char *modDir, char *description, int descriptionLen ) {
+	fileHandle_t	descHandle;
+	char			descPath[MAX_QPATH];
+	int				nDescLen;
+	FILE			*file;
+
+	Com_sprintf( descPath, sizeof ( descPath ), "%s/description.txt", modDir );
+	nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
+
+	if ( nDescLen > 0 && descHandle ) {
+		file = FS_FileForHandle(descHandle);
+		Com_Memset( description, 0, descriptionLen );
+		nDescLen = fread(description, 1, descriptionLen, file);
+		if (nDescLen >= 0) {
+			description[nDescLen] = '\0';
+		}
+		FS_FCloseFile(descHandle);
+	} else {
+		Q_strncpyz( description, modDir, descriptionLen );
+	}
+}
+
+/*
+================
 FS_GetModList
 
 Returns a list of mod directory names
-A mod directory is a peer to baseq3 with a pk3 in it
-The directories are searched in base path, cd path and home path
+A mod directory is a peer to <BASEDIR> with a pk3 or pk3dir in it
 ================
 */
 int	FS_GetModList( char *listbuf, int bufsize ) {
-	int		nMods, i, j, nTotal, nLen, nPaks, nPotential, nDescLen;
+	int nMods, i, j, k, nTotal, nLen, nPaks, nDirs, nPakDirs, nPotential, nDescLen;
 	char **pFiles = NULL;
 	char **pPaks = NULL;
+	char **pDirs = NULL;
 	char *name, *path;
-	char descPath[MAX_OSPATH];
-	fileHandle_t descHandle;
+	char description[MAX_OSPATH];
 
 	int dummy;
 	char **pFiles0 = NULL;
-	char **pFiles1 = NULL;
-	char **pFiles2 = NULL;
-	char **pFiles3 = NULL;
 	qboolean bDrop = qfalse;
+
+	// paths to search for mods
+	const char * const paths[] = { fs_basePath->string, fs_homePath->string };
 
 	*listbuf = 0;
 	nMods = nTotal = 0;
 
-	pFiles0 = Sys_ListFiles( fs_homePath->string, NULL, NULL, &dummy, qtrue );
-	pFiles1 = Sys_ListFiles( fs_basePath->string, NULL, NULL, &dummy, qtrue );
-	// we searched for mods in the three paths
-	// it is likely that we have duplicate names now, which we will cleanup below
-	pFiles3 = Sys_ConcatenateFileLists( pFiles0, pFiles1 );
-	pFiles = Sys_ConcatenateFileLists( pFiles2, pFiles3 );
+	// iterate through paths and get list of potential mods
+	for (i = 0; i < ARRAY_LEN(paths); i++) {
+		pFiles0 = Sys_ListFiles(paths[i], NULL, NULL, &dummy, qtrue);
+		// Sys_ConcatenateFileLists frees the lists so Sys_FreeFileList isn't required
+		pFiles = Sys_ConcatenateFileLists(pFiles, pFiles0);
+	}
 
 	nPotential = Sys_CountFileList(pFiles);
 
-	for ( i = 0 ; i < nPotential ; i++ ) {
+	for (i = 0; i < nPotential; i++) {
 		name = pFiles[i];
 		// NOTE: cleaner would involve more changes
 		// ignore duplicate mod directories
-		if (i!=0) {
+		if (i != 0) {
 			bDrop = qfalse;
-			for(j=0; j<i; j++)
-			{
-				if (Q_stricmp(pFiles[j],name)==0) {
+			for (j = 0; j < i; j++) {
+				if (Q_stricmp(pFiles[j], name) == 0) {
 					// this one can be dropped
 					bDrop = qtrue;
 					break;
 				}
 			}
 		}
-		if (bDrop) {
+		// we also drop "<BASEDIR>" "." and ".."
+		if (bDrop || Q_stricmp(name, com_baseDir->string) == 0 || Q_stricmpn(name, ".", 1) == 0) {
 			continue;
 		}
-		// we drop "ZEQ2-Lite" "." and ".."
-		if (Q_stricmp(name, com_baseDir->string) && Q_stricmpn(name, ".", 1)) {
-			// now we need to find some .pk3 files to validate the mod
-			// NOTE TTimo: (actually I'm not sure why .. what if it's a mod under developement with no .pk3?)
-			// we didn't keep the information when we merged the directory names, as to what OS Path it was found under
-			//   so it could be in base path, cd path or home path
-			//   we will try each three of them here (yes, it's a bit messy)
-			path = FS_BuildOSPath( fs_basePath->string, name, "" );
-			nPaks = 0;
-			pPaks = Sys_ListFiles(path, ".pk3", NULL, &nPaks, qfalse); 
-			Sys_FreeFileList( pPaks ); // we only use Sys_ListFiles to check wether .pk3 files are present
 
-			/* try on home path */
-			if ( nPaks <= 0 )
-			{
-				path = FS_BuildOSPath( fs_homePath->string, name, "" );
-				nPaks = 0;
-				pPaks = Sys_ListFiles( path, ".pk3", NULL, &nPaks, qfalse );
-				Sys_FreeFileList( pPaks );
+		// in order to be a valid mod the directory must contain at least one .pk3 or .pk3dir
+		// we didn't keep the information when we merged the directory names, as to what OS Path it was found under
+		// so we will try each of them here
+		for (j = 0; j < ARRAY_LEN(paths); j++) {
+			path = FS_BuildOSPath(paths[j], name, "");
+			nPaks = nDirs = nPakDirs = 0;
+			pPaks = Sys_ListFiles(path, ".pk3", NULL, &nPaks, qfalse);
+			pDirs = Sys_ListFiles(path, "/", NULL, &nDirs, qfalse);
+			for (k = 0; k < nDirs; k++) {
+				// we only want to count directories ending with ".pk3dir"
+				if (FS_IsExt(pDirs[k], ".pk3dir", strlen(pDirs[k]))) {
+					nPakDirs++;
+				}
 			}
+			// we only use Sys_ListFiles to check whether files are present
+			Sys_FreeFileList(pPaks);
+			Sys_FreeFileList(pDirs);
 
-			if (nPaks > 0) {
-				nLen = strlen(name) + 1;
-				// nLen is the length of the mod path
-				// we need to see if there is a description available
-				descPath[0] = '\0';
-				strcpy(descPath, name);
-				strcat(descPath, "/description.txt");
-				nDescLen = FS_SV_FOpenFileRead( descPath, &descHandle );
-				if ( nDescLen > 0 && descHandle) {
-					FILE *file;
-					file = FS_FileForHandle(descHandle);
-					Com_Memset( descPath, 0, sizeof( descPath ) );
-					nDescLen = fread(descPath, 1, 48, file);
-					if (nDescLen >= 0) {
-						descPath[nDescLen] = '\0';
-					}
-					FS_FCloseFile(descHandle);
-				} else {
-					strcpy(descPath, name);
-				}
-				nDescLen = strlen(descPath) + 1;
+			if (nPaks > 0 || nPakDirs > 0) {
+				break;
+			}
+		}
 
-				if (nTotal + nLen + 1 + nDescLen + 1 < bufsize) {
-					strcpy(listbuf, name);
-					listbuf += nLen;
-					strcpy(listbuf, descPath);
-					listbuf += nDescLen;
-					nTotal += nLen + nDescLen;
-					nMods++;
-				}
-				else {
-					break;
-				}
+		if (nPaks > 0 || nPakDirs > 0) {
+			nLen = strlen(name) + 1;
+			// nLen is the length of the mod path
+			// we need to see if there is a description available
+			FS_GetModDescription(name, description, sizeof(description));
+			nDescLen = strlen(description) + 1;
+
+			if (nTotal + nLen + 1 + nDescLen + 1 < bufsize) {
+				strcpy(listbuf, name);
+				listbuf += nLen;
+				strcpy(listbuf, description);
+				listbuf += nDescLen;
+				nTotal += nLen + nDescLen;
+				nMods++;
+			} else {
+				break;
 			}
 		}
 	}
@@ -2927,7 +2922,7 @@ void FS_AddDirectory( const char *path, const char *dir ) {
 			search->dir = Z_Malloc(sizeof(*search->dir));
 
 			Q_strncpyz(search->dir->path, curpath, sizeof(search->dir->path));	// c:\quake3\baseq3
-			Q_strncpyz(search->dir->fullPath, pakfile, sizeof(search->dir->fullPath));	// c:\quake3\baseq3\mypak.pk3dir
+			Q_strncpyz(search->dir->fullPath, pakfile, sizeof(search->dir->fullPath));	// c:\<build>\<directory>\myPack.pk3dir
 			Q_strncpyz(search->dir->dir, pakdirs[pakdirsi], sizeof(search->dir->dir)); // mypak.pk3dir
 
 			search->next = fs_searchPaths;
@@ -2980,7 +2975,7 @@ FS_ComparePaks
 dlstring == qtrue
 
 Returns a list of pak files that we should download from the server. They all get stored
-in the current dir and an FS_Restart will be fired up after we download them all.
+in the current directory and an FS_Restart will be fired up after we download them all.
 
 The string is the format:
 
@@ -3205,7 +3200,7 @@ static void FS_Startup( const char *dirName )
 	}
 	// fs_homePath is somewhat particular to *nix systems, only add if relevant
 
-#ifdef MACOS_X
+#ifdef __APPLE__
 	fs_appPath = Cvar_Get ("fs_appPath", Sys_DefaultAppPath(), CVAR_INIT|CVAR_PROTECTED );
 	// Make MacOSX also include the base path included with the .app bundle
 	if (fs_appPath->string[0])
@@ -3616,6 +3611,8 @@ void FS_InitFilesystem( void ) {
 	}
 
 	Q_strncpyz(lastValidBase, fs_basePath->string, sizeof(lastValidBase));
+	Q_strncpyz(lastValidComBaseDir, com_baseDir->string, sizeof(lastValidComBaseDir));
+	Q_strncpyz(lastValidFsBaseDir, fs_baseDir->string, sizeof(lastValidFsBaseDir));
 	Q_strncpyz(lastValidDir, fs_dirVar->string, sizeof(lastValidDir));
 }
 
@@ -3626,6 +3623,7 @@ FS_Restart
 ================
 */
 void FS_Restart( int checksumFeed ) {
+	const char *lastDir;
 
 	// free anything we currently have loaded
 	FS_Shutdown(qfalse);
@@ -3648,8 +3646,12 @@ void FS_Restart( int checksumFeed ) {
 		if (lastValidBase[0]) {
 			FS_PureServerSetLoadedPaks("", "");
 			Cvar_Set("fs_basePath", lastValidBase);
-			Cvar_Set("fs_dir", lastValidDir);
+			Cvar_Set("com_baseDir", lastValidComBaseDir);
+			Cvar_Set("fs_baseDir", lastValidFsBaseDir);
+			Cvar_Set("fs_Dir", lastValidDir);
 			lastValidBase[0] = '\0';
+			lastValidComBaseDir[0] = '\0';
+			lastValidFsBaseDir[0] = '\0';
 			lastValidDir[0] = '\0';
 			FS_Restart(checksumFeed);
 			Com_Error( ERR_DROP, "Invalid FileSystem directory" );
@@ -3658,7 +3660,12 @@ void FS_Restart( int checksumFeed ) {
 		Com_Error( ERR_FATAL, "Couldn't load default.cfg" );
 	}
 
-	if ( Q_stricmp(fs_dirVar->string, lastValidDir) ) {
+	lastDir = ( lastValidDir[0] ) ? lastValidDir : lastValidComBaseDir;
+
+	if ( Q_stricmp(FS_GetCurrentDir(), lastDir) ) {
+		Sys_RemovePIDFile( lastDir );
+		Sys_InitPIDFile( FS_GetCurrentDir() );
+
 		// skip the config.cfg if "safe" is on the command line
 		if ( !Com_SafeMode() ) {
 			Cbuf_AddText ("exec " CONFIG_CFG "\n");
@@ -3666,6 +3673,8 @@ void FS_Restart( int checksumFeed ) {
 	}
 
 	Q_strncpyz(lastValidBase, fs_basePath->string, sizeof(lastValidBase));
+	Q_strncpyz(lastValidComBaseDir, com_baseDir->string, sizeof(lastValidComBaseDir));
+	Q_strncpyz(lastValidFsBaseDir, fs_baseDir->string, sizeof(lastValidFsBaseDir));
 	Q_strncpyz(lastValidDir, fs_dirVar->string, sizeof(lastValidDir));
 
 }
@@ -3686,7 +3695,7 @@ qboolean FS_ConditionalRestart(int checksumFeed, qboolean disconnect)
 				(*lastValidDir || FS_FilenameCompare(fs_dirVar->string, com_baseDir->string)) &&
 				(*fs_dirVar->string || FS_FilenameCompare(lastValidDir, com_baseDir->string)))
 		{
-			Com_AppRestart(checksumFeed, disconnect);
+			Com_DirRestart(checksumFeed, disconnect);
 			return qtrue;
 		}
 		else
@@ -3746,11 +3755,6 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 
 	if ( *f ) {
 		fsh[*f].fileSize = r;
-		fsh[*f].streamed = qfalse;
-
-		if (mode == FS_READ) {
-			fsh[*f].streamed = qtrue;
-		}
 	}
 	fsh[*f].handleSync = sync;
 

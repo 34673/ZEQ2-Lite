@@ -369,6 +369,7 @@ LAN_CompareServers
 static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int s2 ) {
 	int res;
 	serverInfo_t *server1, *server2;
+	int clients1, clients2;
 
 	server1 = LAN_GetServerPtr(source, s1);
 	server2 = LAN_GetServerPtr(source, s2);
@@ -386,10 +387,19 @@ static int LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int
 			res = Q_stricmp( server1->mapName, server2->mapName );
 			break;
 		case SORT_CLIENTS:
-			if (server1->clients < server2->clients) {
+			// sub sort by max clients
+			if ( server1->clients == server2->clients ) {
+				clients1 = server1->maxClients;
+				clients2 = server2->maxClients;
+			} else {
+				clients1 = server1->clients;
+				clients2 = server2->clients;
+			}
+
+			if (clients1 < clients2) {
 				res = -1;
 			}
-			else if (server1->clients > server2->clients) {
+			else if (clients1 > clients2) {
 				res = 1;
 			}
 			else {
@@ -731,7 +741,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return FS_FOpenFileByMode( VMA(1), VMA(2), args[3] );
 
 	case UI_FS_READ:
-		FS_Read2( VMA(1), args[2], args[3] );
+		FS_Read( VMA(1), args[2], args[3] );
 		return 0;
 
 	case UI_FS_WRITE:
@@ -1017,6 +1027,7 @@ CL_InitUI
 #define UI_OLD_API_VERSION	4
 
 void CL_InitUI( void ) {
+	int		v;
 	vmInterpret_t		interpret;
 
 	// load the dll or bytecode

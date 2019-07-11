@@ -1,1 +1,1 @@
-SimpleDirectmediaLayer V2.0.4 Stable
+SimpleDirectmediaLayer V2.0.6 Stable

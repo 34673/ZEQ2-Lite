@@ -59,7 +59,7 @@ void CG_DrawDiffGauge(float x, float y, float width, float height, vec4_t color,
 	int newWidth, newX, difference;
 	
 	difference = base -value;
-	if(difference > 0 && direction <= 0 || difference < 0 && direction >= 0) return;
+	if((difference > 0 && direction <= 0) || (difference < 0 && direction >= 0)) return;
 	percent = ((float)value / (float)maxValue);
 	newX = x + ((float)(width *percent));
 	newWidth = ((float)difference / (float)maxValue) *width;
@@ -245,7 +245,7 @@ void CG_DrawChat(char *text){
 	strcpy(cgs.messages[safeIndex],cleaned);
 }
 
-void CG_DrawScreenEffects(){
+void CG_DrawScreenEffects(void){
 	clientInfo_t	*ci;
 	tierConfig_cg	*tier;
 	playerState_t	*ps;
@@ -296,7 +296,7 @@ void CG_DrawHUD(playerState_t *ps, int clientNum, int x, int y, qboolean flipped
 		if(ps->powerLevel[plCurrent] *multiplier == 9001)
 			powerLevelString = "Over ^3NINE-THOUSAND!!!";	// WHAT NINE THOUSANDS?!
 		else
-			powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil", (float)powerLevelDisplay / 1000000.f) : va("%i",powerLevelDisplay);
+			powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil", (float)powerLevelDisplay / 1000000.f) : va("%li",powerLevelDisplay);
 	}
 	else{
 		if(ps->weaponstate == WEAPON_CHARGING){
@@ -310,7 +310,7 @@ void CG_DrawHUD(playerState_t *ps, int clientNum, int x, int y, qboolean flipped
 		skill = CG_FindUserWeaponGraphics(cg.snap->ps.clientNum,cg.weaponSelect);
 		chargeColor = chargePercent >= chargeReady ? &chargeReadyColor : &fatigueEmpty;
 		powerLevelDisplay = ps->attackPower;
-		powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil", (float)powerLevelDisplay / 1000000.f) : va("%i",powerLevelDisplay);
+		powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil", (float)powerLevelDisplay / 1000000.f) : va("%li",powerLevelDisplay);
 		CG_DrawHorGauge(x+60, y+43, 200, 16, *chargeColor, currentEmpty, chargePercent, 100, qfalse);
 		CG_DrawPic(qfalse, x, y+2, 288, 72, cgs.media.hudShader);
 		CG_DrawPic(qfalse, x+6, y+22, 50, 50, skill->weaponIcon);
@@ -598,7 +598,7 @@ static void CG_DrawCrosshair(void){
 		if(ps->bitFlags & isBreakingLimit && tier->crosshairPowering)
 			hShader = tier->crosshairPowering;
 	}
-	if(cg.crosshairClientNum > 0 && cg.crosshairClientNum <= MAX_CLIENTS || ps->lockedTarget > 0){
+	if((cg.crosshairClientNum > 0 && cg.crosshairClientNum <= MAX_CLIENTS) || ps->lockedTarget > 0){
 		if(cgs.clientinfo[cg.crosshairClientNum].team == cg.snap->ps.persistant[PERS_TEAM] &&
 			cgs.clientinfo[cg.crosshairClientNum].team != TEAM_FREE)
 			trap_R_SetColor(lockOnAllyColor);	// Not working?
@@ -745,7 +745,6 @@ void CG_DrawActive(stereoFrame_t stereoView){
 		return;
 	}
 	CG_TileClear();
-	CG_MotionBlur();
 	trap_R_RenderScene(&cg.refdef);
 	contents = CG_PointContents(cg.refdef.vieworg, -1);
 	if(contents & CONTENTS_WATER){

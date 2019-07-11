@@ -25,7 +25,6 @@ void CG_DrawLine(vec3_t start, vec3_t end, float width, qhandle_t shader, float 
 	vec3_t line, offset, viewLine;
 	polyVert_t verts[4];
 	float len;
-	int i = 0, j = 0;
 	VectorSubtract(end, start, line);
 	VectorSubtract(start, cg.refdef.vieworg, viewLine);
 	CrossProduct(viewLine, line, offset);
@@ -43,8 +42,10 @@ void CG_DrawLine(vec3_t start, vec3_t end, float width, qhandle_t shader, float 
 	VectorMA(start, -width, offset, verts[3].xyz);
 	verts[3].st[0] = 1;
 	verts[3].st[1] = 1;
-	for(;i<4;i++){
-		for(;j<4;j++){verts[i].modulate[j] = 255 * RGBModulate;}
+	for(int vertex;vertex<4;vertex++){
+		for(int channel;channel<4;channel++){
+			verts[vertex].modulate[channel] = 255 * RGBModulate;
+		}
 	}
 	trap_R_AddPolyToScene(shader, 4, verts);
 }
@@ -52,7 +53,6 @@ void CG_DrawLineRGBA(vec3_t start, vec3_t end, float width, qhandle_t shader, ve
 	vec3_t line, offset, viewLine;
 	polyVert_t verts[4];
 	float len;
-	int i = 0, j = 0;
 	VectorSubtract(end, start, line);
 	VectorSubtract(start, cg.refdef.vieworg, viewLine);
 	CrossProduct(viewLine, line, offset);
@@ -70,8 +70,8 @@ void CG_DrawLineRGBA(vec3_t start, vec3_t end, float width, qhandle_t shader, ve
 	VectorMA(start, -width, offset, verts[3].xyz);
 	verts[3].st[0] = 1;
 	verts[3].st[1] = 1;
-	for(;i<4;i++){
-		for(;j<4;j++){verts[i].modulate[j] = RGBA[j];}
+	for(int vertex;vertex<4;vertex++){
+		for(int channel;channel<4;channel++){verts[vertex].modulate[channel] = RGBA[channel];}
 	}
 	trap_R_AddPolyToScene(shader, 4, verts);
 }
@@ -155,10 +155,9 @@ Used for both the primary and the alternate fire of weapons.
 Used case depends on input.
 */
 static void CG_AddPlayerWeaponChargeVoices(centity_t *player, cg_userWeapon_t *weaponGraphics, float curChargeLvl, float prevChargeLvl){
-	int i = MAX_CHARGE_VOICES-1;
 	chargeVoice_t *voice;
-	for(;i>=0;i--){
-		voice = &weaponGraphics->chargeVoice[i];
+	for(int index=MAX_CHARGE_VOICES-1;index>=0;index--){
+		voice = &weaponGraphics->chargeVoice[index];
 		// no sound; no complex boolean eval
 		if(voice->voice){
 			if((voice->startPct > prevChargeLvl) && (voice->startPct < curChargeLvl) && (prevChargeLvl < curChargeLvl)){
@@ -179,8 +178,7 @@ static void CG_AddPlayerWeaponFlash(refEntity_t *parent, cg_userWeapon_t *weapon
 	if(flashPowerLevelCurrent >= (flashPowerLevelTotal*2)){flashPowerLevelCurrent = flashPowerLevelTotal*2;}
 	radiusScale = (float)flashPowerLevelCurrent / (float)flashPowerLevelTotal;
 	flashScale = weaponGraphics->flashSize * radiusScale;
-	if(radiusScale > 1.f){radiusScale = 1.f;}
-	else if(radiusScale < 0.f){radiusScale = 0.f;}
+	Com_Clamp(0.0f,1.0f,radiusScale);
 	// Add the charge model or sprite
 	VectorCopy(parent->lightingOrigin, flash->lightingOrigin);
 	flash->shadowPlane = parent->shadowPlane;
@@ -230,8 +228,7 @@ void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent,
 			weaponGraphics = CG_FindUserWeaponGraphics(ent->clientNum, ent->weapon);
 			newLerp = ent->charge1.chBase;
 			backLerp = cent->lerpPrim;
-			if(newLerp < backLerp){cent->lerpPrim = newLerp;}
-			else{cent->lerpPrim = (cent->lerpPrim + newLerp) / 2.f;}
+			cent->lerpPrim = newLerp < backLerp ? newLerp : (cent->lerpPrim + newLerp) / 2.0f;
 			lerp = cent->lerpPrim;
 			cent->lerpSec = 0;
 		}
@@ -239,15 +236,14 @@ void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent,
 			weaponGraphics = CG_FindUserWeaponGraphics(ent->clientNum, ent->weapon + ALTWEAPON_OFFSET);
 			newLerp = ent->charge2.chBase;
 			backLerp = cent->lerpSec;
-			if(newLerp < backLerp){cent->lerpSec = newLerp;}
-			else{cent->lerpSec = (cent->lerpSec + newLerp) / 2.f;}
+			cent->lerpSec = newLerp < backLerp ? newLerp : (cent->lerpSec + newLerp) / 2.0f;
 			lerp = cent->lerpSec;
 			cent->lerpPrim = 0;
 		}
 		// Only bother with anything else if the charge in question is larger than the minimum used for display
 		if(lerp > weaponGraphics->chargeStartPct){
 			// Locate a tag wherever on the model's parts. Don't process further if the tag is not found
-			if(CG_GetTagOrientationFromPlayerEntity(cent, weaponGraphics->chargeTag[0], &orient)){
+			if(CG_TryLerpPlayerTag(cent,weaponGraphics->chargeTag[0],&orient)){
 				memset(&refEnt, 0, sizeof(refEnt));
 				if(VectorLength(weaponGraphics->chargeSpin) != 0.f){
 					vec3_t	tempAngles, lerpAxis[3], tempAxis[3];
@@ -283,7 +279,7 @@ void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent,
 		if(weaponState == WEAPON_GUIDING || weaponState == WEAPON_FIRING){weaponGraphics = CG_FindUserWeaponGraphics(ent->clientNum, ent->weapon);}
 		else{weaponGraphics = CG_FindUserWeaponGraphics(ent->clientNum, ent->weapon + ALTWEAPON_OFFSET);}
 		// Locate a tag wherever on the model's parts. Don't process further if the tag is not found
-		if(CG_GetTagOrientationFromPlayerEntity( cent, weaponGraphics->chargeTag[0], &orient)){
+		if(CG_TryLerpPlayerTag(cent,weaponGraphics->chargeTag[0],&orient)){
 			memset(&refEnt, 0, sizeof(refEnt));
 			VectorCopy(orient.origin, refEnt.origin);
 			AxisCopy(orient.axis, refEnt.axis);

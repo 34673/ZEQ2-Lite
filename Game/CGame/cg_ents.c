@@ -249,8 +249,6 @@ CG_General
 static void CG_General(centity_t *cent){
 	refEntity_t			ent;
 	entityState_t		*s1;
-	int					num;
-
 	s1 = &cent->currentState;
 	// if set to invisible, skip
 	if(!s1->modelindex) return;
@@ -316,32 +314,30 @@ void CG_TrailFunc_StraightBeam(centity_t *ent){
 	entityState_t	*es;
 	centity_t		*owner_ent;
 	cg_userWeapon_t	*weaponGraphics;
-	float			radius, radiusScale;
+	float			radius;
+	float			radiusScale;
 	orientation_t	orient;
-	int				beamPowerLevelCurrent,
-					beamPowerLevelTotal;
-
+	int				beamPowerLevelCurrent;
+	int				beamPowerLevelTotal;
 	// Initialize some things for quick reference
 	es = &ent->currentState;
 	owner_ent = &cg_entities[es->clientNum];
 	weaponGraphics = CG_FindUserWeaponGraphics(es->clientNum, es->weapon);
-	if(!weaponGraphics->missileTrailShader) return;
+	if(!weaponGraphics->missileTrailShader){return;}
 	// The beam's power level was stored in this field. We hijacked it on the
 	// server to be able to transmit the beam's own power level.
 	beamPowerLevelTotal = es->dashDir[0];
 	beamPowerLevelCurrent = es->dashDir[1];
-	if(beamPowerLevelCurrent >= beamPowerLevelTotal *2)
-		beamPowerLevelCurrent = beamPowerLevelTotal *2;
-	// Obtain the scale the missile must have.
-	if(weaponGraphics->missileTrailRadius){
-		radiusScale = (float)beamPowerLevelCurrent / (float)beamPowerLevelTotal;
-		radius = weaponGraphics->missileTrailRadius *radiusScale;
+	if(beamPowerLevelCurrent >= beamPowerLevelTotal * 2){
+		beamPowerLevelCurrent = beamPowerLevelTotal * 2;
 	}
-	else radius = 10;
-	if(radiusScale > 1.f) radiusScale = 1.f;
-	else if(radiusScale < 0) radiusScale = 0;
-	if(CG_GetTagOrientationFromPlayerEntity(&cg_entities[es->clientNum], weaponGraphics->chargeTag[0], &orient))
-		CG_DrawLine(orient.origin, ent->lerpOrigin, radius, weaponGraphics->missileTrailShader, 1/*radiusScale*/);
+	radiusScale = (float)beamPowerLevelCurrent / (float)beamPowerLevelTotal;
+	Com_Clamp(0.0f,1.0f,radiusScale);
+	// Obtain the scale the missile must have.
+	radius = weaponGraphics->missileTrailRadius ? weaponGraphics->missileTrailRadius * radiusScale : 10;
+	if(CG_TryLerpPlayerTag(owner_ent,weaponGraphics->chargeTag[0],&orient)){
+		CG_DrawLine(orient.origin, ent->lerpOrigin, radius, weaponGraphics->missileTrailShader,radiusScale);
+	}
 }
 
 /*
@@ -352,30 +348,27 @@ CG_TrailFunc_BendyBeam
 void CG_TrailFunc_BendyBeam(centity_t *ent){
 	entityState_t	*es;
 	cg_userWeapon_t	*weaponGraphics;
-	float			radius, radiusScale;
-	//vec3_t		tangent;
-	int				beamPowerLevelCurrent,
-					beamPowerLevelTotal;	
-
+	float			radius;
+	float			radiusScale;
+	int				beamPowerLevelCurrent;
+	int				beamPowerLevelTotal;
 	// Set up shortcut references
 	es = &ent->currentState;
-	weaponGraphics = CG_FindUserWeaponGraphics(es->clientNum, es->weapon);	
+	weaponGraphics = CG_FindUserWeaponGraphics(es->clientNum, es->weapon);
 	// The beam's power level was stored in this field. We hijacked it on the
 	// server to be able to transmit the beam's own power level.
 	beamPowerLevelTotal = es->dashDir[0];
 	beamPowerLevelCurrent = es->dashDir[1];
-	if(beamPowerLevelCurrent >= (beamPowerLevelTotal *2))
-		beamPowerLevelCurrent = beamPowerLevelTotal *2;
-	// Obtain the scale the missile must have.
-	if(weaponGraphics->missileTrailRadius){
-		radiusScale = (float)beamPowerLevelCurrent / (float)beamPowerLevelTotal;
-		radius = weaponGraphics->missileTrailRadius *radiusScale;
+	if(beamPowerLevelCurrent >= (beamPowerLevelTotal * 2)){
+		beamPowerLevelCurrent = beamPowerLevelTotal * 2;
 	}
-	else radius = 10;
-	if(radiusScale > 1.f) radiusScale = 1.f;
-	else if(radiusScale < 0) radiusScale = 0;
-	if(weaponGraphics->missileTrailShader)
-		CG_BeamTableUpdate(ent, radius, weaponGraphics->missileTrailShader, weaponGraphics->chargeTag[0]);
+	radiusScale = (float)beamPowerLevelCurrent / (float)beamPowerLevelTotal;
+	Com_Clamp(0.0f,1.0f,radiusScale);
+	// Obtain the scale the missile must have.
+	radius = weaponGraphics->missileTrailRadius ? weaponGraphics->missileTrailRadius * radiusScale : 10;
+	if(weaponGraphics->missileTrailShader){
+		CG_BeamTableUpdate(ent,radius,weaponGraphics->missileTrailShader,weaponGraphics->chargeTag[0]);
+	}
 }
 
 /*
@@ -508,7 +501,7 @@ static void CG_Missile(centity_t *cent){
 	ps = &cg.predictedPlayerState;
 	s1 = &cent->currentState;
 	weaponGraphics = CG_FindUserWeaponGraphics(s1->clientNum, s1->weapon);
-/*
+
 	// Water bubble/splash setup
 	BG_EvaluateTrajectory(s1, &s1->pos, cg.time, origin);
 	contents = CG_PointContents(origin, -1);
@@ -529,7 +522,7 @@ static void CG_Missile(centity_t *cent){
 		splash = qfalse;
 	if(trace.fraction == 1.f) splash = qfalse;
 	cent->trailTime = cg.time;
-*/
+
 	// The missile's charge level was stored in this field. We hijacked it on the
 	// server to be able to transmit the missile's own charge level.
 	missileChargeLvl =			s1->powerups;

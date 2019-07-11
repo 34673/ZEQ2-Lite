@@ -796,45 +796,6 @@ static void UI_PlayerFloatSprite( playerInfo_t *pi, vec3_t origin, qhandle_t sha
 	trap_R_AddRefEntityToScene( &ent );
 }
 
-
-/*
-======================
-UI_MachinegunSpinAngle
-======================
-*/
-float	UI_MachinegunSpinAngle( playerInfo_t *pi ) {
-	int		delta;
-	float	angle;
-	float	speed;
-	int		torsoAnim;
-/*
-	delta = dp_realtime - pi->barrelTime;
-	if ( pi->barrelSpinning ) {
-		angle = pi->barrelAngle + delta * SPIN_SPEED;
-	} else {
-		if ( delta > COAST_TIME ) {
-			delta = COAST_TIME;
-		}
-
-		speed = 0.5 * ( SPIN_SPEED + (float)( COAST_TIME - delta ) / COAST_TIME );
-		angle = pi->barrelAngle + delta * speed;
-	}
-
-	torsoAnim = pi->torsoAnim  & ~ANIM_TOGGLEBIT;
-
-	if( torsoAnim == ANIM_ATTACK2 ) {
-		torsoAnim = ANIM_ATTACK;
-	}
-	if ( pi->barrelSpinning == !(torsoAnim == ANIM_ATTACK) ) {
-		pi->barrelTime = dp_realtime;
-		pi->barrelAngle = AngleMod( angle );
-		pi->barrelSpinning = !!(torsoAnim == ANIM_ATTACK);
-	}
-*/
-	return angle;
-}
-
-
 /*
 ===============
 UI_DrawPlayer

@@ -126,7 +126,7 @@ CG_WaterBubble
 Adds a water bubble localEntity.
 =====================
 */
-localEntity_t *CG_WaterBubble(const vec3_t p, const vec3_t vel, 
+localEntity_t* CG_WaterBubble(const vec3_t p, const vec3_t vel, 
 								float radius, float r, float g, float b, float a,
 								float duration, int startTime, int fadeInTime,
 								int leFlags, qhandle_t hShader){
@@ -135,7 +135,7 @@ localEntity_t *CG_WaterBubble(const vec3_t p, const vec3_t vel,
 	refEntity_t		*re;
 	int contents;
 
-	if(cgs.clientPaused) return le;
+	if(cgs.clientPaused){return NULL;}
 	le = CG_AllocLocalEntity();
 	le->leFlags = leFlags;
 	le->radius = radius;
@@ -446,13 +446,13 @@ void CG_BigLightningEffect(vec3_t org){
 	le->color[0] = le->color[1] = le->color[2] = le->color[3] = 1.f;
 	le->radius = 128;
 	le->light = 200;
-	le->lightColor[0] = le->lightColor[1] = le->lightColor[2] = le->lightColor[3] = 1.f;
+	le->lightColor[0] = le->lightColor[1] = le->lightColor[2] = 1.f;
 	re = &le->refEntity;
 	re->reType = RT_SPRITE;
 	re->radius = le->radius;
-	re->shaderRGBA[0] = le->color[0] *0xff;
-	re->shaderRGBA[1] = le->color[1] *0xff;
-	re->shaderRGBA[2] = le->color[2] *0xff;
+	re->shaderRGBA[0] = le->color[0] * 0xff;
+	re->shaderRGBA[1] = le->color[1] * 0xff;
+	re->shaderRGBA[2] = le->color[2] * 0xff;
 	re->shaderRGBA[3] = 0xff;
 	AxisClear(re->axis);
 	VectorCopy(org, re->origin);

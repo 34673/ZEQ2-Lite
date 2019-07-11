@@ -1,17 +1,13 @@
 // cg_music.c
-
 #include "cg_local.h"
-
 void CG_CheckMusic(void){
 	playerState_t	*ps = &cg.predictedPlayerState;
 	clientInfo_t	*ci = &cgs.clientinfo[ps->clientNum];
 	tierConfig_cg	*tier = &ci->tierConfig[ci->tierCurrent];
-
 	if(!cgs.music.started) CG_ParsePlaylist();
 	if(ps->bitFlags & isTransforming){
 		if(cgs.music.currentType != 7){
 			char var[8];
-			
 			cgs.music.currentType = 7;
 			if(tier->transformMusic[0]) CG_PlayTransformTrack();
 			else CG_NextTrack();
@@ -83,7 +79,7 @@ int CG_GetMilliseconds(char *time){
 	int amount = 0;
 	char current[8] = {0};
 	while(1){
-		if(index > Q_PrintStrlen(time)) break;
+		if(index > Q_PrintStrlen(time)){break;}
 		current[compareIndex] = time[index];
 		if(!strcmp(&current[index],":")){
 			amount += atoi(current) * 60000;
@@ -99,9 +95,8 @@ int CG_GetMilliseconds(char *time){
 
 void CG_ParsePlaylist(void){
 	fileHandle_t	playlist;
-	const char		*info;
-	char			*token,*parse,*name, first, last, fileContents[32000];
-	int 			fileLength, trackIndex = 0, typeIndex = -1;
+	char			*token,*parse, first, last, fileContents[32000];
+	int 			fileLength, trackIndex = 0, typeIndex = 0;
 	
 	cgs.music.currentIndex = -1;
 	cgs.music.fadeAmount = 0;
@@ -129,11 +124,11 @@ void CG_ParsePlaylist(void){
 				if(!token[0]) break;
 				cgs.music.fadeAmount = CG_GetMilliseconds(token);
 			}
-			else if(!strcmp(&last, "{")){
+			else if(last == '{'){
 				cgs.music.lastTrack[typeIndex] = -1;
 				++typeIndex;
 			}
-			else if(!strcmp(&first, "}")){
+			else if(first == '}'){
 				cgs.music.typeSize[typeIndex] = trackIndex;
 				trackIndex = 0;
 			}
@@ -157,7 +152,7 @@ void CG_FadeNext(void){
 }
 
 void CG_NextTrack(void){
-	int i, duration, nextIndex, typeSize;
+	int duration, nextIndex, typeSize;
 	char *path;
 
 	if(cgs.music.fading || cgs.music.playToEnd) return;

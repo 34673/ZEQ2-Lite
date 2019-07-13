@@ -213,8 +213,6 @@ CG_AddFadeNo
 */
 void CG_AddFadeNo(localEntity_t *le){
 	refEntity_t *re;
-	float		c;
-
 	re = &le->refEntity;
 	re->shaderRGBA[0] = le->color[0] *0xff;
 	re->shaderRGBA[1] = le->color[1] *0xff;
@@ -497,7 +495,7 @@ CG_AddZEQSplash
 */
 static void CG_AddZEQSplash( localEntity_t *le ) {
 	refEntity_t	*ent;
-	float		c, phase, RGBfade;
+	float		c, RGBfade;
 	vec3_t		tmpAxes[3];
 	
 	ent = &le->refEntity;
@@ -507,9 +505,6 @@ static void CG_AddZEQSplash( localEntity_t *le ) {
 	ent->shaderRGBA[3] = 0xff *RGBfade;
 	// grow time
 	c = (le->endTime -cg.time) *le->lifeRate / 1.1f;
-	// grow time
-	//phase = (float)(cg.time -le->startTime) / (le->endTime -le->startTime) *M_PI / 1.5f;
-	//c = sin(phase) + 1.f;
 	// preserve the full scale
 	VectorCopy(ent->axis[0], tmpAxes[0]);
 	VectorCopy(ent->axis[1], tmpAxes[1]);

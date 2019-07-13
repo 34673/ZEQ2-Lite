@@ -491,7 +491,7 @@ Syntax:
 qboolean CG_weapGfx_ParseDlight(cg_weapGfxParser_t *parser, cg_weapGfxCategoryIndex_t category, int field){
 	cg_weapGfxToken_t	*token;
 	cg_weapGfxScanner_t	*scanner;
-	vec3_t	RGB;
+	vec3_t	RGB = {1.0f,1.0f,1.0f};
 	scanner = &parser->scanner;
 	token = &parser->token;
 	if((category != CAT_CHARGE) && (category != CAT_EXPLOSION) && (category != CAT_MISSILE) && (category != CAT_FLASH)){

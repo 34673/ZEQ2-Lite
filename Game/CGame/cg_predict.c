@@ -107,8 +107,6 @@ void CG_Trace(trace_t *result, const vec3_t start, const vec3_t mins, const vec3
 
 //JUHOX
 void CG_SmoothTrace(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int skipNumber, int mask){
-	int physicsTime;
-	physicsTime = cg.physicsTime;
 	cg.physicsTime = cg.time;
 	CG_Trace(result, start, mins, maxs, end, skipNumber, mask);
 	cg.physicsTime = cg.time;

@@ -8,22 +8,22 @@
 #define MIN_BOUNCE_DELTA	 8
 
 // Linked list storage for the systems, particles, forces and constraints.
-static PSys_System_t		PSys_Systems[MAX_PARTICLESYSTEMS],
-							PSys_Systems_inuse,
-							*PSys_Systems_free;
-static PSys_Emitter_t		PSys_Emitters[MAX_EMITTERS],
-							PSys_Emitters_inuse,
-							*PSys_Emitters_free;
-static PSys_Particle_t		PSys_Particles[MAX_PARTICLES],
-							PSys_Particles_inuse,
-							*PSys_Particles_free;
-static PSys_Force_t			PSys_Forces[MAX_FORCES],
-							PSys_Forces_inuse,
-							*PSys_Forces_free;
-static PSys_Constraint_t	PSys_Constraints[MAX_CONSTRAINTS],
-							PSys_Constraints_inuse,
-							*PSys_Constraints_free;
-static float				PSys_LastTimeStep;
+PSys_System_t		PSys_Systems[MAX_PARTICLESYSTEMS];
+PSys_System_t		PSys_Systems_inuse;
+PSys_System_t		*PSys_Systems_free;
+PSys_Emitter_t		PSys_Emitters[MAX_EMITTERS];
+PSys_Emitter_t		PSys_Emitters_inuse;
+PSys_Emitter_t		*PSys_Emitters_free;
+PSys_Particle_t		PSys_Particles[MAX_PARTICLES];
+PSys_Particle_t		PSys_Particles_inuse;
+PSys_Particle_t		*PSys_Particles_free;
+PSys_Force_t		PSys_Forces[MAX_FORCES];
+PSys_Force_t		PSys_Forces_inuse;
+PSys_Force_t		*PSys_Forces_free;
+PSys_Constraint_t	PSys_Constraints[MAX_CONSTRAINTS];
+PSys_Constraint_t	PSys_Constraints_inuse;
+PSys_Constraint_t	*PSys_Constraints_free;
+float				PSys_LastTimeStep;
 /*
 -------------------------------
 
@@ -31,7 +31,7 @@ static float				PSys_LastTimeStep;
 
 -------------------------------
 */
-static void PSys_InitSystems(void){
+void PSys_InitSystems(void){
 	int	i;
 
 	memset(PSys_Systems, 0, sizeof(PSys_Systems));
@@ -43,7 +43,7 @@ static void PSys_InitSystems(void){
 		PSys_Systems[i].next = &PSys_Systems[i+1];
 }
 
-static void PSys_InitParticles(void){
+void PSys_InitParticles(void){
 	int	i;
 
 	memset(PSys_Particles, 0, sizeof(PSys_Particles));
@@ -55,7 +55,7 @@ static void PSys_InitParticles(void){
 		PSys_Particles[i].next = &PSys_Particles[i+1];
 }
 
-static void PSys_InitEmitters(void){
+void PSys_InitEmitters(void){
 	int	i;
 
 	memset(PSys_Emitters, 0, sizeof(PSys_Emitters));
@@ -67,7 +67,7 @@ static void PSys_InitEmitters(void){
 		PSys_Emitters[i].next = &PSys_Emitters[i+1];
 }
 
-static void PSys_InitForces(void){
+void PSys_InitForces(void){
 	int	i;
 
 	memset(PSys_Forces, 0, sizeof(PSys_Forces));
@@ -79,7 +79,7 @@ static void PSys_InitForces(void){
 		PSys_Forces[i].next = &PSys_Forces[i+1];
 }
 
-static void PSys_InitConstraints(void){
+void PSys_InitConstraints(void){
 	int	i;
 
 	memset(PSys_Constraints, 0, sizeof(PSys_Constraints));
@@ -107,7 +107,7 @@ void CG_InitParticleSystems(void){
 
 -------------------
 */
-static void PSys_FreeParticle(PSys_Particle_t *particle){
+void PSys_FreeParticle(PSys_Particle_t *particle){
 	if(!particle->prev){
 		CG_Error("PSys_FreeParticle: not active");
 		return;
@@ -123,7 +123,7 @@ static void PSys_FreeParticle(PSys_Particle_t *particle){
 	PSys_Particles_free = particle;
 }
 
-static PSys_Particle_t *PSys_SpawnParticle(PSys_System_t *system){
+PSys_Particle_t *PSys_SpawnParticle(PSys_System_t *system){
 	PSys_Particle_t	*particle;
 
 	// No free entities, so free the one at the end of the chain,
@@ -146,7 +146,7 @@ static PSys_Particle_t *PSys_SpawnParticle(PSys_System_t *system){
 	return particle;
 }
 
-static void PSys_FreeEmitter(PSys_Emitter_t *emitter){
+void PSys_FreeEmitter(PSys_Emitter_t *emitter){
 	PSys_System_t	*system;
 	PSys_Particle_t	*particle,
 					*next_p;
@@ -175,7 +175,7 @@ static void PSys_FreeEmitter(PSys_Emitter_t *emitter){
 	PSys_Emitters_free = emitter;
 }
 
-static PSys_Emitter_t *PSys_SpawnEmitter(PSys_System_t *system){
+PSys_Emitter_t *PSys_SpawnEmitter(PSys_System_t *system){
 	PSys_Emitter_t *emitter;
 
 	// No free entities, so free the one at the end of the chain,
@@ -199,7 +199,7 @@ static PSys_Emitter_t *PSys_SpawnEmitter(PSys_System_t *system){
 	return emitter;
 }
 
-static void PSys_FreeForce(PSys_Force_t *force){
+void PSys_FreeForce(PSys_Force_t *force){
 	if(!force->prev){
 		CG_Error("PSys_FreeForce: not active");
 		return;
@@ -215,7 +215,7 @@ static void PSys_FreeForce(PSys_Force_t *force){
 	PSys_Forces_free = force;
 }
 
-static PSys_Force_t *PSys_SpawnForce(PSys_System_t *system){
+PSys_Force_t *PSys_SpawnForce(PSys_System_t *system){
 	PSys_Force_t *force;
 
 	// No free entities, so free the one at the end of the chain,
@@ -238,7 +238,7 @@ static PSys_Force_t *PSys_SpawnForce(PSys_System_t *system){
 	return force;
 }
 
-static void PSys_FreeConstraint(PSys_Constraint_t *constraint){
+void PSys_FreeConstraint(PSys_Constraint_t *constraint){
 	if(!constraint->prev){
 		CG_Error("PSys_FreeConstraint: not active");
 		return;
@@ -254,7 +254,7 @@ static void PSys_FreeConstraint(PSys_Constraint_t *constraint){
 	PSys_Constraints_free = constraint;
 }
 
-static PSys_Constraint_t *PSys_SpawnConstraint(PSys_System_t *system){
+PSys_Constraint_t *PSys_SpawnConstraint(PSys_System_t *system){
 	PSys_Constraint_t *constraint;
 
 	// No free entities, so free the one at the end of the chain,
@@ -277,7 +277,7 @@ static PSys_Constraint_t *PSys_SpawnConstraint(PSys_System_t *system){
 	return constraint;
 }
 
-static void PSys_FreeSystem(PSys_System_t *system){
+void PSys_FreeSystem(PSys_System_t *system){
 	PSys_Particle_t		*particle,	*next_p;
 	PSys_Emitter_t		*emitter,	*next_e;
 	PSys_Force_t		*force,		*next_f;
@@ -323,7 +323,7 @@ static void PSys_FreeSystem(PSys_System_t *system){
 	PSys_Systems_free = system;
 }
 
-static PSys_System_t *PSys_SpawnSystem(void){
+PSys_System_t *PSys_SpawnSystem(void){
 	PSys_System_t *system;
 
 	// No free entities, so free the one at the end of the chain,
@@ -356,7 +356,7 @@ static PSys_System_t *PSys_SpawnSystem(void){
 
 -------------------------------------------
 */
-static qboolean PSys_UpdateOrientation(PSys_System_t *system, PSys_Orientation_t *orient){
+qboolean PSys_UpdateOrientation(PSys_System_t *system, PSys_Orientation_t *orient){
 	if(orient->entity){
 		// Check if the linked entity is not in the PVS	
 		if(!CG_FrameHist_IsInPVS( orient->entity->currentState.number)) return qfalse;
@@ -392,7 +392,7 @@ static qboolean PSys_UpdateOrientation(PSys_System_t *system, PSys_Orientation_t
 	return qtrue;
 }
 
-static void PSys_UpdateForces(PSys_System_t *system){
+void PSys_UpdateForces(PSys_System_t *system){
 	PSys_Force_t *force, *next;
 
 	force = system->forces.prev_local;
@@ -404,7 +404,7 @@ static void PSys_UpdateForces(PSys_System_t *system){
 	}
 }
 
-static void PSys_UpdateEmitters(PSys_System_t *system){
+void PSys_UpdateEmitters(PSys_System_t *system){
 	PSys_Emitter_t *emitter, *next;
 
 	emitter = system->emitters.prev_local;
@@ -546,17 +546,17 @@ static void PSys_UpdateEmitters(PSys_System_t *system){
 	}
 }
 
-static void PSys_GetParticleVelocity(PSys_Particle_t *particle, vec3_t v){
+void PSys_GetParticleVelocity(PSys_Particle_t *particle, vec3_t v){
 	VectorCopy(particle->position, v);
 	VectorSubtract(v, particle->oldPosition, v);
 }
 
-static void PSys_SetParticleVelocity(PSys_Particle_t *particle, vec3_t v){
+void PSys_SetParticleVelocity(PSys_Particle_t *particle, vec3_t v){
 	VectorCopy(particle->position, particle->oldPosition);
 	VectorSubtract(particle->oldPosition, v, particle->oldPosition);
 }
 
-static void PSys_AccumulateSystem(PSys_System_t *system){
+void PSys_AccumulateSystem(PSys_System_t *system){
 	PSys_Particle_t *particle, *next;
 
 	particle = system->particles.prev_local;
@@ -572,7 +572,7 @@ static void PSys_AccumulateSystem(PSys_System_t *system){
 	}
 }
 
-static float PSys_ApplyFalloff(PSys_Force_t *force, vec3_t particlePos, float sourceVal){
+float PSys_ApplyFalloff(PSys_Force_t *force, vec3_t particlePos, float sourceVal){
 	vec3_t	distance;
 	float	lerp;
 
@@ -620,7 +620,7 @@ static float PSys_ApplyFalloff(PSys_Force_t *force, vec3_t particlePos, float so
 	return sourceVal;
 }
 
-static void PSys_AccumulateParticle(PSys_System_t *system, PSys_Particle_t *particle){
+void PSys_AccumulateParticle(PSys_System_t *system, PSys_Particle_t *particle){
 	PSys_Force_t	*force, *next;
 	vec3_t			v, swirlForce, swirlOut,
 					sphereForce,
@@ -663,7 +663,7 @@ static void PSys_AccumulateParticle(PSys_System_t *system, PSys_Particle_t *part
 	}
 }
 
-static void PSys_IntegrateSystem(PSys_System_t *system, float timeStepSquare, float timeStepCorrected){
+void PSys_IntegrateSystem(PSys_System_t *system, float timeStepSquare, float timeStepCorrected){
 	PSys_Particle_t	*particle, *next;
 
 	particle = system->particles.prev_local;
@@ -674,7 +674,7 @@ static void PSys_IntegrateSystem(PSys_System_t *system, float timeStepSquare, fl
 	}
 }
 
-static void PSys_IntegrateParticle(PSys_Particle_t *particle, float timeStepSquare, float timeStepCorrected){
+void PSys_IntegrateParticle(PSys_Particle_t *particle, float timeStepSquare, float timeStepCorrected){
 	vec3_t vel;
 
 	// Handle (infinite) mass
@@ -698,7 +698,7 @@ static void PSys_IntegrateParticle(PSys_Particle_t *particle, float timeStepSqua
 	if(particle->rayParent) VectorAdd(particle->rayParent->orientation.geometry.origin, particle->rayOffset, particle->rayOrigin);
 }
 
-static qboolean PSys_ConstrainSystem(PSys_System_t *system){
+qboolean PSys_ConstrainSystem(PSys_System_t *system){
 	PSys_Constraint_t	*constraint, *next;
 	qboolean			retval;
 
@@ -712,7 +712,7 @@ static qboolean PSys_ConstrainSystem(PSys_System_t *system){
 	return retval;
 }
 
-static qboolean PSys_ApplyConstraint(PSys_System_t *system, PSys_Constraint_t *constraint){
+qboolean PSys_ApplyConstraint(PSys_System_t *system, PSys_Constraint_t *constraint){
 	qboolean retval;
 
 	switch(constraint->type){
@@ -735,7 +735,7 @@ static qboolean PSys_ApplyConstraint(PSys_System_t *system, PSys_Constraint_t *c
 	return retval;
 }
 
-static qboolean PSys_ApplyDistanceMaxConstraint(PSys_System_t *system, float value){
+qboolean PSys_ApplyDistanceMaxConstraint(PSys_System_t *system, float value){
 	PSys_Particle_t		*pt1, *pt2, *next1, *next2, *minDistPt;
 	float				dist, tempDist;
 	vec3_t				dir;
@@ -753,13 +753,12 @@ static qboolean PSys_ApplyDistanceMaxConstraint(PSys_System_t *system, float val
 		dist = -1; // Start with 'infinite' distance
 		for(;pt2 != &(system->particles) ; pt2 = next2){
 			next2 = pt2->prev_local;
+			minDistPt = pt2;
 			if(dist == -1){
 				dist = Distance(pt1->position, pt2->position);
-				minDistPt = pt2;
 			}
 			else if(dist > (tempDist = Distance(pt1->position, pt2->position))){
 				dist = tempDist;
-				minDistPt = pt2;
 			}
 		}
 		// If the distance is still 'infinite', then there is only one particle in the system,
@@ -781,7 +780,7 @@ static qboolean PSys_ApplyDistanceMaxConstraint(PSys_System_t *system, float val
 	return retval;
 }
 
-static qboolean PSys_ApplyDistanceMinConstraint(PSys_System_t *system, float value){
+qboolean PSys_ApplyDistanceMinConstraint(PSys_System_t *system, float value){
 	PSys_Particle_t		*pt1, *pt2, *next1, *next2, *minDistPt;
 	float				dist, tempDist;
 	vec3_t				dir;
@@ -789,7 +788,7 @@ static qboolean PSys_ApplyDistanceMinConstraint(PSys_System_t *system, float val
 
 	retval = qtrue;
 	pt1 = system->particles.prev_local;
-	for(;pt1 != &(system->particles); pt1 = next1){
+	for(;pt1 != &system->particles; pt1 = next1){
 		next1 = pt1->prev_local;
 		// Determine shortest distance to another particle that has
 		// not yet been affected by the constraint.
@@ -797,15 +796,14 @@ static qboolean PSys_ApplyDistanceMinConstraint(PSys_System_t *system, float val
 		//       will form seperate clusters instead of one cluster!
 		pt2 = next1;
 		dist = -1; // Start with 'infinite' distance
-		for(;pt2 != &(system->particles); pt2 = next2){
+		for(;pt2 != &system->particles; pt2 = next2){
 			next2 = pt2->prev_local;
+			minDistPt = pt2;
 			if(dist == -1){
 				dist = Distance(pt1->position, pt2->position);
-				minDistPt = pt2;
 			}
 			else if(dist > (tempDist = Distance(pt1->position, pt2->position))){
 				dist = tempDist;
-				minDistPt = pt2;
 			}			
 		}
 		// If the distance is still 'infinite', then there is only one particle in the system,
@@ -827,7 +825,7 @@ static qboolean PSys_ApplyDistanceMinConstraint(PSys_System_t *system, float val
 	return retval;
 }
 
-static qboolean PSys_ApplyDistanceConstraint(PSys_System_t *system, float value){
+qboolean PSys_ApplyDistanceConstraint(PSys_System_t *system, float value){
 	PSys_Particle_t		*pt1, *pt2, *next1, *next2;
 	vec3_t				dir;
 	qboolean			retval;
@@ -858,7 +856,7 @@ static qboolean PSys_ApplyDistanceConstraint(PSys_System_t *system, float value)
 	return retval;
 }
 
-static qboolean PSys_ApplyPlaneConstraint(PSys_System_t *system, float value){
+qboolean PSys_ApplyPlaneConstraint(PSys_System_t *system, float value){
 	PSys_Particle_t	*particle, *next;
 	qboolean		retval;
 	trace_t			trace;
@@ -926,7 +924,7 @@ static qboolean PSys_ApplyPlaneConstraint(PSys_System_t *system, float value){
 
 -------------------------------
 */
-static void PSys_UpdateSystems(void){
+void PSys_UpdateSystems(void){
 	PSys_System_t	*system, *next;
 	float			timeStep, timeStepSquare, timeStepCorrected;
 	int				iterations;
@@ -960,14 +958,13 @@ static void PSys_UpdateSystems(void){
 	}
 }
 
-static void PSys_RenderSystems(void){
+void PSys_RenderSystems(void){
 	PSys_System_t	*system, *next_s;
 	PSys_Particle_t	*particle, *next_p;
 	refEntity_t		ent;
 	vec4_t			lerpedRGBA, lerpedRotation;
 	vec3_t			angles;
 	float			lerp, lerpedScale;
-	static int		seed = 0x92;
 	int				lifetime_end, lifetime_cur;
 
 	system = PSys_Systems_inuse.prev;

@@ -216,8 +216,6 @@ CG_DirtPush
 void CG_DirtPush(vec3_t org, vec3_t dir, int size){
 	localEntity_t	*le;
 	refEntity_t		*re;
-	float			ang;
-	vec3_t			oldAxis[3];
 
 	if(cgs.clientPaused) return;
 	le = CG_AllocLocalEntity();
@@ -257,8 +255,6 @@ CG_WaterRipple
 void CG_WaterRipple(vec3_t org, int size, qboolean single){
 	localEntity_t	*le;
 	refEntity_t		*re;
-	float			ang;
-	vec3_t			oldAxis[3];
 
 	if(cgs.clientPaused) return;
 	le = CG_AllocLocalEntity();
@@ -373,10 +369,7 @@ Player lightning effect.
 ==================
 */
 void CG_LightningEffect(vec3_t org, clientInfo_t *ci, int tier){
-	localEntity_t	*le;
-	refEntity_t		*re;
 	int				r[7];
-
 	if(cgs.clientPaused) return;
 	r[0] = random() * 60;
 	r[1] = random() * 24 + 8;
@@ -388,7 +381,6 @@ void CG_LightningEffect(vec3_t org, clientInfo_t *ci, int tier){
 	if(r[0] > 58){
 		localEntity_t	*le;
 		refEntity_t		*re;
-
 		le = CG_AllocLocalEntity();
 		le->leFlags = 0;
 		le->leType = LE_FADE_ALPHA;
@@ -433,8 +425,7 @@ Lightning sparks for high tiers.
 void CG_BigLightningEffect(vec3_t org){
 	localEntity_t	*le;
 	refEntity_t		*re;
-	int 			r = random() *200,
-					s;
+	int 			r = random() * 200;
 
 	if(cgs.clientPaused || (r >= 1 && r <= 198)) return;
 	le = CG_AllocLocalEntity();
@@ -731,7 +722,7 @@ CG_MakeUserExplosion
 ======================
 */
 void CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGraphics, int powerups, int number) {
-	float			angle, start, end;
+	float			angle;
 	localEntity_t	*expShell, *expShock;
 	int				offset, attackChargeLvl;
 	vec3_t			tmpVec, newOrigin;

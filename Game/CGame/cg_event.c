@@ -33,7 +33,7 @@ also called by CG_CheckPlayerstateEvents
 */
 #define	DEBUGNAME(x) if(cg_debugEvents.integer) CG_Printf(x"\n");
 void CG_EntityEvent(centity_t *cent, vec3_t position){
-	entityState_t	*es,*nextState;
+	entityState_t	*es;
 	clientInfo_t	*ci;
 	vec3_t			dir;
 	int				r, size, event, clientNum;
@@ -41,7 +41,6 @@ void CG_EntityEvent(centity_t *cent, vec3_t position){
 
 	r = random() *10;
 	es = &cent->currentState;
-	nextState = &cent->nextState;
 	event = es->event & ~EV_EVENT_BITS;
 	if(cg_debugEvents.integer)
 		CG_Printf("Entity:%3i  Event:%3i", es->number, event);

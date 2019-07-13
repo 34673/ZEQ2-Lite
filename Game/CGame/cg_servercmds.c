@@ -81,7 +81,6 @@ static void CG_ParseWarmup(void){
 }
 //Called on load to set the initial values from configure strings
 void CG_SetConfigValues(void){
-	const char *s;
 	cgs.levelStartTime = atoi(CG_ConfigString(CS_LEVEL_START_TIME));
 	cg.warmup = atoi(CG_ConfigString(CS_WARMUP));
 }

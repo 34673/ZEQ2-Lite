@@ -321,12 +321,9 @@ void CG_DrawHUD(playerState_t *ps, int clientNum, int x, int y, qboolean flipped
 }
 
 static void CG_DrawStatusBar(void){
-	centity_t			*cent;
 	playerState_t		*ps;
 	float				tierLast, tierNext, tier;
-	int					base;
 	clientInfo_t		*ci;
-	cg_userWeapon_t		*weaponGraphics;
 	tierConfig_cg		*activeTier;
 	qboolean 			charging;
 	
@@ -336,7 +333,6 @@ static void CG_DrawStatusBar(void){
 	if(ci->lockStartTimer > cg.time)	CG_DrawPic(qfalse,0,0,640,480,cgs.media.speedLineSpinShader);
 	if(ps->bitFlags & usingBoost)		CG_DrawPic(qfalse,0,0,640,480,cgs.media.speedLineShader);
 	if(!cg_drawStatus.integer) return;
-	cent = &cg_entities[cg.snap->ps.clientNum];
 	tier = (float)ps->powerLevel[plTierCurrent];
 	CG_CheckChat();
 	CG_DrawScreenEffects();
@@ -464,32 +460,6 @@ static void CG_DrawUpperRight(void){
 }
 
 /*==============
-CG_DrawDisconnect
-Should we draw something differnet for long lag vs no packets?
-==============*/
-static void CG_DrawDisconnect(void){
-	usercmd_t	cmd;
-	const char	*s;
-	float		x, y;
-	int			w, cmdNum;
-
-	// draw the phone jack if we are completely past our buffers
-	cmdNum = trap_GetCurrentCmdNumber() -CMD_BACKUP+1;
-	trap_GetUserCmd(cmdNum, &cmd);
-	// special check for map_restart
-	if(cmd.serverTime <= cg.snap->ps.commandTime || cmd.serverTime > cg.time) return;
-	// also add text in center of screen
-	s = "Connection Interrupted";
-	w = CG_DrawStrlen(s) *BIGCHAR_WIDTH;
-	CG_DrawBigString(320-w / 2, 100, s, 1.f);
-	// blink the icon
-	if((cg.time >> 9)&1) return;
-	x = 640 -48;
-	y = 480 -48;
-	CG_DrawPic(qfalse, x, y, 48, 48, trap_R_RegisterShader("disconnect"));
-}
-
-/*==============
 CG_CenterPrint
 Called for important messages that should stay in the center of the screen
 for a few moments
@@ -511,44 +481,10 @@ void CG_CenterPrint(const char *str, int y, int charWidth){
 	}
 }
 
-/*===================
-CG_DrawCenterString
-===================*/
-static void CG_DrawCenterString(void){
-	char	*start;
-	float	*color;
-	int		i, x, y, w;
-
-	if(!cg.centerPrintTime) return;
-	color = CG_FadeColor(cg.centerPrintTime, 1000 *cg_centertime.value, 200);
-	if(!color) return;
-	trap_R_SetColor(color);
-	start = cg.centerPrint;
-	y = cg.centerPrintY -cg.centerPrintLines *BIGCHAR_HEIGHT / 2;
-	while(1){
-		char linebuffer[1024];
-
-		for(i=0;i<50;i++){
-			if(!start[i] || start[i] == '\n') break;
-			linebuffer[i] = start[i];
-		}
-		linebuffer[i] = 0;
-		w = cg.centerPrintCharWidth *CG_DrawStrlen(linebuffer);
-		x = (SCREEN_WIDTH -w) / 2;
-		CG_DrawStringExt(-1, x, y, linebuffer, color, qfalse, qtrue, cg.centerPrintCharWidth, (int)(cg.centerPrintCharWidth *1.5f), 0);
-		y += cg.centerPrintCharWidth *1.5f;
-		while(*start && *start != '\n') start++;
-		if(!*start) break;
-		start++;
-	}
-	trap_R_SetColor(NULL);
-}
-
 /*=================
 CG_DrawCrosshair
 =================*/
 static void CG_DrawCrosshair(void){
-	radar_t			cg_playerOrigins[MAX_CLIENTS];
 	playerState_t	*ps;
 	clientInfo_t	*ci;
 	tierConfig_cg	*tier;
@@ -556,7 +492,7 @@ static void CG_DrawCrosshair(void){
 	trace_t			trace;
 	float			x, y, w, h,
 					f;
-	int				i, ca;
+	int				ca;
 	vec3_t			muzzle, forward, up,
 					start, end;
 	vec4_t			lockOnEnemyColor =	{1.f,	0,	 0, 1.f},
@@ -703,11 +639,6 @@ static void CG_Draw2D(void){
 	}
 	else if(!(cg.snap->ps.bitFlags & usingSoar))
 		if(cg.snap->ps.timers[tmTransform] <= 1 && cg.snap->ps.powerups[PW_STATE] >= 0){
-			playerState_t	*ps;
-			clientInfo_t	*ci;
-			
-			ci = &cgs.clientinfo[cg.snap->ps.clientNum];
-			ps = &cg.snap->ps;
 			CG_DrawStatusBar();
 			CG_DrawCrosshair();
 			CG_DrawCrosshairNames();
@@ -718,16 +649,13 @@ static void CG_Draw2D(void){
 }
 
 void CG_DrawScreenFlash(void){
-	float		*color;
-	vec4_t		white = {1.f, 1.f, 1.f, .5f},
-				black = {  0,	0,	 0, .5f};
-
-	color = CG_FadeColor(cg.screenFlashTime, cg.screenFlastTimeTotal, cg.screenFlashFadeTime);
-	if(!color) return;
+	float* color = CG_FadeColor(cg.screenFlashTime, cg.screenFlastTimeTotal, cg.screenFlashFadeTime);
+	vec4_t white = {1.0f,1.0f,1.0f,0.5f};
+	if(!color){return;}
 	if(cg.snap->ps.timers[tmBlind] > 0){
 		trap_R_SetColor(color);
-		white[3] = color[3] *cg.screenFlashFadeAmount *.5f;
-		CG_DrawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH*SCREEN_HEIGHT, white);
+		white[3] = color[3] * cg.screenFlashFadeAmount * 0.5f;
+		CG_DrawRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,SCREEN_WIDTH*SCREEN_HEIGHT,white);
 		trap_R_SetColor(NULL);
 	}
 }

@@ -8,7 +8,6 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 	char legsPath[MAX_QPATH];
 	char headPath[MAX_QPATH];
 	char cameraPath[MAX_QPATH];
-	char headPrefix[] = "head_";
 	char upperPrefix[] = "upper_";
 	char lowerPrefix[] = "lower_";
 	qhandle_t tempShader;
@@ -172,11 +171,9 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 }
 void parseTier(char *path,tierConfig_cg *tier){
 	fileHandle_t tierCFG;
-	int i;
 	char *token,*parse;
 	int fileLength;
 	int tokenInt;
-	float tokenFloat;
 	char fileContents[32000];
 	if(trap_FS_FOpenFile(path,0,FS_READ)>0){
 		fileLength = trap_FS_FOpenFile(path,&tierCFG,FS_READ);

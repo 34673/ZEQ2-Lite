@@ -285,27 +285,6 @@ static void CG_Speaker(centity_t *cent){
 }
 
 /*
-===============
-JUHOX: CG_AddMissileLensFlare
-===============
-*/
-static void CG_AddMissileLensFlare(centity_t* cent){
-	lensFlareEntity_t lfent;
-
-	if(!cg_lensFlare.integer) return;
-	memset(&lfent, 0, sizeof(lfent));
-	lfent.lfeff = cgs.lensFlareEffectEnergyGlowDarkBackground; //cgs.lensFlareEffectSolarFlare;
-	lfent.angle = -1;
-	//VectorNegate(cent->currentState.pos.trDelta, lfent.dir);
-	VectorCopy(cent->currentState.pos.trDelta, lfent.dir);
-	VectorNormalize(lfent.dir);
-	if(!lfent.lfeff) return;
-	VectorCopy(cent->lerpOrigin, lfent.origin);
-	CG_ComputeMaxVisAngle(&lfent);
-	CG_AddLensFlare(&lfent, 1);
-}
-
-/*
 ===========================
 CG_TrailFunc_StraightBeam
 ===========================
@@ -486,19 +465,16 @@ CG_Missile
 static void CG_Missile(centity_t *cent){
 	refEntity_t			ent;
 	entityState_t		*s1;
-	playerState_t		*ps;
 	cg_userWeapon_t		*weaponGraphics;
 	float				missileScale, radiusScale;
 	int					missileChargeLvl,
 						missilePowerLevelCurrent,
 						missilePowerLevelTotal,
 						contents, lastContents;
-	qboolean			splash, missileIsStruggling;
+	qboolean			missileIsStruggling;
 	vec3_t				origin, lastPos,
 						start, end;
 	trace_t				trace;
-	
-	ps = &cg.predictedPlayerState;
 	s1 = &cent->currentState;
 	weaponGraphics = CG_FindUserWeaponGraphics(s1->clientNum, s1->weapon);
 
@@ -513,14 +489,7 @@ static void CG_Missile(centity_t *cent){
 	start[2] += 64;
 	// trace down to find the surface
 	trap_CM_BoxTrace(&trace, start, end, NULL, NULL, 0, (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA));
-	splash = qtrue;
 	contents = trap_CM_PointContents(end, 0);
-	if(!(contents & (CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA)))
-		splash = qfalse;
-	contents = trap_CM_PointContents(start, 0);
-	if(contents & (CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA))
-		splash = qfalse;
-	if(trace.fraction == 1.f) splash = qfalse;
 	cent->trailTime = cg.time;
 
 	// The missile's charge level was stored in this field. We hijacked it on the
@@ -565,10 +534,6 @@ static void CG_Missile(centity_t *cent){
 		VectorCopy(cent->lerpOrigin, cg.guide_target);
 		cg.guide_view = qtrue;
 	}
-/*
-	if(splash)
-		CG_WaterSplash(trace.endpos, missileScale);
-*/
 	// add trails
 	if(weaponGraphics->missileTrailShader && weaponGraphics->missileTrailRadius){
 		if(cent->currentState.eType == ET_MISSILE){
@@ -608,8 +573,6 @@ static void CG_Missile(centity_t *cent){
 	memset(&ent, 0, sizeof(ent));
 	VectorCopy(cent->lerpOrigin, ent.origin);
 	VectorCopy(cent->lerpOrigin, ent.oldorigin);
-	// JUHOX: draw BeamHead missile lens flare effects
-	CG_AddMissileLensFlare(cent);
 	if(!(weaponGraphics->missileModel && weaponGraphics->missileSkin)){
 		ent.reType = RT_SPRITE;
 		ent.radius = missileScale *4;
@@ -697,7 +660,6 @@ static void CG_Missile(centity_t *cent){
 CG_Mover
 ===============
 */
-// JUHOX: also called from cg_draw.c for lens flare editor
 /*static*/ void CG_Mover(centity_t *cent){
 	refEntity_t			ent;
 	entityState_t		*s1;
@@ -786,7 +748,7 @@ Also called by client movement prediction code
 void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int toTime, vec3_t out){
 	centity_t	*cent;
 	vec3_t	oldOrigin, origin, deltaOrigin,
-			oldAngles, angles, deltaAngles;
+			oldAngles, angles;
 
 	if(moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL){
 		VectorCopy(in, out);
@@ -802,7 +764,6 @@ void CG_AdjustPositionForMover(const vec3_t in, int moverNum, int fromTime, int 
 	BG_EvaluateTrajectory(&cent->currentState, &cent->currentState.pos, toTime, origin);
 	BG_EvaluateTrajectory(&cent->currentState, &cent->currentState.apos, toTime, angles);
 	VectorSubtract(origin, oldOrigin, deltaOrigin);
-	//VectorSubtract(angles, oldAngles, deltaAngles);
 	VectorAdd(in, deltaOrigin, out);
 	// FIXME: origin change when on a rotating object
 }

@@ -10,10 +10,8 @@ false already.)
 */
 int CG_weapGfx_FindImportRef(cg_weapGfxParser_t *parser, char *refname){
 	cg_weapGfxImportRef_t	*importList;
-	cg_weapGfxScanner_t		*scanner;
 	int						i=0;
 	importList = parser->importRef;
-	scanner = &parser->scanner;
 	for(;i<MAX_IMPORTS;i++){
 		if(!importList[i].active){return 0;}
 		if(!Q_stricmp( refname, importList[i].refname)){return i+1;}

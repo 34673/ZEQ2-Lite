@@ -324,7 +324,7 @@ ifneq (,$(findstring "$(COMPILE_PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu
 endif
 
 ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu"))
-  BASE_CFLAGS = -std=c11 -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = -std=c11 -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON -DARCH_STRING=\\\"$(ARCH)\\\"
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 
@@ -553,7 +553,7 @@ ifdef MINGW
     $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
-  BASE_CFLAGS = -std=c11 -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = -std=c11 -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON
 
   # In the absence of wspiapi.h, require Windows XP or later
@@ -669,7 +669,7 @@ ifeq ($(PLATFORM),freebsd)
 
   # flags
   BASE_CFLAGS = -std=c11 \
-    -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+    -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
   HAVE_VM_COMPILED = true
@@ -723,7 +723,7 @@ else # ifeq freebsd
 
 ifeq ($(PLATFORM),openbsd)
 
-  BASE_CFLAGS = -std=c11 -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = -std=c11 -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 
@@ -803,7 +803,7 @@ ifeq ($(PLATFORM),netbsd)
   SHLIBLDFLAGS=-shared $(LDFLAGS)
   THREAD_LIBS=-lpthread
 
-  BASE_CFLAGS = -std=c11 -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
+  BASE_CFLAGS = -std=c11 -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
 
   ifeq ($(ARCH),x86)
     HAVE_VM_COMPILED=true
@@ -860,7 +860,7 @@ ifeq ($(PLATFORM),sunos)
     endif
   endif
 
-  BASE_CFLAGS = -std=c11 -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = -std=c11 -Wall -Wextra -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 
@@ -1350,7 +1350,7 @@ ifndef YACC
   YACC = yacc
 endif
 
-TOOLS_OPTIMIZE = -g -Wall -fno-strict-aliasing
+TOOLS_OPTIMIZE = -g -Wall -Wextra -fno-strict-aliasing
 TOOLS_CFLAGS += $(TOOLS_OPTIMIZE) \
                 -DTEMPDIR=\"$(TEMPDIR)\" -DSYSTEM=\"\" \
                 -I$(Q3LCCSRCDIR) \

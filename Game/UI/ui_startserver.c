@@ -104,8 +104,7 @@ static const char *gametype_items[] = {
 	NULL
 };
 
-static int gametype_remap[] = {GT_FFA, GT_TEAM, GT_STRUGGLE,GT_TOURNAMENT, GT_CTF};
-static int gametype_remap2[] = {0, 2, 0, 1, 3};
+static int gametype_remap[] = {GT_FFA,GT_STRUGGLE};
 
 
 /*
@@ -130,27 +129,12 @@ static int GametypeBits( char *string ) {
 			bits |= 1 << GT_FFA;
 			continue;
 		}
-
-		if( Q_stricmp( token, "tourney" ) == 0 ) {
-			bits |= 1 << GT_TOURNAMENT;
-			continue;
-		}
 		if( Q_stricmp( token, "struggle" ) == 0 ) {
 			bits |= 1 << GT_STRUGGLE;
 			continue;
 		}
 		if( Q_stricmp( token, "single" ) == 0 ) {
 			bits |= 1 << GT_SINGLE_PLAYER;
-			continue;
-		}
-
-		if( Q_stricmp( token, "team" ) == 0 ) {
-			bits |= 1 << GT_TEAM;
-			continue;
-		}
-
-		if( Q_stricmp( token, "ctf" ) == 0 ) {
-			bits |= 1 << GT_CTF;
 			continue;
 		}
 	}

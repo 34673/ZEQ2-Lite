@@ -46,7 +46,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 
-#define MAX_TEAMNAME			32
 #define MAX_MASTER_SERVERS      5			// number of supported master servers
 #ifndef PRODUCT_DATE
 #  define PRODUCT_DATE __DATE__
@@ -1445,7 +1444,6 @@ typedef enum _flag_status {
 #define MAX_SERVERSTATUSREQUESTS	16
 
 #define SAY_ALL		0
-#define SAY_TEAM	1
 #define SAY_TELL	2
 
 #define LERP( a, b, w ) ( ( a ) * ( 1.0f - ( w ) ) + ( b ) * ( w ) )

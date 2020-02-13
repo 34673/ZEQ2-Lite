@@ -868,8 +868,6 @@ void CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGrap
 		expShell->light = weaponGraphics->explosionDlightRadius * 100;
 
 	}
-	// JUHOX: draw BeamHead missile lens flare effects
-	//CG_AddExplosionLensFlare( newOrigin, dir );
 
 	if(weaponGraphics->shockwaveModel && weaponGraphics->shockwaveSkin){
 		// allocate the entity as a ZEQ explosion

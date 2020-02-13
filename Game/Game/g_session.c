@@ -28,8 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
   SESSION DATA
 
-Session data is the only data that stays persistant across level loads
-and tournament restarts.
+Session data is the only data that stays persistant across level loads.
 =======================================================================
 */
 
@@ -44,14 +43,11 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i", 
+	s = va("%i %i %i %i", 
 		client->sess.sessionTeam,
 		client->sess.spectatorNum,
 		client->sess.spectatorState,
-		client->sess.spectatorClient,
-		client->sess.wins,
-		client->sess.losses,
-		client->sess.teamLeader
+		client->sess.spectatorClient
 		);
 
 	var = va( "session%i", (int)(client - level.clients) );
@@ -69,26 +65,21 @@ Called on a reconnect
 void G_ReadSessionData( gclient_t *client ) {
 	char	s[MAX_STRING_CHARS];
 	const char	*var;
-	int teamLeader;
 	int spectatorState;
 	int sessionTeam;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i",
+	sscanf( s, "%i %i %i %i",
 		&sessionTeam,
 		&client->sess.spectatorNum,
 		&spectatorState,
-		&client->sess.spectatorClient,
-		&client->sess.wins,
-		&client->sess.losses,
-		&teamLeader
-		);
+		&client->sess.spectatorClient
+	);
 
 	client->sess.sessionTeam = (team_t)sessionTeam;
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
-	client->sess.teamLeader = (qboolean)teamLeader;
 }
 
 
@@ -104,56 +95,27 @@ void G_InitSessionData( gclient_t *client, char *userinfo ) {
 	const char		*value;
 
 	sess = &client->sess;
-
-#if MAPLENSFLARES	// JUHOX: in lf edit mode always join as a spectator
-	if (g_editmode.integer == EM_mlf) {
+	value = Info_ValueForKey( userinfo, "team" );
+	if ( value[0] == 's' ) {
+		// a willing spectator, not a waiting-in-line
 		sess->sessionTeam = TEAM_SPECTATOR;
-	}
-	else
-#endif
-
-	// initial team determination
-	if ( g_gametype.integer >= GT_TEAM ) {
-		if ( g_teamAutoJoin.integer ) {
-			sess->sessionTeam = PickTeam( -1 );
-			BroadcastTeamChange( client, -1 );
-		} else {
-			// always spawn as spectator in team games
-			sess->sessionTeam = TEAM_SPECTATOR;	
-		}
 	} else {
-		value = Info_ValueForKey( userinfo, "team" );
-		if ( value[0] == 's' ) {
-			// a willing spectator, not a waiting-in-line
-			sess->sessionTeam = TEAM_SPECTATOR;
-		} else {
-			switch ( g_gametype.integer ) {
-			default:
-			case GT_FFA:
-			case GT_STRUGGLE:
-			case GT_SINGLE_PLAYER:
-				if ( g_maxGameClients.integer > 0 && 
-					level.numNonSpectatorClients >= g_maxGameClients.integer ) {
-					sess->sessionTeam = TEAM_SPECTATOR;
-				} else {
-					sess->sessionTeam = TEAM_FREE;
-				}
-				break;
-			case GT_TOURNAMENT:
-				// if the game is full, go into a waiting mode
-				if ( level.numNonSpectatorClients >= 2 ) {
-					sess->sessionTeam = TEAM_SPECTATOR;
-				} else {
-					sess->sessionTeam = TEAM_FREE;
-				}
-				break;
+		switch ( g_gametype.integer ) {
+		default:
+		case GT_FFA:
+		case GT_STRUGGLE:
+		case GT_SINGLE_PLAYER:
+			if ( g_maxGameClients.integer > 0 && 
+				level.numNonSpectatorClients >= g_maxGameClients.integer ) {
+				sess->sessionTeam = TEAM_SPECTATOR;
+			} else {
+				sess->sessionTeam = TEAM_FREE;
 			}
+			break;
 		}
 	}
 
 	sess->spectatorState = SPECTATOR_FREE;
-	AddTournamentQueue(client);
-
 	G_WriteClientSessionData( client );
 }
 

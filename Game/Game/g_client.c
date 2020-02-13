@@ -443,55 +443,6 @@ team_t TeamCount( int ignoreClientNum, int team ) {
 }
 
 /*
-================
-TeamLeader
-
-Returns the client number of the team leader
-================
-*/
-int TeamLeader( int team ) {
-	int		i;
-
-	for ( i = 0 ; i < level.maxclients ; i++ ) {
-		if ( level.clients[i].pers.connected == CON_DISCONNECTED ) {
-			continue;
-		}
-		if ( level.clients[i].sess.sessionTeam == team ) {
-			if ( level.clients[i].sess.teamLeader )
-				return i;
-		}
-	}
-
-	return -1;
-}
-
-
-/*
-================
-PickTeam
-
-================
-*/
-team_t PickTeam( int ignoreClientNum ) {
-	int		counts[TEAM_NUM_TEAMS];
-
-	counts[TEAM_BLUE] = TeamCount( ignoreClientNum, TEAM_BLUE );
-	counts[TEAM_RED] = TeamCount( ignoreClientNum, TEAM_RED );
-
-	if ( counts[TEAM_BLUE] > counts[TEAM_RED] ) {
-		return TEAM_RED;
-	}
-	if ( counts[TEAM_RED] > counts[TEAM_BLUE] ) {
-		return TEAM_BLUE;
-	}
-	// equal team count, so join the team with the lowest score
-	if ( level.teamScores[TEAM_BLUE] > level.teamScores[TEAM_RED] ) {
-		return TEAM_RED;
-	}
-	return TEAM_BLUE;
-}
-
-/*
 ===========
 ForceClientSkin
 
@@ -585,7 +536,7 @@ if desired.
 */
 void ClientUserinfoChanged( int clientNum ) {
 	gentity_t *ent;
-	int		teamTask, teamLeader, team, shouldRespawn;
+	int		team, shouldRespawn;
 	char	*s;
 	char	model[MAX_QPATH];
 	char	headModel[MAX_QPATH];
@@ -694,16 +645,10 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	team = client->sess.sessionTeam;
 
-	// team task (0 = none, 1 = offence, 2 = defence)
-	teamTask = atoi(Info_ValueForKey(userinfo, "teamtask"));
-	// team Leader (1 = leader, 0 is normal player)
-	teamLeader = client->sess.teamLeader;
-
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
-	s = va("n\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\lmodel\\%s\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d",
-		client->pers.netname, client->sess.sessionTeam, model, headModel, legsModel, 
-		client->sess.wins, client->sess.losses, teamTask, teamLeader);
+	s = va("n\\%s\\t\\%i\\model\\%s\\hmodel\\%s\\lmodel\\%s",
+		client->pers.netname, client->sess.sessionTeam, model, headModel, legsModel);
 	client->ps.powerLevel[plTierCurrent] = 0;
 	client->ps.powerLevel[plTierDesired] = 0;
 	client->ps.powerLevel[plTierChanged] = 2;
@@ -721,7 +666,7 @@ void ClientUserinfoChanged( int clientNum ) {
 ClientConnect
 
 Called when a player begins connecting to the server.
-Called again for every map change or tournement restart.
+Called again for every map change.
 
 The session information will be valid after exit.
 
@@ -732,8 +677,7 @@ Otherwise, the client will be sent the current gamestate
 and will eventually get to ClientBegin.
 
 firstTime will be qtrue the very first time a client connects
-to the server machine, but qfalse on map changes and tournement
-restarts.
+to the server machine, but qfalse on map changes.
 ============
 */
 char *ClientConnect( int clientNum, qboolean firstTime ) {
@@ -791,15 +735,6 @@ char *ClientConnect( int clientNum, qboolean firstTime ) {
 	if ( firstTime ) {
 		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " connected\n\"", client->pers.netname) );
 	}
-
-	if ( g_gametype.integer >= GT_TEAM &&
-		client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		BroadcastTeamChange( client, -1 );
-	}
-
-	// count current clients and rank for scoreboard
-	CalculateRanks();
-
 	// for statistics
 //	client->areabits = areabits;
 //	if ( !client->areabits )
@@ -862,15 +797,9 @@ void ClientBegin( int clientNum ) {
 		// send event
 		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
 		tent->s.clientNum = ent->s.clientNum;
-
-		if ( g_gametype.integer != GT_TOURNAMENT  ) {
-			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " entered the game\n\"", client->pers.netname) );
-		}
+		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " entered the game\n\"", client->pers.netname) );
 	}
 	G_LogPrintf( "ClientBegin: %i\n", clientNum );
-
-	// count current clients and rank for scoreboard
-	CalculateRanks();
 }
 
 /*
@@ -905,12 +834,7 @@ void ClientSpawn(gentity_t *ent) {
 	if(client->sess.sessionTeam == TEAM_SPECTATOR){
 		spawnPoint = SelectSpectatorSpawnPoint(spawn_origin, spawn_angles);
 	}
-	else if (g_gametype.integer >= GT_CTF ){
-		// all base oriented team games use the CTF spawn points
-		spawnPoint = SelectCTFSpawnPoint(client->sess.sessionTeam,client->pers.teamState.state,spawn_origin, spawn_angles);
-	}
-	else
-	{
+	else{
 		// the first spawn should be at a good looking spot
 		if ( !client->pers.initialSpawn && client->pers.localClient )
 		{
@@ -928,7 +852,7 @@ void ClientSpawn(gentity_t *ent) {
 	client->pers.teamState.state = TEAM_ACTIVE;
 	// toggle the teleport bit so the client knows to not lerp
 	// and never clear the voted flag
-	flags = ent->client->ps.eFlags & (EF_TELEPORT_BIT | EF_VOTED | EF_TEAMVOTED);
+	flags = ent->client->ps.eFlags & (EF_TELEPORT_BIT | EF_VOTED);
 	flags ^= EF_TELEPORT_BIT;
 
 	// clear everything but the persistant data
@@ -1099,27 +1023,8 @@ void ClientDisconnect( int clientNum ) {
 
 		// They don't get to take powerups with them!
 		// Especially important for stuff like CTF flags
-}
+	}
 	G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
-
-	// if we are playing in tourney mode and losing, give a win to the other player
-	if ( (g_gametype.integer == GT_TOURNAMENT )
-		&& !level.intermissiontime
-		&& !level.warmupTime && level.sortedClients[1] == clientNum ) {
-		level.clients[ level.sortedClients[0] ].sess.wins++;
-		ClientUserinfoChanged( level.sortedClients[0] );
-	}
-
-	if( g_gametype.integer == GT_TOURNAMENT &&
-		ent->client->sess.sessionTeam == TEAM_FREE &&
-		level.intermissiontime ) {
-		
-		trap_SendConsoleCommand( EXEC_APPEND, "map_restart 0\n" );
-		level.restarted = qtrue;
-		level.changemap = NULL;
-		level.intermissiontime = 0;
-	}
-
 	trap_UnlinkEntity (ent);
 	ent->client->ps.powerLevel[plHealth] = 0;
 	ent->s.modelindex = 0;
@@ -1131,8 +1036,6 @@ void ClientDisconnect( int clientNum ) {
 	ent->client->sess.sessionTeam = TEAM_FREE;
 
 	trap_SetConfigstring( CS_PLAYERS + clientNum, "");
-
-	CalculateRanks();
 }
 
 

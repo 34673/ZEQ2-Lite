@@ -19,49 +19,37 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-//
-
 #include "g_local.h"
 #include "bg_local.h"
-/*===============
-P_DamageFeedback
-===============*/
-void P_DamageFeedback( gentity_t *player ) {
-	gclient_t	*client;
-	float	count;
-	vec3_t	angles;
-
+void P_DamageFeedback(gentity_t* player){
+	gclient_t* client;
+	float count;
+	vec3_t angles;
 	client = player->client;
 	// total points of damage shot at the player this frame
 	count = client->damage_blood; // + client->damage_armor;
-	if ( count == 0 ) { // didn't take any damage
+	// didn't take any damage
+	if(count == 0){ 
 		// ADDING FOR ZEQ2
 		// but we DO need to reset this to 0 for the deductHP to work!
 		client->ps.damageCount = 0;
 		return;		
 	}
-
-	if ( count > 255 ) {
-		count = 255;
-	}
-
+	if(count > 255){count = 255;}
 	// send the information to the client
-
 	// world damage (falling, slime, etc) uses a special code
 	// to make the blend blob centered instead of positional
-	if ( client->damage_fromWorld ) {
+	if(client->damage_fromWorld){
 		client->ps.damagePitch = 255;
 		client->ps.damageYaw = 255;
-
 		client->damage_fromWorld = qfalse;
-	} else {
-		vectoangles( client->damage_from, angles );
-		client->ps.damagePitch = angles[PITCH]/360.0 * 256;
-		client->ps.damageYaw = angles[YAW]/360.0 * 256;
 	}
-
+	else{
+		vectoangles(client->damage_from,angles);
+		client->ps.damagePitch = angles[PITCH] / 360.0f * 256;
+		client->ps.damageYaw = angles[YAW] / 360.0f * 256;
+	}
 	client->ps.damageCount = count;
-
 	//
 	// clear totals
 	//
@@ -69,9 +57,6 @@ void P_DamageFeedback( gentity_t *player ) {
 	//client->damage_armor = 0;
 	client->damage_knockback = 0;
 }
-
-
-
 /*
 =============
 P_WorldEffects
@@ -79,54 +64,25 @@ P_WorldEffects
 Check for lava / slime contents and drowning
 =============
 */
-void P_WorldEffects( gentity_t *ent ) {}
-
-
-
-/*
-===============
-G_SetClientSound
-===============
-*/
-void G_SetClientSound( gentity_t *ent ) {
-	ent->client->ps.loopSound = 0;
-}
-
-
-
+void P_WorldEffects(gentity_t* ent){}
+void G_SetClientSound(gentity_t* ent){ent->client->ps.loopSound = 0;}
 //==============================================================
-
-/*
-==============
-ClientImpacts
-==============
-*/
-void ClientImpacts( gentity_t *ent, pmove_t *pm ) {
-	int		i, j;
-	trace_t	trace;
-	gentity_t	*other;
-
-	memset( &trace, 0, sizeof( trace ) );
-	for (i=0 ; i<pm->numtouch ; i++) {
-		for (j=0 ; j<i ; j++) {
-			if (pm->touchents[j] == pm->touchents[i] ) {
-				break;
-			}
+void ClientImpacts(gentity_t *ent,pmove_t *pm){
+	trace_t trace;
+	gentity_t* other;
+	memset(&trace,0,sizeof(trace));
+	for(int i=0;i<pm->numtouch;i++){
+		int j = 0;
+		for(;j<i;j++){
+			if(pm->touchents[j] == pm->touchents[i]){break;}
 		}
-		if (j != i) {
-			continue;	// duplicated
-		}
-		other = &g_entities[ pm->touchents[i] ];
-
-		if ( !other->touch ) {
-			continue;
-		}
-
-		other->touch( other, ent, &trace );
+		// duplicated
+		if(j != i){continue;}
+		other = &g_entities[pm->touchents[i]];
+		if(!other->touch){continue;}
+		other->touch(other,ent);
 	}
-
 }
-
 /*
 ============
 G_TouchTriggers
@@ -135,110 +91,74 @@ Find all trigger entities that ent's current position touches.
 Spectators will only interact with teleporters.
 ============
 */
-void	G_TouchTriggers( gentity_t *ent ) {
-	int			i, num;
-	int			touch[MAX_GENTITIES];
-	gentity_t	*hit;
-	trace_t		trace;
-	vec3_t		mins, maxs;
-	static vec3_t	range = { 40, 40, 52 };
-
-	if ( !ent->client ) {
-		return;
-	}
-
-#if MAPLENSFLARES	// JUHOX: never touch triggers in lens flare editor
-	if (g_editmode.integer == EM_mlf) return;
-#endif
-	VectorSubtract( ent->client->ps.origin, range, mins );
-	VectorAdd( ent->client->ps.origin, range, maxs );
-
-	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
-
+void G_TouchTriggers(gentity_t* ent){
+	int num;
+	int touch[MAX_GENTITIES];
+	gentity_t* hit;
+	trace_t trace;
+	vec3_t mins;
+	vec3_t maxs;
+	static vec3_t range = {40,40,52};
+	if(!ent->client){return;}
+	VectorSubtract(ent->client->ps.origin,range,mins);
+	VectorAdd(ent->client->ps.origin,range,maxs);
+	num = trap_EntitiesInBox(mins,maxs,touch,MAX_GENTITIES);
 	// can't use ent->absmin, because that has a one unit pad
-	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
-	VectorAdd( ent->client->ps.origin, ent->r.maxs, maxs );
-
-	for ( i=0 ; i<num ; i++ ) {
+	VectorAdd(ent->client->ps.origin,ent->r.mins,mins);
+	VectorAdd(ent->client->ps.origin,ent->r.maxs,maxs);
+	for(int i=0;i<num;i++){
 		hit = &g_entities[touch[i]];
-
-		if ( !hit->touch && !ent->touch ) {
-			continue;
-		}
-		if ( !( hit->r.contents & CONTENTS_TRIGGER ) ) {
-			continue;
-		}
-
+		if(!hit->touch && !ent->touch){continue;}
+		if(!(hit->r.contents & CONTENTS_TRIGGER)){continue;}
 		// ignore most entities if a spectator
-		if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
-			if ( hit->s.eType != ET_TELEPORT_TRIGGER &&
+		if(ent->client->sess.sessionTeam == TEAM_SPECTATOR){
+			if(hit->s.eType != ET_TELEPORT_TRIGGER &&
 				// this is ugly but adding a new ET_? type will
 				// most likely cause network incompatibilities
 				hit->touch != Touch_DoorTrigger) {
 				continue;
 			}
 		}
-
-		if ( !trap_EntityContact( mins, maxs, hit ) ) {
-				continue;
-		}
-		memset( &trace, 0, sizeof(trace) );
-
-		if ( hit->touch ) {
-			hit->touch (hit, ent, &trace);
-		}
+		if(!trap_EntityContact(mins,maxs,hit)){continue;}
+		memset(&trace,0,sizeof(trace));
+		if(hit->touch){hit->touch(hit,ent);}
 	}
-
 	// if we didn't touch a jump pad this pmove frame
-	if ( ent->client->ps.jumppad_frame != ent->client->ps.pmove_framecount ) {
+	if(ent->client->ps.jumppad_frame != ent->client->ps.pmove_framecount){
 		ent->client->ps.jumppad_frame = 0;
 		ent->client->ps.jumppad_ent = 0;
 	}
 }
-
-/*
-=================
-SpectatorThink
-=================
-*/
-void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
-	pmove_t	pm;
-	gclient_t	*client;
-
+void SpectatorThink(gentity_t* ent,usercmd_t* ucmd){
+	pmove_t pm;
+	gclient_t* client;
 	client = ent->client;
-
-	if ( client->sess.spectatorState != SPECTATOR_FOLLOW ) {
+	if(client->sess.spectatorState != SPECTATOR_FOLLOW){
 		client->ps.pm_type = PM_SPECTATOR;
 		client->ps.baseStats[stSpeed] = 50;	// faster than normal
-
 		// set up for pmove
-		memset (&pm, 0, sizeof(pm));
+		memset(&pm,0,sizeof(pm));
 		pm.ps = &client->ps;
 		pm.cmd = *ucmd;
-		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
+		// spectators can fly through bodies
+		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
 		pm.trace = trap_Trace;
 		pm.pointcontents = trap_PointContents;
 		// perform a pmove
-		Pmove (&pm);
+		Pmove(&pm);
 		// save results of pmove
-		VectorCopy( client->ps.origin, ent->s.origin );
+		VectorCopy(client->ps.origin,ent->s.origin);
 		// END ADDING
-
-		G_TouchTriggers( ent );
-		trap_UnlinkEntity( ent );
+		G_TouchTriggers(ent);
+		trap_UnlinkEntity(ent);
 	}
-
 	client->oldbuttons = client->buttons;
 	client->buttons = ucmd->buttons;
-
 	// attack button cycles through spectators
-	if ( ( client->buttons & BUTTON_ATTACK ) && ! ( client->oldbuttons & BUTTON_ATTACK ) ) {
-		Cmd_FollowCycle_f( ent, 1 );
+	if(client->buttons & BUTTON_ATTACK && !(client->oldbuttons & BUTTON_ATTACK)){
+		Cmd_FollowCycle_f(ent,1);
 	}
 }
-
-
-
 /*
 =================
 ClientInactivityTimer
@@ -246,52 +166,29 @@ ClientInactivityTimer
 Returns qfalse if the client is dropped
 =================
 */
-qboolean ClientInactivityTimer( gclient_t *client ) {
-	if ( ! g_inactivity.integer ) {
+qboolean ClientInactivityTimer(gclient_t* client){
+	if(!g_inactivity.integer){
 		// give everyone some time, so if the operator sets g_inactivity during
 		// gameplay, everyone isn't kicked
 		client->inactivityTime = level.time + 60 * 1000;
 		client->inactivityWarning = qfalse;
-	} else if ( client->pers.cmd.forwardmove || 
-		client->pers.cmd.rightmove || 
-		client->pers.cmd.upmove ||
-		(client->pers.cmd.buttons & BUTTON_ATTACK) ) {
+	}
+	else if(client->pers.cmd.forwardmove || client->pers.cmd.rightmove || client->pers.cmd.upmove || client->pers.cmd.buttons & BUTTON_ATTACK){
 		client->inactivityTime = level.time + g_inactivity.integer * 1000;
 		client->inactivityWarning = qfalse;
-	} else if ( !client->pers.localClient ) {
-		if ( level.time > client->inactivityTime ) {
-			trap_DropClient( client - level.clients, "Dropped due to inactivity" );
+	}
+	else if(!client->pers.localClient){
+		if(level.time > client->inactivityTime){
+			trap_DropClient(client - level.clients,"Dropped due to inactivity");
 			return qfalse;
 		}
-		if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
+		if(level.time > client->inactivityTime - 10000 && !client->inactivityWarning){
 			client->inactivityWarning = qtrue;
-			trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
+			trap_SendServerCommand(client - level.clients,"cp \"Ten seconds until inactivity drop!\n\"");
 		}
 	}
 	return qtrue;
 }
-
-/*
-====================
-ClientIntermissionThink
-====================
-*/
-void ClientIntermissionThink( gclient_t *client ) {
-	client->ps.eFlags &= ~EF_TALK;
-	client->ps.eFlags &= ~EF_FIRING;
-
-	// the level will exit when everyone wants to or after timeouts
-
-	// swap and latch button actions
-	client->oldbuttons = client->buttons;
-	client->buttons = client->pers.cmd.buttons;
-	if ( client->buttons & ( BUTTON_ATTACK | BUTTON_USE_HOLDABLE ) & ( client->oldbuttons ^ client->buttons ) ) {
-		// this used to be an ^1 but once a player says ready, it should stick
-		client->readyToExit = 1;
-	}
-}
-
-
 /*
 ================
 ClientEvents
@@ -300,35 +197,22 @@ Events will be passed on to the clients for presentation,
 but any server game effects are handled here
 ================
 */
-void ClientEvents( gentity_t *ent, int oldEventSequence ) {
-	int			i, j;
+void ClientEvents(gentity_t* ent,int oldEventSequence){
 	int			event;
-	int 		tier;
-	int			distance;
-	int 		enemyMelee,playerMelee;
 	gclient_t	*client;
 	gentity_t	*enemy;
-	int			damage;
-	int			amount;
-	vec3_t		dir;
-	vec3_t		origin, angles;
-//	qboolean	fired;
-	gentity_t	*drop;
 	playerState_t *ps;
-	playerState_t *enemyPS;
 	// ADDING FOR ZEQ2
 	gentity_t	*missile;
 	// END ADDING
 	client = ent->client;
 	ps = &client->ps;
-	if(ps->lockedTarget>0){enemyPS = &g_entities[ps->lockedTarget-1].client->ps;}
-	tier = ps->powerLevel[plTierCurrent];
 	if(oldEventSequence < client->ps.eventSequence - MAX_PS_EVENTS){
 		oldEventSequence = client->ps.eventSequence - MAX_PS_EVENTS;
 	}
-	for ( i = oldEventSequence ; i < client->ps.eventSequence ; i++ ) {
-		event = client->ps.events[ i & (MAX_PS_EVENTS-1) ];
-		switch ( event ) {
+	for(int i=oldEventSequence;i<client->ps.eventSequence;i++){
+		event = client->ps.events[i&(MAX_PS_EVENTS-1)];
+		switch(event){
 		case EV_LAND_MEDIUM:
 		case EV_LAND_HEAVY:
 			break;
@@ -394,32 +278,26 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 			break;
 		}
 	}
-
 }
-
-/*
-==============
-SendPendingPredictableEvents
-==============
-*/
-void SendPendingPredictableEvents( playerState_t *ps ) {
-	gentity_t *t;
-	int event, seq;
-	int extEvent, number;
-
+void SendPendingPredictableEvents(playerState_t* ps){
+	gentity_t* t;
+	int event;
+	int seq;
+	int extEvent;
+	int number;
 	// if there are still events pending
-	if ( ps->entityEventSequence < ps->eventSequence ) {
+	if(ps->entityEventSequence < ps->eventSequence){
 		// create a temporary entity for this event which is sent to everyone
 		// except the client who generated the event
 		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
+		event = ps->events[seq] | ((ps->entityEventSequence & 3) << 8);
 		// set external event to zero before calling BG_PlayerStateToEntityState
 		extEvent = ps->externalEvent;
 		ps->externalEvent = 0;
 		// create temporary entity for event
-		t = G_TempEntity( ps->origin, event );
+		t = G_TempEntity(ps->origin,event);
 		number = t->s.number;
-		BG_PlayerStateToEntityState( ps, &t->s,qtrue );
+		BG_PlayerStateToEntityState(ps,&t->s,qtrue);
 		t->s.number = number;
 		t->s.eType = ET_EVENTS + event;
 		t->s.eFlags |= EF_PLAYER_EVENT;
@@ -431,9 +309,9 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
 		ps->externalEvent = extEvent;
 	}
 }
-void LockonCheck(gclient_t *client){
+void LockonCheck(gclient_t* client){
 	int entityNum = -1;
-	playerState_t *ps;
+	playerState_t* ps;
 	ps = &client->ps;
 	if(ps->lockedTarget>0){
 		if(!&g_entities[ps->lockedTarget-1].client || &g_entities[ps->lockedTarget-1].client->pers.connected == CON_DISCONNECTED){
@@ -476,7 +354,7 @@ If "g_synchronousClients 1" is set, this will be called exactly
 once for each server frame, which makes for smooth demo recording.
 ==============
 */
-void ClientThink_real( gentity_t *ent ) {
+void ClientThink_real(gentity_t* ent){
 	gclient_t	*client;
 	pmove_t		pm;
 	int			oldEventSequence;
@@ -484,10 +362,10 @@ void ClientThink_real( gentity_t *ent ) {
 	usercmd_t	*ucmd;
 	int			i;
 	client = ent->client;
-	if (client->pers.connected != CON_CONNECTED){return;}
+	if(client->pers.connected != CON_CONNECTED){return;}
 	ucmd = &ent->client->pers.cmd;
-	if ( ucmd->serverTime > level.time + 200 ) {ucmd->serverTime = level.time + 200;}
-	if ( ucmd->serverTime < level.time - 1000 ) {ucmd->serverTime = level.time - 1000;} 
+	if(ucmd->serverTime > level.time + 200){ucmd->serverTime = level.time + 200;}
+	if(ucmd->serverTime < level.time - 1000){ucmd->serverTime = level.time - 1000;} 
 	msec = ucmd->serverTime - client->ps.commandTime;
 	if(msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW){return;}
 	if(msec > 200){msec = 200;}
@@ -496,26 +374,14 @@ void ClientThink_real( gentity_t *ent ) {
 	if(pmove_fixed.integer || client->pers.pmoveFixed){
 		ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
 	}
-	if(level.intermissiontime){
-		ClientIntermissionThink( client );
-		return;
-	}
 	if(client->sess.sessionTeam == TEAM_SPECTATOR){
-		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
-			return;
-		}
-		SpectatorThink( ent, ucmd );
+		SpectatorThink(ent,ucmd);
 		return;
 	}
-	if(client->noclip){
-		client->ps.pm_type = PM_NOCLIP;
-	}
-	else{
-		client->ps.pm_type = PM_NORMAL;
-	}
+	client->ps.pm_type = client->noclip ? PM_NOCLIP : PM_NOCLIP;
 	ent->s.playerBitFlags = client->ps.bitFlags;
-	ent->s.attackPowerCurrent = client->ps.powerLevel[plHealth];
-	ent->s.attackPowerTotal = client->ps.powerLevel[plMaximum];
+	//ent->s.attackPowerCurrent = client->ps.powerLevel[plHealth];
+	//ent->s.attackPowerTotal = client->ps.powerLevel[plMaximum];
 	G_LinkUserWeaponData( &(client->ps) );
 	G_CheckSkills(&(client->ps));
 	// set up for pmove
@@ -632,7 +498,7 @@ void SpectatorClientEndFrame( gentity_t *ent ) {
 		if ( clientNum >= 0 ) {
 			cl = &level.clients[ clientNum ];
 			if ( cl->pers.connected == CON_CONNECTED && cl->sess.sessionTeam != TEAM_SPECTATOR ) {
-				flags = (cl->ps.eFlags & ~(EF_VOTED | EF_TEAMVOTED)) | (ent->client->ps.eFlags & (EF_VOTED | EF_TEAMVOTED));
+				flags = (cl->ps.eFlags & ~EF_VOTED) | (ent->client->ps.eFlags & EF_VOTED);
 				ent->client->ps = cl->ps;
 				ent->client->ps.pm_flags |= PMF_FOLLOW;
 				ent->client->ps.eFlags = flags;

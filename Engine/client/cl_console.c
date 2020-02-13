@@ -100,7 +100,6 @@ Con_MessageMode_f
 */
 void Con_MessageMode_f (void) {
 	chat_playerNum = -1;
-	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 
@@ -114,7 +113,6 @@ Con_MessageMode2_f
 */
 void Con_MessageMode2_f (void) {
 	chat_playerNum = -1;
-	chat_team = qtrue;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
@@ -131,7 +129,6 @@ void Con_MessageMode3_f (void) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );
@@ -148,7 +145,6 @@ void Con_MessageMode4_f (void) {
 		chat_playerNum = -1;
 		return;
 	}
-	chat_team = qfalse;
 	Field_Clear( &chatField );
 	chatField.widthInChars = 30;
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_MESSAGE );

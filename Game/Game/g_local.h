@@ -48,9 +48,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	MISSILE_PRESTEP_TIME	50
 
 // gentity->flags
-#define	FL_TEAMSLAVE			0x00000010	// not the first on the team
 #define FL_NO_KNOCKBACK			0x00000020
-#define FL_FORCE_GESTURE		0x00000400	// force gesture on client
 
 // movers are things like doors, plats, buttons, etc
 typedef enum {
@@ -154,7 +152,7 @@ struct gentity_s {
 	void		(*think)(gentity_t *self);
 	void		(*reached)(gentity_t *self);	// movers call this when hitting endpoint
 	void		(*blocked)(gentity_t *self, gentity_t *other);
-	void		(*touch)(gentity_t *self, gentity_t *other, trace_t *trace);
+	void		(*touch)(gentity_t* self,gentity_t* other);
 	void		(*use)(gentity_t *self, gentity_t *other, gentity_t *activator);
 	void		(*pain)(gentity_t *self, gentity_t *attacker, int damage);
 	void		(*die)(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod);
@@ -177,7 +175,6 @@ struct gentity_s {
 	gentity_t	*ally;
 	gentity_t	*activator;
 	gentity_t	*teamchain;		// next entity in team
-	gentity_t	*teammaster;	// master of the team
 	int			watertype;
 	int			waterlevel;
 
@@ -247,7 +244,7 @@ typedef struct {
 #define	FOLLOW_ACTIVE1	-1
 #define	FOLLOW_ACTIVE2	-2
 
-// client data that stays across multiple levels or tournament restarts
+// client data that stays across multiple levels
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
 // MUST be dealt with in G_InitSessionData() / G_ReadSessionData() / G_WriteSessionData()
@@ -256,8 +253,6 @@ typedef struct {
 	int			spectatorNum;		// for determining next-in-line to play
 	spectatorState_t	spectatorState;
 	int			spectatorClient;	// for chasecam and follow mode
-	int			wins, losses;		// tournament stats
-	qboolean	teamLeader;			// true when this client is a team leader
 } clientSession_t;
 
 //
@@ -276,7 +271,6 @@ typedef struct {
 	int			enterTime;			// level.time the client entered the game
 	playerTeamState_t teamState;	// status in teamplay games
 	int			voteCount;			// to prevent people from constantly calling votes
-	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
 } clientPersistant_t;
 
@@ -365,7 +359,6 @@ typedef struct {
 	int			previousTime;			// so movers can back up when blocked
 
 	int			startTime;				// level.time the map was started
-	int			teamScores[TEAM_NUM_TEAMS];
 	int			lastTeamLocationTime;		// last time of client team location update
 
 	qboolean	newSession;				// don't use any old session data, because
@@ -389,13 +382,6 @@ typedef struct {
 	int			voteYes;
 	int			voteNo;
 	int			numVotingClients;		// set by CalculateRanks
-
-	// team voting state
-	char		teamVoteString[2][MAX_STRING_CHARS];
-	int			teamVoteTime[2];		// level.time vote was called
-	int			teamVoteYes[2];
-	int			teamVoteNo[2];
-	int			numteamVotingClients[2];// set by CalculateRanks
 	// spawn variables
 	qboolean	spawning;				// the G_Spawn*() functions are valid
 	int			numSpawnVars;
@@ -421,10 +407,6 @@ typedef struct {
 	int			bodyQueIndex;			// dead bodies
 	gentity_t	*bodyQue[BODY_QUEUE_SIZE];
 	int			lastRadarUpdateTime;	// when did the radar last update
-
-	#if MAPLENSFLARES	// JUHOX: level locals for the lens flare editor
-	qboolean	lfeFMM;	// FMM = fine move mode
-#endif
 } level_locals_t;
 
 
@@ -512,8 +494,7 @@ void G_ExplodeMissile( gentity_t *ent );
 //
 // g_mover.c
 //
-void G_RunMover( gentity_t *ent );
-void Touch_DoorTrigger( gentity_t *ent, gentity_t *other, trace_t *trace );
+void Touch_DoorTrigger(gentity_t* ent,gentity_t* other);
 
 //
 // g_trigger.c
@@ -525,10 +506,6 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 // g_misc.c
 //
 void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles );
-#ifdef MISSIONPACK
-void DropPortalSource( gentity_t *ent );
-void DropPortalDestination( gentity_t *ent );
-#endif
 
 
 //
@@ -545,7 +522,6 @@ void Weapon_HookThink (gentity_t *ent);
 // g_client.c
 //
 team_t TeamCount( int ignoreClientNum, int team );
-int TeamLeader( int team );
 team_t PickTeam( int ignoreClientNum );
 void SetClientViewAngle( gentity_t *ent, vec3_t angle );
 gentity_t *SelectSpawnPoint (vec3_t avoidPoint, vec3_t origin, vec3_t angles );
@@ -597,10 +573,7 @@ void DeathmatchScoreboardMessage (gentity_t *client);
 // g_main.c
 //
 void FindIntermissionPoint( void );
-void SetLeader(int team, int client);
-void CheckTeamLeader( int team );
 void G_RunThink (gentity_t *ent);
-void AddTournamentQueue(gclient_t *client);
 void QDECL G_LogPrintf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void SendScoreboardMessageToAllClients( void );
 void QDECL G_Printf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
@@ -624,13 +597,6 @@ void ClientEndFrame( gentity_t *ent );
 void G_RunClient( gentity_t *ent );
 
 //
-// g_team.c
-//
-qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
-void Team_CheckDroppedItem( gentity_t *dropped );
-qboolean CheckObeliskAttack( gentity_t *obelisk, gentity_t *attacker );
-
-//
 // g_mem.c
 //
 void *G_Alloc( int size );
@@ -649,7 +615,6 @@ void G_WriteSessionData( void );
 //
 // g_arenas.c
 //
-void UpdateTournamentInfo( void );
 void SpawnModelsOnVictoryPads( void );
 void Svcmd_AbortPodium_f( void );
 
@@ -696,7 +661,6 @@ void checkTier(gclient_t *client );
 void syncTier(gclient_t *client );
 void setupTiers(gclient_t *client );
 
-#include "g_team.h" // teamplay specific stuff
 extern	level_locals_t	level;
 extern	gentity_t		g_entities[MAX_GENTITIES];
 
@@ -726,8 +690,6 @@ extern	vmCvar_t	g_motd;
 extern	vmCvar_t	g_warmup;
 extern	vmCvar_t	g_doWarmup;
 extern	vmCvar_t	g_allowVote;
-extern	vmCvar_t	g_teamAutoJoin;
-extern	vmCvar_t	g_teamForceBalance;
 extern	vmCvar_t	g_banIPs;
 extern	vmCvar_t	g_filterBan;
 extern	vmCvar_t	g_smoothClients;
@@ -765,9 +727,6 @@ extern	vmCvar_t	g_quickTransformCostPerTier ;
 extern	vmCvar_t	g_quickZanzokenCost ;
 extern	vmCvar_t	g_quickZanzokenDistance ;
 // END ADDING
-#if MAPLENSFLARES	// JUHOX: cvars for map lens flares
-extern	vmCvar_t	g_editmode;
-#endif
 
 void	trap_Print( const char *fmt );
 void	trap_Error(const char *fmt) __attribute__((noreturn));

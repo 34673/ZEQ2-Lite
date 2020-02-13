@@ -209,7 +209,7 @@ static void CG_AddPlayerWeaponFlash(refEntity_t *parent, cg_userWeapon_t *weapon
 	// add dynamic light
 	if(weaponGraphics->flashDlightRadius){trap_R_AddLightToScene(flash->origin, 100*weaponGraphics->flashDlightRadius, weaponGraphics->flashDlightColor[0],weaponGraphics->flashDlightColor[1], weaponGraphics->flashDlightColor[2]);}
 }
-void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent, int team){
+void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent){
 	cg_userWeapon_t		*weaponGraphics;
 	orientation_t		orient;
 	refEntity_t			refEnt;

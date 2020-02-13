@@ -128,18 +128,13 @@ vmCvar_t			cg_railTrailTime,
 					cg_thirdPersonMeleeCameraDamp,
 					cg_thirdPersonMeleeTargetDamp,
 					cg_synchronousClients,
-					cg_teamChatTime,
-					cg_teamChatHeight,
 					cg_stats,
 					cg_buildScript,
 					cg_forceModel,
 					cg_paused,
 					cg_blood,
 					cg_deferPlayers,
-					cg_drawTeamOverlay,
-					cg_teamOverlayUserinfo,
 					cg_drawFriend,
-					cg_teamChatsOnly,
 					cg_noVoiceChats,
 					cg_noVoiceText,
 					cg_hudFiles,
@@ -173,15 +168,8 @@ vmCvar_t			cg_railTrailTime,
 					cg_particlesType,
 					cg_particlesStop,
 					cg_particlesMaximum,
-					cg_drawBBox,
+					cg_drawBBox;
 //END ADDING
-// JUHOX
-#if MAPLENSFLARES
-					cg_lensFlare,
-					cg_mapFlare,
-					cg_sunFlare,
-					cg_missileFlare;
-#endif
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -248,22 +236,10 @@ static cvarTable_t cvarTable[] = {
 	{&cg_thirdPersonMeleeCameraDamp,	"cg_thirdPersonMeleeCameraDamp",	"0.1",		CVAR_ARCHIVE},
 	{&cg_thirdPersonMeleeTargetDamp,	"cg_thirdPersonMeleeTargetDamp",	"0.9",		CVAR_ARCHIVE},
 	{&cg_thirdPerson,					"cg_thirdPerson",					"0",		CVAR_ARCHIVE},
-	{&cg_teamChatTime,					"cg_teamChatTime",					"3000",		CVAR_ARCHIVE},
-	{&cg_teamChatHeight,				"cg_teamChatHeight",				"0",		CVAR_ARCHIVE},
 	{&cg_forceModel,					"cg_forceModel",					"0",		CVAR_ARCHIVE},
 	{&cg_deferPlayers,					"cg_deferPlayers",					"1",		CVAR_ARCHIVE},
-	{&cg_drawTeamOverlay,				"cg_drawTeamOverlay",				"0",		CVAR_ARCHIVE},
-	{&cg_teamOverlayUserinfo,			"teamoverlay",						"0",		CVAR_ROM | CVAR_USERINFO},
 	{&cg_stats,							"cg_stats",							"0",		0},
-// JUHOX
-#if MAPLENSFLARES
-	{&cg_lensFlare,						"cg_lensFlare",						"1",		CVAR_ARCHIVE},
-	{&cg_mapFlare,						"cg_mapFlare",						"2",		CVAR_ARCHIVE},
-	{&cg_sunFlare,						"cg_sunFlare",						"2",		CVAR_ARCHIVE},
-	{&cg_missileFlare,					"cg_missileFlare",					"1",		CVAR_ARCHIVE},
-#endif
 	{&cg_drawFriend,					"cg_drawFriend",					"1",		CVAR_ARCHIVE},
-	{&cg_teamChatsOnly,					"cg_teamChatsOnly",					"0",		CVAR_ARCHIVE},
 	{&cg_noVoiceChats,					"cg_noVoiceChats",					"0",		CVAR_ARCHIVE},
 	{&cg_noVoiceText,					"cg_noVoiceText",					"0",		CVAR_ARCHIVE},
 	{&cg_buildScript,					"com_buildScript",					"0",		0},	// force loading of all possible data and error on failures
@@ -324,8 +300,6 @@ void CG_RegisterCvars(void){
 	trap_Cvar_Register(NULL, "model", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
 	trap_Cvar_Register(NULL, "legsmodel", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
 	trap_Cvar_Register(NULL, "headmodel", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
-	trap_Cvar_Register(NULL, "team_model", DEFAULT_TEAM_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
-	trap_Cvar_Register(NULL, "team_headmodel", DEFAULT_TEAM_HEAD, CVAR_USERINFO | CVAR_ARCHIVE );
 }
 
 /*
@@ -578,9 +552,6 @@ static void CG_RegisterClients(void){
 	int	i;
 
 	// JUHOX: don't load client models in lens flare editor
-#if MAPLENSFLARES
-	if(cgs.editMode == EM_mlf) return;
-#endif
 	CG_LoadingClient(cg.clientNum);
 	CG_NewClientInfo(cg.clientNum);
 	for(i=0;i<MAX_CLIENTS;i++){

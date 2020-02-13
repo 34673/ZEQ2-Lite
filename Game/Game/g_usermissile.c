@@ -55,7 +55,6 @@ void Think_ProxDet( gentity_t *self ) {
 		// or clients on our team.
 		if ( !target_ent->inuse ) continue;
 		if ( target_ent == target_owner ) continue;
-		if ( OnSameTeam( target_ent, target_owner ) ) continue;
 
 		// Judge the distance from the middle of the body, not the feet
 		midbody[0] = target_ent->r.currentOrigin[0] + 
@@ -188,7 +187,6 @@ void Think_Homing (gentity_t *self) {
 
 		if (!target_ent->inuse) continue;
 		if (target_ent == target_owner) continue;
-		if ( OnSameTeam( target_ent, target_owner ) ) continue;
 
 		// Aim for the body, not the feet
 		midbody[0] = target_ent->r.currentOrigin[0] + 
@@ -287,7 +285,6 @@ void Think_CylinderHoming (gentity_t *self) {
 
 		if (!target_ent->inuse) continue;
 		if (target_ent == target_owner) continue;
-		if ( OnSameTeam( target_ent, target_owner ) ) continue;
 
 		// Aim for the body, not the feet
 		midbody[0] = target_ent->r.currentOrigin[0] + 

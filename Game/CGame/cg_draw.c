@@ -22,10 +22,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // cg_draw.c -- draw all of the graphical elements during
 // active (after loading) gameplay
 #include "cg_local.h"
-
-int sortedTeamPlayers[TEAM_MAXOVERLAY];
-int	numSortedTeamPlayers;
-
 /*
 =================
 CG_DrawHorGauge
@@ -490,60 +486,61 @@ static void CG_DrawCrosshair(void){
 	tierConfig_cg	*tier;
 	qhandle_t		hShader;
 	trace_t			trace;
-	float			x, y, w, h,
-					f;
+	float			x;
+	float			y;
+	float			w;
+	float			h;
+	float			f;
 	int				ca;
-	vec3_t			muzzle, forward, up,
-					start, end;
-	vec4_t			lockOnEnemyColor =	{1.f,	0,	 0, 1.f},
-					lockOnAllyColor	=	{  0, 1.f,	 0, 1.f},
-					chargeColor	=		{.5f, .5f, 1.f, 1.f};
-
-	if(!cg_drawCrosshair.integer || cg.snap->ps.lockedTarget > 0) return;
-	if(cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR) return;
+	vec3_t			muzzle;
+	vec3_t			forward;
+	vec3_t			up;
+	vec3_t			start;
+	vec3_t			end;
+	vec4_t			lockOnEnemyColor = {1.0f,0.0f,0.0f,1.0f};
+	vec4_t			chargeColor	= {0.5f,0.5f,1.0f,1.0f};
+	if(!cg_drawCrosshair.integer || cg.snap->ps.lockedTarget > 0){return;}
+	if(cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR){return;}
+	ps = &cg.predictedPlayerState;
 	ci = &cgs.clientinfo[cg.snap->ps.clientNum];
 	tier = &ci->tierConfig[ci->tierCurrent];
-	ps = &cg.predictedPlayerState;
-	if(ps->bitFlags & usingMelee) return;
+	if(ps->bitFlags & usingMelee){return;}
 	AngleVectors(ps->viewangles, forward, NULL, up);
 	VectorCopy(ps->origin, muzzle);
 	VectorMA(muzzle, ps->viewheight, up, muzzle);
 	VectorMA(muzzle, 14, forward, muzzle);
 	VectorCopy(muzzle, start);
 	VectorMA(start, 131072, forward, end);
-	CG_Trace(&trace, start, NULL, NULL, end, cg.snap->ps.clientNum, CONTENTS_SOLID|CONTENTS_BODY);	
-	if(!CG_WorldCoordToScreenCoordFloat(trace.endpos, &x, &y)) return;
+	CG_Trace(&trace, start, NULL, NULL, end, cg.snap->ps.clientNum, CONTENTS_SOLID|CONTENTS_BODY);
+	if(!CG_WorldCoordToScreenCoordFloat(trace.endpos, &x, &y)){return;}
 	w = h = cg_crosshairSize.value *8 +8;
 	f = cg.time -cg.itemPickupBlendTime;
 	if(f > 0 && f < ITEM_BLOB_TIME){
 		f /= ITEM_BLOB_TIME;
 		w = h *= f+1;
 	}
+	trap_R_SetColor(NULL);
 	if(cg_crosshairHealth.integer){
 		vec4_t hcolor;
-		
 		CG_ColorForHealth(hcolor);
 		trap_R_SetColor(hcolor);
 	}
-	else trap_R_SetColor(NULL);
 	ca = cg_drawCrosshair.integer;
 	if(ca < 0) ca = 0;
 	hShader = cgs.media.crosshairShader[ca % NUM_CROSSHAIRS];
 	if(tier->crosshair){
 		hShader = tier->crosshair;
-		if(ps->bitFlags & isBreakingLimit && tier->crosshairPowering)
+		if(ps->bitFlags & isBreakingLimit && tier->crosshairPowering){
 			hShader = tier->crosshairPowering;
+		}
 	}
+	trap_R_SetColor(NULL);
 	if((cg.crosshairClientNum > 0 && cg.crosshairClientNum <= MAX_CLIENTS) || ps->lockedTarget > 0){
-		if(cgs.clientinfo[cg.crosshairClientNum].team == cg.snap->ps.persistant[PERS_TEAM] &&
-			cgs.clientinfo[cg.crosshairClientNum].team != TEAM_FREE)
-			trap_R_SetColor(lockOnAllyColor);	// Not working?
-		else
-			trap_R_SetColor(lockOnEnemyColor);
+		trap_R_SetColor(lockOnEnemyColor);
 	}
-	else if(cg.snap->ps.currentSkill[WPSTAT_BITFLAGS] & WPF_READY || cg.snap->ps.currentSkill[WPSTAT_ALT_BITFLAGS] & WPF_READY)
+	else if(cg.snap->ps.currentSkill[WPSTAT_BITFLAGS] & WPF_READY || cg.snap->ps.currentSkill[WPSTAT_ALT_BITFLAGS] & WPF_READY){
 		trap_R_SetColor(chargeColor);
-	else trap_R_SetColor(NULL);
+	}
 	CG_DrawPic(qfalse, x -.5f *w, y -.5f *h, w, h, hShader);
 	trap_R_SetColor(NULL);
 }

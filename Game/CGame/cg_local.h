@@ -63,14 +63,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	CHAR_WIDTH			8		// 32
 #define	CHAR_HEIGHT			12		// 48
 #define	TEXT_ICON_SPACE		4
-#define	TEAMCHAT_WIDTH		80
-#define TEAMCHAT_HEIGHT		8
 // very large characters
 #define	GIANT_WIDTH			32
 #define	GIANT_HEIGHT		48
 #define	NUM_CROSSHAIRS		10
-#define TEAM_OVERLAY_MAXNAME_WIDTH	12
-#define TEAM_OVERLAY_MAXLOCATION_WIDTH	16
 #define	DEFAULT_MODEL			"goku"
 #define	DEFAULT_TEAM_MODEL		"goku"
 #define	DEFAULT_TEAM_HEAD		"goku"
@@ -247,9 +243,7 @@ typedef struct{
 					powerLevel,		// you only get this info about your teammates
 					armor,
 					curWeapon,
-					wins, losses,	// in tourney mode
-					teamTask;		// task in teamplay (offence/defence)
-	qboolean		teamLeader;		// true when this is a team leader
+					wins, losses;	// in tourney mode
 	int				powerups,		// so can display quad/flag status
 					breathPuffTime,
 					bubbleTrailTime;
@@ -259,9 +253,7 @@ typedef struct{
 					headModelName[MAX_QPATH],
 					headSkinName[MAX_QPATH],
 					legsModelName[MAX_QPATH],
-					legsSkinName[MAX_QPATH],
-					redTeam[MAX_TEAMNAME],
-					blueTeam[MAX_TEAMNAME];
+					legsSkinName[MAX_QPATH];
 	qhandle_t		skinDamageState[8][3][10],
 					modelDamageState[8][3][10];
 	qboolean		deferred,
@@ -323,118 +315,6 @@ typedef struct weaponInfo_s{
 
 #define MAX_REWARDSTACK		10
 #define MAX_SOUNDBUFFER		20
-// JUHOX: definitions used for map lens flares
-#if MAPLENSFLARES
-#define MAX_LENSFLARE_EFFECTS 200
-#define MAX_MISSILE_LENSFLARE_EFFECTS 16
-#define MAX_LENSFLARES_PER_EFFECT 32
-typedef enum{
-	LFM_reflexion,
-	LFM_glare,
-	LFM_star
-} lensFlareMode_t;
-
-typedef struct{
-	qhandle_t shader;
-	lensFlareMode_t mode;
-	float	pos,					// position at light axis
-			size,
-			rgba[4],
-			rotationOffset,
-			rotationYawFactor,
-			rotationPitchFactor,
-			rotationRollFactor,
-			fadeAngleFactor,		// for spotlights
-			entityAngleFactor,		// for spotlights
-			intensityThreshold;
-} lensFlare_t;
-
-typedef struct{
-	char		name[64];
-	float		range,
-				rangeSqr,
-				fadeAngle;	// for spotlights
-	int			numLensFlares;
-	lensFlare_t lensFlares[MAX_LENSFLARES_PER_EFFECT];
-} lensFlareEffect_t;
-
-#define MAX_LIGHTS_PER_MAP 1024
-#define LIGHT_INTEGRATION_BUFFER_SIZE 8	// must be a power of 2
-typedef struct{
-	float light;
-	vec3_t origin;
-} lightSample_t;
-
-typedef struct{
-	vec3_t						origin;
-	centity_t*					lock;
-	float						radius, lightRadius;
-	vec3_t						dir;					// for spotlights
-	float						angle,					// for spotlights
-								maxVisAngle;
-	const lensFlareEffect_t*	lfeff;
-	int							libPos,
-								libNumEntries;
-	lightSample_t lib[LIGHT_INTEGRATION_BUFFER_SIZE];	// lib = light integration buffer
-} lensFlareEntity_t;
-
-typedef enum{
-	LFEEM_none,
-	LFEEM_pos,
-	LFEEM_target,
-	LFEEM_radius
-} lfeEditMode_t;
-
-typedef enum{
-	LFEDM_normal,
-	LFEDM_marks,
-	LFEDM_none
-} lfeDrawMode_t;
-
-typedef enum{
-	LFEMM_coarse,
-	LFEMM_fine
-} lfeMoveMode_t;
-
-typedef enum{
-	LFECS_small,
-	LFECS_lightRadius,
-	LFECS_visRadius
-} lfeCursorSize_t;
-
-typedef enum{
-	LFECM_main,
-	LFECM_copyOptions
-} lfeCommandMode_t;
-
-#define LFECO_EFFECT		1
-#define LFECO_VISRADIUS		2
-#define LFECO_LIGHTRADIUS	4
-#define LFECO_SPOT_DIR		8
-#define LFECO_SPOT_ANGLE	16
-typedef struct{
-	lensFlareEntity_t*	selectedLFEnt;	// NULL = none
-	lfeDrawMode_t		drawMode;
-	lfeEditMode_t		editMode;
-	lfeMoveMode_t		moveMode;
-	lfeCursorSize_t		cursorSize;
-	float				fmm_distance;	// fmm = fine move mode
-	vec3_t				fmm_offset;
-	qboolean			delAck;
-	int					selectedEffect,
-						markedLFEnt;	// -1 = none
-	lensFlareEntity_t	originalLFEnt;	// backup for undo
-	int					oldButtons,
-						lastClick;
-	qboolean			editTarget;
-	vec3_t				targetPosition;
-	lfeCommandMode_t	cmdMode;
-	int					copyOptions;
-	lensFlareEntity_t	copiedLFEnt;	// for copy / paste
-	qboolean			moversStopped;
-	centity_t*			selectedMover;
-} lfEditor_t;
-#endif
 
 //======================================================================
 // all cg.stepTime, cg.duckTime, cg.landTime, etc are set to cg.time when the action
@@ -514,12 +394,6 @@ typedef struct{
 	// view rendering
 	refdef_t		refdef;
 	vec3_t			refdefViewAngles;		// will be converted to refdef.viewaxis
-#if MAPLENSFLARES							// JUHOX: variables for map lens flares
-	vec3_t			lastViewOrigin;
-	float			viewMovement;
-	int				numFramesWithoutViewMovement;	
-	lfEditor_t		lfEditor;				// JUHOX: lens flare editor variables
-#endif
 #if EARTHQUAKE_SYSTEM						// JUHOX: earthquake variables
 	int				earthquakeStartedTime,
 					earthquakeEndTime;
@@ -755,27 +629,12 @@ typedef struct{
 								capturelimit,
 								timelimit,
 								maxclients;
-	char						mapname[MAX_QPATH],
-								redTeam[MAX_QPATH],
-								blueTeam[MAX_QPATH],
-// JUHOX: serverinfo cvars for map lens flares
-#if MAPLENSFLARES
-								sunFlareEffect[128];
-	editMode_t					editMode;
-	float						sunFlareYaw,
-								sunFlarePitch,
-								sunFlareDistance;
-#endif
+	char						mapname[MAX_QPATH];
 	qboolean					voteModified;					// beep whenever changed
 	char						voteString[MAX_STRING_TOKENS];
 	int							voteTime,
 								voteYes,
-								voteNo,
-								teamVoteTime[2],
-								teamVoteYes[2],
-								teamVoteNo[2];
-	qboolean					teamVoteModified[2];			// beep whenever changed
-	char						teamVoteString[2][MAX_STRING_TOKENS];
+								voteNo;
 	int							levelStartTime;
 	// locally derived information from gamestate
 	qhandle_t					gameModels[MAX_MODELS];
@@ -784,38 +643,14 @@ typedef struct{
 	qhandle_t					inlineDrawModel[MAX_MODELS];
 	vec3_t						inlineModelMidpoints[MAX_MODELS];
 	clientInfo_t				clientinfo[MAX_CLIENTS];
-	// teamchat width is *3 because of embedded color codes
-	char						teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH*3+1];
-	int							teamChatMsgTimes[TEAMCHAT_HEIGHT],
-								teamChatPos,
-								teamLastChatPos;
 	qboolean 					eventHandling,
 	// orders
 								orderPending;
 	int							currentOrder,
 								orderTime,
 								currentVoiceClient,
-								acceptOrderTime,
-								acceptTask,
-								acceptLeader;
+								acceptOrderTime;
 	char						acceptVoice[MAX_NAME_LENGTH];
-// JUHOX: variables for map lens flares
-#if MAPLENSFLARES
-	int							numLensFlareEffects, numLensFlareEntities;
-	lensFlareEffect_t			lensFlareEffects[MAX_LENSFLARE_EFFECTS];
-	lensFlareEntity_t			lensFlareEntities[MAX_LIGHTS_PER_MAP],
-								sunFlare;
-#endif
-// JUHOX: variables for missile lens flares
-	int 						numMissileLensFlareEffects;
-	lensFlareEffect_t			missileLensFlareEffects[MAX_MISSILE_LENSFLARE_EFFECTS];
-	const lensFlareEffect_t* 	lensFlareEffectBeamHead;
-	const lensFlareEffect_t* 	lensFlareEffectSolarFlare;
-	const lensFlareEffect_t* 	lensFlareEffectExplosion1;
-	const lensFlareEffect_t* 	lensFlareEffectExplosion2;
-	const lensFlareEffect_t* 	lensFlareEffectExplosion3;
-	const lensFlareEffect_t* 	lensFlareEffectExplosion4;
-	const lensFlareEffect_t*	lensFlareEffectEnergyGlowDarkBackground;
 	char						messages[3][256];
 	int							messageClient[3],
 								chatTimer;
@@ -846,8 +681,6 @@ extern	vmCvar_t		cg_centertime,
 						cg_drawIcons,
 						cg_drawCrosshair,
 						cg_drawCrosshairNames,
-						cg_drawTeamOverlay,
-						cg_teamOverlayUserinfo,
 						cg_crosshairX,
 						cg_crosshairY,
 						cg_crosshairSize,
@@ -891,8 +724,6 @@ extern	vmCvar_t		cg_centertime,
 						cg_lockedSlide,
 						cg_thirdPerson,
 						cg_synchronousClients,
-						cg_teamChatTime,
-						cg_teamChatHeight,
 						cg_stats,
 						cg_forceModel,
 						cg_buildScript,
@@ -901,7 +732,6 @@ extern	vmCvar_t		cg_centertime,
 						cg_predictItems,
 						cg_deferPlayers,
 						cg_drawFriend,
-						cg_teamChatsOnly,
 						cg_noVoiceChats,
 						cg_noVoiceText,
 						cg_smoothClients,
@@ -917,8 +747,6 @@ extern	vmCvar_t		cg_centertime,
 						cg_smallFont,
 						cg_bigFont,
 						cg_trueLightning,
-						cg_redTeamName,
-						cg_blueTeamName,
 						cg_enableDust,
 						cg_enableBreath,
 					//ADDING FOR ZEQ2
@@ -934,14 +762,8 @@ extern	vmCvar_t		cg_centertime,
 						cg_particlesQuality,
 						cg_particlesStop,
 						cg_particlesMaximum,
-						cg_drawBBox,
+						cg_drawBBox;
 					// END ADDING
-#if MAPLENSFLARES
-						cg_lensFlare,		// JUHOX
-						cg_mapFlare,		// JUHOX
-						cg_sunFlare,		// JUHOX
-						cg_missileFlare;	// JUHOX
-#endif
 extern	radar_t			cg_playerOrigins[MAX_CLIENTS];
 //
 // cg_main.c
@@ -959,18 +781,6 @@ void			CG_UpdateCvars(void),
 				CG_EventHandling(int type),
 				CG_RankRunFrame(void),
 				CG_BuildSpectatorString(void),
-// JUHOX: prototypes
-#if MAPLENSFLARES
-				CG_LFEntOrigin(const lensFlareEntity_t* lfent, vec3_t origin),
-				CG_SetLFEntOrigin(lensFlareEntity_t* lfent, const vec3_t origin),
-				CG_SetLFEdMoveMode(lfeMoveMode_t mode),
-				CG_SelectLFEnt(int lfentnum),
-				CG_LoadLensFlares(void),
-				CG_ComputeMaxVisAngle(lensFlareEntity_t* lfent),
-				CG_LoadLensFlareEntities(void),
-				CG_AddLFEditorCursor(void),
-				CG_AddLensFlare(lensFlareEntity_t* lfent, int quality),
-#endif
 //
 // cg_view.c
 //
@@ -1014,14 +824,11 @@ void			CG_TileClear(void),
 //
 // cg_draw.c
 //
-extern int		sortedTeamPlayers[TEAM_MAXOVERLAY],
-				numSortedTeamPlayers;
 void			CG_DrawChat(char *text),
 				CG_DrawScreenEffects(void),
 				CG_CenterPrint(const char *str, int y, int charWidth),
 				CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headAngles),
 				CG_DrawActive(stereoFrame_t stereoView),
-				CG_DrawFlagModel(float x, float y, float w, float h, int team, qboolean force2D),
 				CG_Text_Paint(float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int style);
 int				CG_Text_Width(const char *text, float scale, int limit),
 				CG_Text_Height(const char *text, float scale, int limit);
@@ -1031,7 +838,6 @@ void			CG_SelectPrevPlayer(void),
 				CG_RunMenuScript(char **args),
 				CG_ShowResponseHead(void),
 				CG_SetPrintString(int type, const char *p),
-				CG_InitTeamChat(void),
 				CG_GetTeamColor(vec4_t *color);
 const char		*CG_GetGameStatusText(void),
 				*CG_GetKillerText(void);
@@ -1039,15 +845,13 @@ void			CG_Draw3DModel(float x, float y, float w, float h, qhandle_t model, qhand
 				CG_Text_PaintChar(float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader),
 				CG_CheckOrderPending(void);
 const char		*CG_GameTypeString(void);
-qboolean		CG_YourTeamHasFlag(void),
-				CG_OtherTeamHasFlag(void);
 qhandle_t		CG_StatusHandle(int task);
 //
 // cg_player.c
 //
 void			CG_Player(centity_t *cent),
 				CG_ResetPlayerEntity(centity_t *cent),
-				CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, int team, qboolean auraAlways),
+				CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, qboolean auraAlways),
 				CG_NewClientInfo(int clientNum),
 				CG_SpawnLightSpeedGhost(centity_t *cent);
 sfxHandle_t		CG_CustomSound(int clientNum, const char *soundName);
@@ -1084,10 +888,6 @@ void			CG_BuildSolidList(void),
 				CG_PositionRotatedEntityOnTag(refEntity_t *entity, const refEntity_t *parent, qhandle_t parentModel, char *tagName),
 				CG_GetTagPosition(refEntity_t *parent, char *tagName, vec3_t outpos),
 				CG_GetTagOrientation(refEntity_t *parent, char *tagName, vec3_t dir),
-// JUHOX: prototypes
-#if MAPLENSFLARES	
-				CG_Mover(centity_t *cent),
-#endif
 //
 // cg_tiers.c
 //
@@ -1111,7 +911,7 @@ void			CG_BuildSolidList(void),
 				CG_RailTrail(clientInfo_t *ci, vec3_t start, vec3_t end),
 				CG_GrappleTrail(centity_t *ent, const weaponInfo_t *wi),
 				CG_AddViewWeapon(playerState_t *ps),
-				CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent, int team),
+				CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent),
 				CG_DrawWeaponSelect(void),
 // FIXME: Should these be in drawtools instead?
 //        Should these be generalized for use in all manual poly drawing functions? (probably, yes...)

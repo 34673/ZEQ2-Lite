@@ -19,24 +19,16 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-//
 // bg_misc.c -- both games misc functions, all completely stateless
-
 #include "../../Shared/q_shared.h"
 #include "bg_public.h"
-
-//======================================================================
-
 #define	QUADB1(t)		(t*t)
 #define	QUADB2(t)		(2*t*(1-t))
 #define	QUADB3(t)		((1-t)*(1-t))
-
 #define	QUADB1dt(t)		(2*t)
 #define	QUADB2dt(t)		(2-4*t)
 #define	QUADB3dt(t)		(2*t-2)
-
-void BG_LerpQuadraticSpline( const vec3_t cp1, const vec3_t cp2, const vec3_t cp3, float t, vec3_t lerpBase )
-{
+void BG_LerpQuadraticSpline(const vec3_t cp1,const vec3_t cp2,const vec3_t cp3,float t,vec3_t lerpBase){
 	// CP1: Start point
 	// CP2: Mid point
 	// CP3: End point
@@ -44,84 +36,66 @@ void BG_LerpQuadraticSpline( const vec3_t cp1, const vec3_t cp2, const vec3_t cp
 	lerpBase[1] = cp1[1]*QUADB1(t) + cp2[1]*QUADB2(t) + cp3[1]*QUADB3(t);
 	lerpBase[2] = cp1[2]*QUADB1(t) + cp2[2]*QUADB2(t) + cp3[2]*QUADB3(t);
 }
-
-void BG_LerpQuadraticSplineDelta( const vec3_t cp1, const vec3_t cp2, const vec3_t cp3, float t, vec3_t lerpDelta )
-{
+void BG_LerpQuadraticSplineDelta(const vec3_t cp1,const vec3_t cp2,const vec3_t cp3,float t,vec3_t lerpDelta){
 	// CP1: Start point
 	// CP2: Mid point
 	// CP3: End point
 	lerpDelta[0] = cp1[0]*QUADB1(t) + cp2[0]*QUADB2(t) + cp3[0]*QUADB3(t);
 	lerpDelta[1] = cp1[1]*QUADB1(t) + cp2[1]*QUADB2(t) + cp3[1]*QUADB3(t);
 	lerpDelta[2] = cp1[2]*QUADB1(t) + cp2[2]*QUADB2(t) + cp3[2]*QUADB3(t);
-	VectorInverse( lerpDelta );
+	VectorInverse(lerpDelta);
 }
-
-
-/*
-================
-BG_EvaluateTrajectory
-
-================
-*/
-void BG_EvaluateTrajectory( entityState_t *es, const trajectory_t *tr, int atTime, vec3_t result ) {
-	float			deltaTime;
-	float			phase;
-	float			v0;
-	vec3_t			dir;
-
-	switch( tr->trType ) {
+void BG_EvaluateTrajectory(entityState_t *es,const trajectory_t *tr,int atTime,vec3_t result){
+	float deltaTime;
+	float phase;
+	float v0;
+	vec3_t dir;
+	switch(tr->trType){
 	case TR_STATIONARY:
 	case TR_INTERPOLATE:
-		VectorCopy( tr->trBase, result );
+		VectorCopy(tr->trBase,result);
 		break;
-
 	case TR_LINEAR:
 	case TR_DRUNKEN:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
-
-		if ( tr->trType == TR_DRUNKEN ) { // trDuration is how much the missile will wobble
-			vec3_t	axis[3];
-			float	ph1, ph2;
-
-			if ( VectorNormalize2( tr->trDelta, axis[0] ) == 0.0f ) {
-				VectorSet( axis[0], 0, 0, 1 );
-			}
-			MakeNormalVectors( tr->trDelta, axis[1], axis[2] );
-			RotateAroundDirection( axis, deltaTime );
-			ph1 = sin( deltaTime * M_PI * 2 );
-			ph2 = (cos( deltaTime * M_PI * 2 ) - ph1) + cos( deltaTime * M_PI * 4 );
-			VectorMA( result, tr->trDuration * ph1, axis[1], result );
-			VectorMA( result, tr->trDuration * ph2, axis[2], result );
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001f;
+		VectorMA(tr->trBase,deltaTime,tr->trDelta,result);
+		// trDuration is how much the missile will wobble
+		if(tr->trType == TR_DRUNKEN){
+			vec3_t axis[3];
+			float ph1;
+			float ph2;
+			if(!VectorNormalize2(tr->trDelta,axis[0])){VectorSet(axis[0],0,0,1);}
+			MakeNormalVectors(tr->trDelta,axis[1],axis[2]);
+			RotateAroundDirection(axis,deltaTime);
+			ph1 = sin(deltaTime * M_PI * 2);
+			ph2 = (cos(deltaTime * M_PI * 2) - ph1) + cos(deltaTime * M_PI * 4);
+			VectorMA(result,tr->trDuration * ph1,axis[1],result);
+			VectorMA(result,tr->trDuration * ph2,axis[2],result);
 		}
 		break;
-
 	case TR_SINE:
-		deltaTime = ( atTime - tr->trTime ) / (float) tr->trDuration;
-		phase = sin( deltaTime * M_PI * 2 );
-		VectorMA( tr->trBase, phase, tr->trDelta, result );
+		deltaTime = (atTime - tr->trTime) / (float)tr->trDuration;
+		phase = sin(deltaTime * M_PI * 2);
+		VectorMA(tr->trBase,phase,tr->trDelta,result);
 		break;
-
 	case TR_LINEAR_STOP:
-		if ( atTime > tr->trTime + tr->trDuration ) {
-			atTime = tr->trTime + tr->trDuration;
-		}
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		if ( deltaTime < 0 ) {
-			deltaTime = 0;
-		}
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
+		if(atTime > tr->trTime + tr->trDuration){atTime = tr->trTime + tr->trDuration;}
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001;
+		if(deltaTime < 0){deltaTime = 0;}
+		VectorMA(tr->trBase,deltaTime,tr->trDelta,result);
 		break;
-
 	case TR_GRAVITY:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
-		result[2] -= 0.5 * DEFAULT_GRAVITY * deltaTime * deltaTime;		// FIXME: local gravity...
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001;	
+		VectorMA(tr->trBase,deltaTime,tr->trDelta,result);
+		// FIXME: local gravity...
+		result[2] -= 0.5 * DEFAULT_GRAVITY * (deltaTime * deltaTime);
 		break;
-
 	case TR_ACCEL:
-		deltaTime = ( atTime - tr->trTime ) * 0.001f;	// milliseconds to seconds
-
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001f;
 		/*
 			NOTE:
 			There's a problem with accelerated missiles being able to
@@ -131,43 +105,35 @@ void BG_EvaluateTrajectory( entityState_t *es, const trajectory_t *tr, int atTim
 			NOTE:
 			trDuration = acceleration,
 		*/
-
-		VectorCopy( tr->trDelta, dir );
-		v0 = VectorNormalize( dir );
+		VectorCopy(tr->trDelta,dir);
+		v0 = VectorNormalize(dir);
 		phase = v0 + tr->trDuration * deltaTime;
-		if ( phase < 0 ) {
-
+		if(phase < 0){
 			// We have to find the point in time at which the velocity
 			// becomes zero. We solve 0 = v0 + a * t for t.
-
 			deltaTime = -v0 / tr->trDuration;
-
 			// Now we can use this time to get the missile's position
 		}
-
-			// the 0.5*a*t^2 part. 
-			phase = (tr->trDuration / 2.0f) * (deltaTime * deltaTime);
-			VectorMA (tr->trBase, phase, dir, result);
-
-			// The u*t part.
-			VectorMA (result, deltaTime, tr->trDelta, result);
+		// the 0.5*a*t^2 part. 
+		phase = (tr->trDuration / 2.0f) * (deltaTime * deltaTime);
+		VectorMA(tr->trBase,phase,dir,result);
+		// The u*t part.
+		VectorMA(result,deltaTime,tr->trDelta,result);
 		break;
-
 	case TR_ARCH:
-		if (!es) {
-			Com_Error( ERR_DROP, "BG_EvaluateTrajectory: NULL entityState: %i", tr->trTime );
-		} else {
-			deltaTime = 1.0f - ( ( atTime - tr->trTime ) / (float) tr->trDuration );
-			BG_LerpQuadraticSpline( tr->trBase, es->angles2, tr->trDelta, deltaTime, result );
+		if(!es){
+			Com_Error(ERR_DROP,"BG_EvaluateTrajectory: NULL entityState: %i",tr->trTime);
+		}
+		else{
+			deltaTime = 1.0f - ((atTime - tr->trTime) / (float)tr->trDuration);
+			BG_LerpQuadraticSpline(tr->trBase,es->angles2,tr->trDelta,deltaTime,result);
 		}
 		break;
-
 	default:
-		Com_Error( ERR_DROP, "BG_EvaluateTrajectory: unknown trType: %i", tr->trTime );
+		Com_Error(ERR_DROP,"BG_EvaluateTrajectory: unknown trType: %i",tr->trTime);
 		break;
 	}
 }
-
 /*
 ================
 BG_EvaluateTrajectoryDelta
@@ -175,72 +141,70 @@ BG_EvaluateTrajectoryDelta
 For determining velocity at a given time
 ================
 */
-void BG_EvaluateTrajectoryDelta( entityState_t *es, const trajectory_t *tr, int atTime, vec3_t result ) {
-	float	deltaTime;
-	float	phase;
-	vec3_t	dir;
-
-	switch( tr->trType ) {
+void BG_EvaluateTrajectoryDelta(entityState_t *es,const trajectory_t *tr,int atTime,vec3_t result){
+	float deltaTime;
+	float phase;
+	vec3_t dir;
+	switch(tr->trType){
 	case TR_STATIONARY:
 	case TR_INTERPOLATE:
-		VectorClear( result );
+		VectorClear(result);
 		break;
 	case TR_LINEAR:
 	case TR_DRUNKEN:
-		VectorCopy( tr->trDelta, result );
+		VectorCopy(tr->trDelta,result);
 		break;
 	case TR_SINE:
-		deltaTime = ( atTime - tr->trTime ) / (float) tr->trDuration;
-		phase = cos( deltaTime * M_PI * 2 );	// derivative of sin = cos
+		deltaTime = (atTime - tr->trTime) / (float)tr->trDuration;
+		// derivative of sin = cos
+		phase = cos(deltaTime * M_PI * 2);
 		phase *= 0.5;
-		VectorScale( tr->trDelta, phase, result );
+		VectorScale(tr->trDelta,phase,result);
 		break;
 	case TR_LINEAR_STOP:
-		if ( atTime > tr->trTime + tr->trDuration ) {
-			VectorClear( result );
+		if(atTime > tr->trTime + tr->trDuration){
+			VectorClear(result);
 			return;
 		}
-		VectorCopy( tr->trDelta, result );
+		VectorCopy(tr->trDelta,result);
 		break;
 	case TR_GRAVITY:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorCopy( tr->trDelta, result );
-		result[2] -= DEFAULT_GRAVITY * deltaTime;		// FIXME: local gravity...
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001;
+		VectorCopy(tr->trDelta,result);
+		// FIXME: local gravity...
+		result[2] -= DEFAULT_GRAVITY * deltaTime;
 		break;
 	case TR_ACCEL:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-
+		// milliseconds to seconds
+		deltaTime = (atTime - tr->trTime) * 0.001;
 		// Turn magnitude of acceleration into a vector
-		VectorCopy(tr->trDelta, dir);
-		phase = VectorNormalize (dir);
+		VectorCopy(tr->trDelta,dir);
+		phase = VectorNormalize(dir);
 		phase = phase + tr->trDuration * deltaTime;
-		if ( phase < 0 ) { // prevent 'negative' velocity, clamp it at zero.
-			VectorSet( dir, 0, 0, 0);
-		} else {
-			VectorScale (dir, tr->trDuration, dir);
-		}
-
+		// prevent 'negative' velocity, clamp it at zero.
+		if(phase < 0){VectorSet(dir,0,0,0);}
+		else{VectorScale(dir,tr->trDuration,dir);}
 		// u + t * a = v
-		VectorMA (tr->trDelta, deltaTime, dir, result);
+		VectorMA(tr->trDelta,deltaTime,dir,result);
 		break;
 	case TR_ARCH:
-		if (!es) {
-			Com_Error( ERR_DROP, "BG_EvaluateTrajectory: NULL entityState: %i", tr->trTime );
-		} else {
-			deltaTime = 1.0f - ( ( atTime - tr->trTime ) / (float) tr->trDuration );
-			BG_LerpQuadraticSplineDelta( tr->trBase, es->angles2, tr->trDelta, deltaTime, result );
-			VectorNormalize( result );
-
+		if(!es){
+			Com_Error(ERR_DROP,"BG_EvaluateTrajectory: NULL entityState: %i",tr->trTime);
+		}
+		else{
+			deltaTime = 1.0f - ((atTime - tr->trTime) / (float)tr->trDuration);
+			BG_LerpQuadraticSplineDelta(tr->trBase,es->angles2,tr->trDelta,deltaTime,result);
+			VectorNormalize(result);
 			// Reverse the speed calculation we did in user_missile.c under HOM_ARCH
-			VectorScale( result, 1000.0f * Distance( tr->trBase, tr->trDelta ) / (float) tr->trDuration, result );
+			VectorScale(result,1000.0f * Distance(tr->trBase,tr->trDelta) / (float)tr->trDuration,result);
 		}
 		break;
 	default:
-		Com_Error( ERR_DROP, "BG_EvaluateTrajectoryDelta: unknown trType: %i", tr->trTime );
+		Com_Error(ERR_DROP,"BG_EvaluateTrajectoryDelta: unknown trType: %i",tr->trTime);
 		break;
 	}
 }
-
 char *eventnames[] = {
 	"EV_NONE",
 	"EV_FOOTSTEP",
@@ -308,7 +272,6 @@ char *eventnames[] = {
 	"EV_LOCKON_END",
 	"EV_BEAM_FADE"
 };
-
 /*
 ===============
 BG_AddPredictableEventToPlayerstate
@@ -316,20 +279,17 @@ BG_AddPredictableEventToPlayerstate
 Handles the sequence numbers
 ===============
 */
-
-void	trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
-
-extern void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps ) {
-
+void trap_Cvar_VariableStringBuffer(const char *var_name,char *buffer,int bufsize);
+extern void BG_AddPredictableEventToPlayerstate(int newEvent,int eventParm,playerState_t *ps){
 #ifdef _DEBUG
 	{
 		char buf[256];
-		trap_Cvar_VariableStringBuffer("showevents", buf, sizeof(buf));
-		if ( atof(buf) != 0 ) {
+		trap_Cvar_VariableStringBuffer("showevents",buf,sizeof(buf));
+		if(atof(buf) != 0){
 #ifdef GAME
-			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n",ps->pmove_framecount/*ps->commandTime*/,ps->eventSequence,eventnames[newEvent],eventParm);
 #else
-			Com_Printf("Cgame event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+			Com_Printf("Cgame event svt %5d -> %5d: num = %20s parm %d\n",ps->pmove_framecount/*ps->commandTime*/,ps->eventSequence,eventnames[newEvent],eventParm);
 #endif
 		}
 	}
@@ -338,42 +298,31 @@ extern void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, pl
 	ps->eventParms[ps->eventSequence & (MAX_PS_EVENTS-1)] = eventParm;
 	ps->eventSequence++;
 }
-
 /*
 ========================
 BG_TouchJumpPad
 ========================
 */
-void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
-	vec3_t	angles;
+void BG_TouchJumpPad(playerState_t *ps,entityState_t *jumppad){
+	vec3_t angles;
 	float p;
 	int effectNum;
-
 	// spectators don't use jump pads
-	if ( ps->pm_type != PM_NORMAL ) {
-		return;
-	}
-
+	if(ps->pm_type != PM_NORMAL){return;}
 	// if we didn't hit this same jumppad the previous frame
 	// then don't play the event sound again if we are in a fat trigger
-	if ( ps->jumppad_ent != jumppad->number ) {
-
-		vectoangles( jumppad->origin2, angles);
-		p = fabs( AngleNormalize180( angles[PITCH] ) );
-		if( p < 45 ) {
-			effectNum = 0;
-		} else {
-			effectNum = 1;
-		}
-		BG_AddPredictableEventToPlayerstate( EV_JUMP_PAD, effectNum, ps );
+	if(ps->jumppad_ent != jumppad->number){
+		vectoangles(jumppad->origin2,angles);
+		p = fabs(AngleNormalize180(angles[PITCH]));
+		effectNum = p < 45 ? 0 : 1;
+		BG_AddPredictableEventToPlayerstate(EV_JUMP_PAD,effectNum,ps);
 	}
 	// remember hitting this jumppad this frame
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
-	VectorCopy( jumppad->origin2, ps->velocity );
+	VectorCopy(jumppad->origin2,ps->velocity);
 }
-
 /*
 ========================
 BG_PlayerStateToEntityState
@@ -382,18 +331,15 @@ This is done after each set of usercmd_t on the server,
 and after local prediction on the client
 ========================
 */
-void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s,qboolean snap ) {
+void BG_PlayerStateToEntityState(playerState_t *ps,entityState_t *s,qboolean snap){
 	int	i;
 	int time;
 	time = ps->commandTime;
-	if(ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR){s->eType = ET_INVISIBLE;}
-	else{s->eType = ET_PLAYER;}
+	s->eType = ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR ? ET_INVISIBLE : ET_PLAYER;
 	s->number = ps->clientNum;
 	s->pos.trType = TR_INTERPOLATE;
-	VectorCopy( ps->origin, s->pos.trBase );
-	if(snap){
-		SnapVector(s->pos.trBase);
-	}
+	VectorCopy(ps->origin,s->pos.trBase);
+	if(snap){SnapVector(s->pos.trBase);}
 	VectorCopy(ps->velocity,s->pos.trDelta);
 	s->pos.trTime = time;
 	s->pos.trDuration = 50;
@@ -417,8 +363,8 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s,qboolean s
 			ps->entityEventSequence = ps->eventSequence - MAX_PS_EVENTS;
 		}
 		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		s->event = ps->events[seq] | ((ps->entityEventSequence & 3 ) << 8);
-		s->eventParm = ps->eventParms[ seq ];
+		s->event = ps->events[seq] | ((ps->entityEventSequence & 3) << 8);
+		s->eventParm = ps->eventParms[seq];
 		ps->entityEventSequence++;
 	}
 	s->weapon = ps->weapon;
@@ -432,9 +378,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s,qboolean s
 	s->tier = ps->powerLevel[plTierCurrent];
 	s->powerups = 0;
 	for(i = 0;i < MAX_POWERUPS;i++){
-		if ( ps->powerups[ i ] ) {
-			s->powerups |= 1 << i;
-		}
+		if(ps->powerups[i]){s->powerups |= 1 << i;}
 	}
 	s->loopSound = ps->loopSound;
 	s->generic1 = ps->generic1;

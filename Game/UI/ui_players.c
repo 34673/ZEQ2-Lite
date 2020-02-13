@@ -44,92 +44,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 static int			dp_realtime;
 static float		jumpHeight;
 
-
-/*
-===============
-UI_PlayerInfo_SetWeapon
-===============
-*/
-static void UI_PlayerInfo_SetWeapon( playerInfo_t *pi, weapon_t weaponNum ) {
-	char		path[MAX_QPATH];
-
-	pi->currentWeapon = weaponNum;
-tryagain:
-	pi->realWeapon = weaponNum;
-	pi->weaponModel = 0;
-	pi->barrelModel = 0;
-	pi->flashModel = 0;
-
-	if ( weaponNum == WP_NONE ) {
-		return;
-	}
-	if( pi->weaponModel == 0 ) {
-		if( weaponNum == WP_MACHINEGUN ) {
-			weaponNum = WP_NONE;
-			goto tryagain;
-		}
-		weaponNum = WP_MACHINEGUN;
-		goto tryagain;
-	}
-
-	if ( weaponNum == WP_MACHINEGUN || weaponNum == WP_GAUNTLET || weaponNum == WP_BFG ) {
-		COM_StripExtension( path, path, sizeof(path) );
-		strcat( path, "_barrel.md3" );
-		pi->barrelModel = trap_R_RegisterModel( path );
-	}
-
-	COM_StripExtension( path, path, sizeof(path) );
-	strcat( path, "_flash.md3" );
-	pi->flashModel = trap_R_RegisterModel( path );
-
-	switch( weaponNum ) {
-	case WP_GAUNTLET:
-		MAKERGB( pi->flashDlightColor, 0.6f, 0.6f, 1 );
-		break;
-
-	case WP_MACHINEGUN:
-		MAKERGB( pi->flashDlightColor, 1, 1, 0 );
-		break;
-
-	case WP_SHOTGUN:
-		MAKERGB( pi->flashDlightColor, 1, 1, 0 );
-		break;
-
-	case WP_GRENADE_LAUNCHER:
-		MAKERGB( pi->flashDlightColor, 1, 0.7f, 0.5f );
-		break;
-
-	case WP_ROCKET_LAUNCHER:
-		MAKERGB( pi->flashDlightColor, 1, 0.75f, 0 );
-		break;
-
-	case WP_LIGHTNING:
-		MAKERGB( pi->flashDlightColor, 0.6f, 0.6f, 1 );
-		break;
-
-	case WP_RAILGUN:
-		MAKERGB( pi->flashDlightColor, 1, 0.5f, 0 );
-		break;
-
-	case WP_PLASMAGUN:
-		MAKERGB( pi->flashDlightColor, 0.6f, 0.6f, 1 );
-		break;
-
-	case WP_BFG:
-		MAKERGB( pi->flashDlightColor, 1, 0.7f, 1 );
-		break;
-
-	case WP_GRAPPLING_HOOK:
-		MAKERGB( pi->flashDlightColor, 0.6f, 0.6f, 1 );
-		break;
-
-	default:
-		MAKERGB( pi->flashDlightColor, 1, 1, 1 );
-		break;
-	}
-}
-
-
 /*
 ===============
 UI_ForceLegsAnim
@@ -224,7 +138,6 @@ static void UI_TorsoSequencing( playerInfo_t *pi ) {
 	}
 
 	if ( currentAnim == ANIM_DROP ) {
-		UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 		pi->torsoAnimationTimer = UI_TIMER_WEAPON_SWITCH;
 		UI_ForceTorsoAnim( pi, ANIM_RAISE );
 		return;
@@ -1272,14 +1185,12 @@ UI_PlayerInfo_SetModel
 void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model ) {
 	memset( pi, 0, sizeof(*pi) );
 	UI_RegisterClientModelname( pi, model );
-	pi->weapon = WP_MACHINEGUN;
 	pi->currentWeapon = pi->weapon;
 	pi->lastWeapon = pi->weapon;
 	pi->pendingWeapon = -1;
 	pi->weaponTimer = 0;
 	pi->chat = qfalse;
 	pi->newModel = qtrue;
-	UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 }
 
 
@@ -1325,7 +1236,6 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 			pi->lastWeapon = weaponNumber;
 			pi->pendingWeapon = -1;
 			pi->weaponTimer = 0;
-			UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 		}
 
 		return;
@@ -1346,7 +1256,6 @@ void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_
 	if ( torsoAnim == ANIM_DEATH_GROUND || legsAnim == ANIM_DEATH_GROUND ) {
 		torsoAnim = legsAnim = ANIM_DEATH_GROUND;
 		pi->weapon = pi->currentWeapon = WP_NONE;
-		UI_PlayerInfo_SetWeapon( pi, pi->weapon );
 
 		jumpHeight = 0;
 		pi->pendingLegsAnim = 0;

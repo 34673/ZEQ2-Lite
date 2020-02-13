@@ -24,27 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // be a valid snapshot this frame
 #include "cg_local.h"
 #include "../UI/menudef/menudef.h"
-static void CG_ParseTeamInfo(void){
-	int		i=0;
-	int		client;
-	numSortedTeamPlayers = atoi(CG_Argv(1));
-	if(numSortedTeamPlayers < 0 || numSortedTeamPlayers > TEAM_MAXOVERLAY){
-		CG_Error("CG_ParseTeamInfo: numSortedTeamPlayers out of range (%d)", numSortedTeamPlayers);
-		return;
-	}
-	for(;i<numSortedTeamPlayers;i++){
-		client = atoi(CG_Argv(i*6+2));
-		if(client < 0 || client >= MAX_CLIENTS){
-		  CG_Error("CG_ParseTeamInfo: bad client number: %d", client);
-		  return;
-		}
-		sortedTeamPlayers[i] = client;
-		cgs.clientinfo[client].location = atoi(CG_Argv(i*6+3));
-		cgs.clientinfo[client].armor = atoi(CG_Argv(i*6+5));
-		cgs.clientinfo[client].curWeapon = atoi(CG_Argv(i*6+6));
-		cgs.clientinfo[client].powerups = atoi(CG_Argv(i*6+7));
-	}
-}
+
 ///This is called explicitly when the gamestate is first received,
 //and whenever the server updates any serverinfo flagged cvars
 void CG_ParseServerinfo(void){
@@ -61,15 +41,6 @@ void CG_ParseServerinfo(void){
 	cgs.maxclients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 	mapname = Info_ValueForKey( info, "mapname" );
 	Com_sprintf( cgs.mapname, sizeof( cgs.mapname ), "maps/%s.bsp", mapname );
-	Q_strncpyz( cgs.redTeam, Info_ValueForKey( info, "g_redTeam" ), sizeof(cgs.redTeam) );
-	trap_Cvar_Set("g_redTeam", cgs.redTeam);
-	Q_strncpyz( cgs.blueTeam, Info_ValueForKey( info, "g_blueTeam" ), sizeof(cgs.blueTeam) );
-	trap_Cvar_Set("g_blueTeam", cgs.blueTeam);
-#if MAPLENSFLARES
-	cgs.editMode = atoi(Info_ValueForKey(info, "g_editmode"));
-	if(cgs.maxclients > 1){cgs.editMode = EM_none;}
-	if(atoi(Info_ValueForKey(CG_ConfigString(CS_SYSTEMINFO), "sv_cheats")) != 1){cgs.editMode = EM_none;}
-#endif
 }
 static void CG_ParseWarmup(void){
 	const char	*info;
@@ -143,21 +114,6 @@ static void CG_ConfigStringModified(void){
 	else if(num == CS_VOTE_STRING){
 		Q_strncpyz(cgs.voteString, str, sizeof(cgs.voteString));
 	}
-	else if(num >= CS_TEAMVOTE_TIME && num <= CS_TEAMVOTE_TIME + 1){
-		cgs.teamVoteTime[num-CS_TEAMVOTE_TIME] = atoi(str);
-		cgs.teamVoteModified[num-CS_TEAMVOTE_TIME] = qtrue;
-	}
-	else if(num >= CS_TEAMVOTE_YES && num <= CS_TEAMVOTE_YES + 1){
-		cgs.teamVoteYes[num-CS_TEAMVOTE_YES] = atoi(str);
-		cgs.teamVoteModified[num-CS_TEAMVOTE_YES] = qtrue;
-	}
-	else if(num >= CS_TEAMVOTE_NO && num <= CS_TEAMVOTE_NO + 1){
-		cgs.teamVoteNo[num-CS_TEAMVOTE_NO] = atoi(str);
-		cgs.teamVoteModified[num-CS_TEAMVOTE_NO] = qtrue;
-	}
-	else if(num >= CS_TEAMVOTE_STRING && num <= CS_TEAMVOTE_STRING + 1){
-		Q_strncpyz(cgs.teamVoteString[num-CS_TEAMVOTE_STRING], str, sizeof(cgs.teamVoteString));
-	}
 	else if(num == CS_INTERMISSION){cg.intermissionStarted = atoi(str);}
 	else if(num >= CS_MODELS && num < CS_MODELS+MAX_MODELS){
 		cgs.gameModels[ num-CS_MODELS ] = trap_R_RegisterModel(str);
@@ -168,57 +124,6 @@ static void CG_ConfigStringModified(void){
 	}
 	else if(num >= CS_PLAYERS && num < CS_PLAYERS+MAX_CLIENTS){CG_NewClientInfo(num - CS_PLAYERS);}
 	else if(num == CS_SHADERSTATE){CG_ShaderStateChanged();}
-}
-static void CG_AddToTeamChat(const char *str){
-	int		len=0;
-	char	*p, *ls;
-	int		lastcolor;
-	int		chatHeight;
-	if(cg_teamChatHeight.integer < TEAMCHAT_HEIGHT){
-		chatHeight = cg_teamChatHeight.integer;
-	}
-	else{chatHeight = TEAMCHAT_HEIGHT;}
-	if(chatHeight <= 0 || cg_teamChatTime.integer <= 0){
-		// team chat disabled, dump into normal chat
-		cgs.teamChatPos = cgs.teamLastChatPos = 0;
-		return;
-	}
-	p = cgs.teamChatMsgs[cgs.teamChatPos % chatHeight];
-	*p = 0;
-	lastcolor = '7';
-	ls = NULL;
-	while(*str){
-		if(len > TEAMCHAT_WIDTH - 1){
-			if(ls){
-				str -= (p - ls);
-				str++;
-				p -= (p - ls);
-			}
-			*p = 0;
-			cgs.teamChatMsgTimes[cgs.teamChatPos % chatHeight] = cg.time;
-			cgs.teamChatPos++;
-			p = cgs.teamChatMsgs[cgs.teamChatPos % chatHeight];
-			*p = 0;
-			*p++ = Q_COLOR_ESCAPE;
-			*p++ = lastcolor;
-			len = 0;
-			ls = NULL;
-		}
-		if(Q_IsColorString(str)){
-			*p++ = *str++;
-			lastcolor = *str;
-			*p++ = *str++;
-			continue;
-		}
-		if(*str == ' '){ls = p;}
-		*p++ = *str++;
-		len++;
-	}
-	*p = 0;
-	cgs.teamChatMsgTimes[cgs.teamChatPos % chatHeight] = cg.time;
-	cgs.teamChatPos++;
-	if(cgs.teamChatPos - cgs.teamLastChatPos > chatHeight)
-		cgs.teamLastChatPos = cgs.teamChatPos - chatHeight;
 }
 //The server has issued a map_restart, so the next snapshot
 //is completely new and should not be interpolated to.
@@ -353,25 +258,11 @@ static void CG_ServerCommand(void){
 		return;
 	}
 	if(!strcmp(cmd, "chat")){
-		if(!cg_teamChatsOnly.integer){
-			trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
-			Q_strncpyz(text, CG_Argv(1), MAX_SAY_TEXT);
-			CG_RemoveChatEscapeChar(text);
-			CG_Printf("%s\n", text);
-			CG_DrawChat(text);
-		}
-		return;
-	}
-	if(!strcmp(cmd, "tchat")){
 		trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
 		Q_strncpyz(text, CG_Argv(1), MAX_SAY_TEXT);
 		CG_RemoveChatEscapeChar(text);
-		CG_AddToTeamChat(text);
 		CG_Printf("%s\n", text);
-		return;
-	}
-	if(!strcmp(cmd, "tinfo")){
-		CG_ParseTeamInfo();
+		CG_DrawChat(text);
 		return;
 	}
 	if(!strcmp(cmd, "map_restart")){

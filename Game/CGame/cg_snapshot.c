@@ -234,23 +234,6 @@ void CG_ProcessSnapshots(void){
 		CG_TransitionSnapshot();
 	}
 	while(1);
-	// JUHOX: stop-movers-mechanism for lens flare editor
-#if MAPLENSFLARES
-	if(cgs.editMode == EM_mlf){
-		if(cg.lfEditor.moversStopped){
-			int num = MAX_CLIENTS;
-			for(;num<ENTITYNUM_MAX_NORMAL;num++){
-				centity_t* cent;
-				cent = &cg_entities[num];
-				if(cent->currentState.eType != ET_MOVER){continue;}
-				CG_StopMover(cent);
-			}
-		}
-		else if(cg.lfEditor.selectedLFEnt && cg.lfEditor.selectedLFEnt->lock){
-			CG_StopMover(cg.lfEditor.selectedLFEnt->lock);
-		}
-	}
-#endif
 	// assert our valid conditions upon exiting
 	if(cg.snap == NULL){CG_Error("CG_ProcessSnapshots: cg.snap == NULL");}
 	if(cg.time < cg.snap->serverTime){

@@ -31,48 +31,6 @@ gentity_t	*podium1;
 gentity_t	*podium2;
 gentity_t	*podium3;
 
-
-/*
-==================
-UpdateTournamentInfo
-==================
-*/
-void UpdateTournamentInfo( void ) {
-	int			i;
-	gentity_t	*player;
-	int			playerClientNum;
-	int			n, accuracy, perfect,	msglen;
-#ifdef MISSIONPACK
-  int score1, score2;
-	qboolean won;
-#endif
-	char		buf[32];
-	char		msg[MAX_STRING_CHARS];
-
-	// find the real player
-	player = NULL;
-	for (i = 0; i < level.maxclients; i++ ) {
-		player = &g_entities[i];
-		if ( !player->inuse ) {
-			continue;
-		}
-	}
-	// this should never happen!
-	if ( !player || i == level.maxclients ) {
-		return;
-	}
-	playerClientNum = i;
-
-	CalculateRanks();
-
-	if ( level.clients[playerClientNum].sess.sessionTeam == TEAM_SPECTATOR ) {
-		Com_sprintf( msg, sizeof(msg), "postgame %i %i 0 0 0 0 0 0", level.numNonSpectatorClients, playerClientNum );
-	}
-	msglen = strlen( msg );
-	trap_SendConsoleCommand( EXEC_APPEND, msg );
-}
-
-
 static gentity_t *SpawnModelOnVictoryPad( gentity_t *pad, vec3_t offset, gentity_t *ent, int place ) {
 	gentity_t	*body;
 	vec3_t		vec;

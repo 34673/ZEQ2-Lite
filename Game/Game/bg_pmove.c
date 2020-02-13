@@ -1106,7 +1106,7 @@ float PM_CmdScale(usercmd_t *cmd){
 	if(pm->ps->bitFlags & usingBoost){totalSpeed *= pm->ps->timers[tmBoost] <= 1000 ? 4.2 : 2.8;}
 	if(pm->cmd.buttons & BUTTON_WALKING){totalSpeed = 1000;}
 	if(pm->ps->powerups[PW_DRIFTING] > 0){
-		totalSpeed = 500;
+		totalSpeed = 1000;
 		if(pm->ps->lockedPlayer->timers[tmMeleeIdle] > 1500 && pm->ps->timers[tmMeleeIdle] > 1500){totalSpeed = 1500;}
 	}
 	if(pm->ps->timers[tmMeleeIdle] < 0){totalSpeed = 4000;}
@@ -1405,8 +1405,8 @@ void PM_AirMove(void){
 	float		scale;
 	usercmd_t	cmd;
 	backupDrift = pm->cmd.forwardmove;
-	if((!pm->ps->powerups[PW_DRIFTING] && pm->ps->timers[tmMeleeIdle] >= 0) && (pml.onGround
-		|| ((pm->ps->bitFlags & usingAlter || pm->ps->timers[tmTransform]) && !VectorLength(pm->ps->velocity))
+	if((!pm->ps->powerups[PW_DRIFTING] && pm->ps->timers[tmMeleeIdle] >= 0) &&
+		(pml.onGround || ((pm->ps->bitFlags & usingAlter || pm->ps->timers[tmTransform]) && !VectorLength(pm->ps->velocity))
 		&& !(pm->ps->bitFlags & isUnconcious) && !(pm->ps->bitFlags & isDead) && !(pm->ps->bitFlags & isCrashed))){return;}
 	if(pm->ps->bitFlags & isGuiding){return;}
 	if(!(pm->ps->bitFlags & usingFlight) && pm->ps->options & canBallFlip){

@@ -221,7 +221,7 @@ qboolean CG_ParseAnimationFile(const char *filename, clientInfo_t *ci, qboolean 
 CG_RegisterClientModelname
 ==========================
 */
-static qboolean CG_RegisterClientModelname(clientInfo_t *ci, const char *modelName, const char *skinName, const char *headModelName, const char *headSkinName, const char *teamName){
+static qboolean CG_RegisterClientModelname(clientInfo_t *ci, const char *modelName, const char *skinName, const char *headModelName, const char *headSkinName){
 	if(!CG_RegisterClientModelnameWithTiers(ci, modelName, skinName)) return qfalse;
 	return qtrue;
 }
@@ -236,21 +236,18 @@ This will usually be deferred to a safe time
 */
 static void CG_LoadClientInfo(clientInfo_t *ci){
 	const char	*dir;
-	char		soundPath[MAX_QPATH],
-				singlePath[MAX_QPATH],
-				loopPath[MAX_QPATH],
-				teamname[MAX_QPATH];
-	int			i,tier,count,currentIndex,soundIndex,loopIndex,clientNum;
-	
-	teamname[0] = 0;
-	if(!CG_RegisterClientModelname(ci,ci->modelName,ci->skinName, ci->headModelName, ci->headSkinName, teamname)){
+	char soundPath[MAX_QPATH];
+	char singlePath[MAX_QPATH];
+	char loopPath[MAX_QPATH];
+	int i,tier,count,currentIndex,soundIndex,loopIndex,clientNum;
+	if(!CG_RegisterClientModelname(ci,ci->modelName,ci->skinName, ci->headModelName, ci->headSkinName)){
 		strcpy(ci->modelName,DEFAULT_MODEL);
 		strcpy(ci->headModelName,DEFAULT_MODEL);
 		strcpy(ci->skinName,"default");
 		strcpy(ci->headSkinName,"default");
 		if(cg_buildScript.integer)
-			CG_Error("CG_RegisterClientModelname(%s, %s, %s, %s %s) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname);
-		if(!CG_RegisterClientModelname(ci, DEFAULT_MODEL, "default", DEFAULT_MODEL, "default", teamname))
+			CG_Error("CG_RegisterClientModelname(%s, %s, %s, %s) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName);
+		if(!CG_RegisterClientModelname(ci, DEFAULT_MODEL, "default", DEFAULT_MODEL, "default"))
 			CG_Error("DEFAULT_MODEL (%s) failed to register",DEFAULT_MODEL);
 	}
 	//sounds
@@ -912,19 +909,12 @@ Float sprites over the player's head
 ===============
 */
 static void CG_PlayerSprites(centity_t *cent){
-	int	team;
 	if(cent->currentState.eFlags & EF_CONNECTION){
 		CG_PlayerFloatSprite(cent, cgs.media.connectionShader);
 		return;
 	}
 	if(cent->currentState.eFlags & EF_TALK){
 		CG_PlayerFloatSprite(cent, cgs.media.chatBubble);
-		return;
-	}
-	team = cgs.clientinfo[cent->currentState.clientNum].team;
-	if(!(cent->currentState.eFlags & EF_DEAD) && cg.snap->ps.persistant[PERS_TEAM] == team && cgs.gametype >= GT_TEAM && cent->currentState.number != cg.snap->ps.clientNum){
-		if(cg_drawFriend.integer)
-			CG_PlayerFloatSprite(cent, cgs.media.friendShader);
 		return;
 	}
 }
@@ -1088,7 +1078,7 @@ Adds a piece with modifications or duplications for powerups
 Also called by CG_Missile for quad rockets, but nobody can tell...
 ===============
 */
-void CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, int team, qboolean auraAlways){
+void CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, qboolean auraAlways){
 	trap_R_AddRefEntityToScene(ent);
 	if(!auraAlways){
 		trap_R_AddRefEntityToScene(ent);
@@ -1262,9 +1252,9 @@ void CG_Player(centity_t *cent){
 	// don't positionally lerp at all
 	VectorCopy(modelEntities[3].origin, modelEntities[3].oldorigin);	
 	CG_PositionRotatedEntityOnTag(&modelEntities[3], &modelEntities[1], modelEntities[1].hModel, "tag_torso");
-	CG_AddRefEntityWithPowerups(&modelEntities[0], &cent->currentState, ci->team, ci->auraConfig[tier]->auraAlways);
-	CG_AddRefEntityWithPowerups(&modelEntities[1], &cent->currentState, ci->team, ci->auraConfig[tier]->auraAlways);
-	CG_AddRefEntityWithPowerups(&modelEntities[2], &cent->currentState, ci->team, ci->auraConfig[tier]->auraAlways);
+	CG_AddRefEntityWithPowerups(&modelEntities[0], &cent->currentState, ci->auraConfig[tier]->auraAlways);
+	CG_AddRefEntityWithPowerups(&modelEntities[1], &cent->currentState, ci->auraConfig[tier]->auraAlways);
+	CG_AddRefEntityWithPowerups(&modelEntities[2], &cent->currentState, ci->auraConfig[tier]->auraAlways);
 	CG_BreathPuffs(cent,&modelEntities[2]);
 	CG_BubblesTrail(cent,&modelEntities[2]);
 	CG_InnerAuraSpikes(cent, &modelEntities[2]);
@@ -1275,7 +1265,7 @@ void CG_Player(centity_t *cent){
 	memcpy(&playerInfoDuplicate[cent->currentState.number], &cent->pe, sizeof(playerEntity_t));
 	if(onBodyQue) return;
 	CG_Camera(cent);
-	CG_AddPlayerWeapon(&modelEntities[1],NULL,cent,ci->team);
+	CG_AddPlayerWeapon(&modelEntities[1],NULL,cent);
 	if((cent->currentState.eFlags & EF_AURA) || ci->auraConfig[tier]->auraAlways){
 		CG_AuraStart(cent);
 		if(!xyzspeed){ CG_PlayerDirtPush(cent,scale,qfalse);}

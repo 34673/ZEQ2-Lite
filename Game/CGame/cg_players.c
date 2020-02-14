@@ -50,13 +50,6 @@ char *cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
 //       WTF is up with this stupid bug anyway?! Same thing happened when adding
 //       certain fields to centity_t...
 static playerEntity_t playerInfoDuplicate[MAX_GENTITIES];
-int strcmp2( const char *string1, const char *string2 ) {
-	while ( *string1 == *string2 && *string1 && *string2 ) {
-		string1++;
-		string2++;
-	}
-	return *string1 - *string2;
-}
 /*================
 CG_CustomSound
 ================*/
@@ -75,7 +68,7 @@ sfxHandle_t	CG_CustomSound(int clientNum, const char *soundName){
 		return cgs.media.nullSound;
 	}
 	for(i=0;i<MAX_CUSTOM_SOUNDS && cg_customSoundNames[i];i++){
-		qboolean foundType = !strcmp2(soundName,cg_customSoundNames[i]);
+		qboolean foundType = !strcmp(soundName,cg_customSoundNames[i]);
 		if(foundType){return ci->sounds[ci->tierCurrent][(i*9)+nextIndex];}
 	}
 	Com_Printf("^3CG_CustomSound(): unknown sound type '%s' from '%d/%s'. Using default.\n",soundName,clientNum,ci->name);

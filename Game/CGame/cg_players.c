@@ -32,16 +32,16 @@ char *cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
 	"landHeavy",
 	"footsteps",
 	"gasp",
+	"jump",
 	"jumpHigh",
 	"idleBanter",
 	"idleWinningBanter",
 	"idleLosingBanter",
-	"jump",
 	"painLight",
 	"painMedium",
 	"painHeavy",
 	"struggleBanter",
-	"taunt",
+	"taunt"
 };
 
 // HACK: We have to copy the entire playerEntity_t information
@@ -50,24 +50,35 @@ char *cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
 //       WTF is up with this stupid bug anyway?! Same thing happened when adding
 //       certain fields to centity_t...
 static playerEntity_t playerInfoDuplicate[MAX_GENTITIES];
-
+int strcmp2( const char *string1, const char *string2 ) {
+	while ( *string1 == *string2 && *string1 && *string2 ) {
+		string1++;
+		string2++;
+	}
+	return *string1 - *string2;
+}
 /*================
 CG_CustomSound
 ================*/
 sfxHandle_t	CG_CustomSound(int clientNum, const char *soundName){
-	clientInfo_t	*ci;
-	int				i, nextIndex;
-	
-	nextIndex = (fabs(crandom())*8)+1;
-	if(nextIndex > 9) nextIndex = 9;
-	if(nextIndex < 1) nextIndex = 1;
-	if(clientNum < 0 || clientNum >= MAX_CLIENTS) clientNum = 0;
+	clientInfo_t* ci;
+	int i;
+	int nextIndex = (fabs(crandom())*8)+1;
+	nextIndex = Com_Clamp(1,9,nextIndex);
+	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
+		Com_Printf("^3CG_CustomSound(): invalid client number %d.\n",clientNum);
+		return cgs.media.nullSound;
+	}
 	ci = &cgs.clientinfo[clientNum];
-	if(!ci->infoValid) return cgs.media.nullSound;
-	for(i=0;i<MAX_CUSTOM_SOUNDS;i++)
-		if(!strcmp(soundName,cg_customSoundNames[i]) && ci->sounds[ci->tierCurrent][(i*9)+nextIndex])
-			return ci->sounds[ci->tierCurrent][(i*9)+nextIndex];
-	Com_Printf("^3WARNING: missing custom sound '%s%i' - from [%s^3]\n",soundName,nextIndex, ci->name);
+	if(!ci->infoValid){
+		Com_Printf("^3CG_CustomSound(): invalid info from client number %d.)",clientNum);
+		return cgs.media.nullSound;
+	}
+	for(i=0;i<MAX_CUSTOM_SOUNDS && cg_customSoundNames[i];i++){
+		qboolean foundType = !strcmp2(soundName,cg_customSoundNames[i]);
+		if(foundType){return ci->sounds[ci->tierCurrent][(i*9)+nextIndex];}
+	}
+	Com_Printf("^3CG_CustomSound(): unknown sound type '%s' from '%d/%s'. Using default.\n",soundName,clientNum,ci->name);
 	return cgs.media.nullSound;
 }
 /*=============================================================================
@@ -253,9 +264,11 @@ static void CG_LoadClientInfo(clientInfo_t *ci){
 	//sounds
 	dir = ci->modelName;
 	//Custom sounds reset? Would it need a method?
-	for(tier=0;tier<9;tier++)
-		for(i=0;i<MAX_CUSTOM_SOUNDS;i++)
+	for(tier=0;tier<9;tier++){
+		for(i=0;i<MAX_CUSTOM_SOUNDS;i++){
 			ci->sounds[tier][i] = cgs.media.nullSound;
+		}
+	}
 	for(tier=0;tier<9;tier++){
 		for(i=0;i<MAX_CUSTOM_SOUNDS;i++){
 			if(!cg_customSoundNames[i]) continue;
@@ -263,7 +276,7 @@ static void CG_LoadClientInfo(clientInfo_t *ci){
 			currentIndex = 1;
 			for(count=1;count<=9;count++){
 				soundIndex = (i*9)+(count-1);
-				if(!tier){
+				if(tier == 0){
 					Com_sprintf(singlePath, sizeof(singlePath), "players/%s/%s.opus", dir, cg_customSoundNames[i]);
 					Com_sprintf(soundPath, sizeof(soundPath), "players/%s/%s%i.opus", dir, cg_customSoundNames[i],count);
 					Com_sprintf(loopPath, sizeof(loopPath), "players/%s/%s%i.opus", dir, cg_customSoundNames[i], currentIndex);
@@ -287,8 +300,9 @@ static void CG_LoadClientInfo(clientInfo_t *ci){
 					currentIndex += 1;
 					if(currentIndex > loopIndex) currentIndex = 1;
 				}
-				else if(ci->sounds[0][soundIndex])
+				else if(ci->sounds[0][soundIndex]){
 					ci->sounds[tier][soundIndex] = ci->sounds[0][soundIndex];
+				}
 			}
 		}
 	}

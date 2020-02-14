@@ -252,7 +252,8 @@ void CG_EntityEvent(centity_t *cent, vec3_t position){
 	case EV_MISSILE_MISS_AIR:
 		DEBUGNAME("EV_MISSILE_MISS_AIR");
 		ByteToDir(es->eventParm, dir);
-		CG_UserMissileHitWall(es->weapon, es->clientNum, es->powerups, es->number, position, dir, qtrue);	
+		CG_UserMissileHitWall(es->weapon, es->clientNum, es->powerups, es->number, position, dir, qtrue);
+		break;
 	case EV_BEAM_FADE:
 		DEBUGNAME("EV_BEAM_FADE");
 		break;

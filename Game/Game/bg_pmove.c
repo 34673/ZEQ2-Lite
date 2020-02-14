@@ -2000,10 +2000,9 @@ void PM_Footsteps(void){
 				PM_ContinueLegsAnim(ANIM_DASH_LEFT);
 			}
 		}
-		footstep = qtrue;
 	}
 	else{
-		bobmove = 0.3f;
+		bobmove = 0.25f;
 		if(pm->cmd.forwardmove < 0){
 			PM_ContinueLegsAnim(ANIM_BACKWALK );
 		}
@@ -2011,6 +2010,7 @@ void PM_Footsteps(void){
 			PM_ContinueLegsAnim(ANIM_WALK);
 		}
 	}
+	footstep = qtrue;
 	old = pm->ps->bobCycle;
 	pm->ps->bobCycle = (int)(old + bobmove * pml.msec)& 255;
 	if(((old + 64)^ (pm->ps->bobCycle + 64)) & 128){

@@ -1,9 +1,13 @@
 //cg_tiers.c: Client-side tier file system.
 #include "cg_local.h"
-qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *modelName, const char *skinName){
-	int	index,partIndex,damageIndex,lastSkinIndex,lastModelIndex,i;
+qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t* ci, const char* modelName, const char* skinName){
+	int i;
+	int	partIndex;
+	int damageIndex;
+	int lastSkinIndex;
+	int lastModelIndex;
 	char filename[MAX_QPATH*2];
-	char tierPath[MAX_QPATH];
+	char filePath[MAX_QPATH];
 	char tempPath[MAX_QPATH];
 	char legsPath[MAX_QPATH];
 	char headPath[MAX_QPATH];
@@ -26,37 +30,17 @@ qboolean CG_RegisterClientModelnameWithTiers(clientInfo_t *ci, const char *model
 		// ===================================
 		// Config
 		// ===================================
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/icon.png",modelName,i+1);
-		if(trap_FS_FOpenFile(tierPath,0,FS_READ)<=0){continue;}
+		Com_sprintf(filePath,sizeof(filePath),"players/%s/tier%i/icon.png",modelName,i+1);
+		if(trap_FS_FOpenFile(filePath,0,FS_READ)<=0){continue;}
 		memset(&ci->tierConfig[i],0,sizeof(tierConfig_cg));
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		tempShader = trap_R_RegisterShaderNoMip(strcat(tierPath,"icon.png"));
-		for(index=0;index<10;++index){
+		Com_sprintf(filePath,sizeof(filePath),"players/%s/tier%i/icon.png",modelName,i+1);
+		tempShader = trap_R_RegisterShaderNoMip(filePath);
+		for(int index=0;index<10;++index){
 			ci->tierConfig[i].icon2D[index] = tempShader; 
 			ci->tierConfig[i].screenEffect[index] = cgs.media.clearShader;
 		}
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformFirst.opus"),0,FS_READ)>0){
-			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformFirst = trap_S_RegisterSound(strcat(tierPath,"transformFirst.opus"),qfalse);
-		}
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformUp.opus"),0,FS_READ)>0){
-			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformUp = trap_S_RegisterSound(strcat(tierPath,"transformUp.opus"),qfalse);
-		}
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"transformDown.opus"),0,FS_READ)>0){
-			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundTransformDown = trap_S_RegisterSound(strcat(tierPath,"transformDown.opus"),qfalse);
-		}
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-		if(trap_FS_FOpenFile(strcat(tierPath,"poweringUp.opus"),0,FS_READ)>0){
-			Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/",modelName,i+1);
-			ci->tierConfig[i].soundPoweringUp = trap_S_RegisterSound(strcat(tierPath,"poweringUp.opus"),qfalse);
-		}
-		Com_sprintf(tierPath,sizeof(tierPath),"players/%s/tier%i/transformScript.cfg",modelName,i+1);
-		if(trap_FS_FOpenFile(tierPath,0,FS_READ)>0){
+		Com_sprintf(filePath,sizeof(filePath),"players/%s/tier%i/transformScript.cfg",modelName,i+1);
+		if(trap_FS_FOpenFile(filePath,0,FS_READ)>0){
 			ci->tierConfig[i].transformScriptExists = qtrue;
 		}
 		Com_sprintf(filename,sizeof(filename),"players/tierDefault.cfg");
@@ -249,17 +233,22 @@ void parseTier(char *path,tierConfig_cg *tier){
 				if(!token[0]){break;}
 				tier->requirementHealthMaximum = atoi(token);
 			}
-			else if(!Q_stricmp(token,"transformSoundFirst")){
+			else if(!Q_stricmp(token,"poweringUp")){
+				token = COM_Parse(&parse);
+				if(!token[0]){break;}
+				tier->soundPoweringUp = trap_S_RegisterSound(token,qfalse);
+			}
+			else if(!Q_stricmp(token,"transformFirst")){
 				token = COM_Parse(&parse);
 				if(!token[0]){break;}
 				tier->soundTransformFirst = trap_S_RegisterSound(token,qfalse);
 			}
-			else if(!Q_stricmp(token,"transformSoundUp")){
+			else if(!Q_stricmp(token,"transformUp")){
 				token = COM_Parse(&parse);
 				if(!token[0]){break;}
 				tier->soundTransformUp = trap_S_RegisterSound(token,qfalse);
 			}
-			else if(!Q_stricmp(token,"transformSoundDown")){
+			else if(!Q_stricmp(token,"transformDown")){
 				token = COM_Parse(&parse);
 				if(!token[0]){break;}
 				tier->soundTransformDown = trap_S_RegisterSound(token,qfalse);
@@ -273,11 +262,6 @@ void parseTier(char *path,tierConfig_cg *tier){
 					if(!token[0]){break;}
 					tier->transformMusicLength = CG_GetMilliseconds(token);
 				}
-			}
-			else if(!Q_stricmp(token,"poweringUpSound")){
-				token = COM_Parse(&parse);
-				if(!token[0]){break;}
-				tier->soundPoweringUp = trap_S_RegisterSound(token,qfalse);
 			}
 			else if(!Q_stricmp(token,"damageFeatures")){
 				token = COM_Parse(&parse);
@@ -300,10 +284,9 @@ void parseTier(char *path,tierConfig_cg *tier){
 				tokenInt = atoi(token);
 				token = COM_Parse(&parse);
 				if(Q_stricmp(token,"default")){
-					int countdown = tokenInt/10-1;
-					while(countdown > 0){
-						tier->icon2D[countdown] = trap_R_RegisterShaderNoMip(token);
-						countdown -= 1;
+					qhandle_t shader = trap_R_RegisterShaderNoMip(token);
+					for(int countdown = tokenInt / 10 - 1;countdown > 0;countdown--){
+						tier->icon2D[countdown] = shader;
 					}
 				}
 			}

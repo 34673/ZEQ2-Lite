@@ -380,8 +380,8 @@ void ClientThink_real(gentity_t* ent){
 	}
 	client->ps.pm_type = client->noclip ? PM_NOCLIP : PM_NOCLIP;
 	ent->s.playerBitFlags = client->ps.bitFlags;
-	//ent->s.attackPowerCurrent = client->ps.powerLevel[plHealth];
-	//ent->s.attackPowerTotal = client->ps.powerLevel[plMaximum];
+	ent->s.attackPowerCurrent = client->ps.powerLevel[plHealth];
+	ent->s.attackPowerTotal = client->ps.powerLevel[plMaximum];
 	G_LinkUserWeaponData( &(client->ps) );
 	G_CheckSkills(&(client->ps));
 	// set up for pmove

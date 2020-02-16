@@ -473,7 +473,7 @@ void PM_BurnPowerLevel(void){
 				if(newValue > limit){newValue = limit;}
 				else if(newValue < 0){newValue = 0;}
 				pm->ps->powerLevel[plMaximum] = newValue;
-			}	
+			}
 		}
 		if(burnType == 0){pm->ps->powerLevel[plDamageFromEnergy] = 0;}
 		else if(burnType == 1){pm->ps->powerLevel[plDamageFromMelee] = 0;}
@@ -1561,7 +1561,7 @@ void PM_DashMove(void){
 		VectorNormalize(pml.forward);
 		VectorNormalize(pml.right);
 		for(i=0;i<2;i++){
-			wishvel[i] = pml.forward[i]*fmove + pml.right[i]*smove;
+			wishvel[i] = pml.forward[i]*fmove*0.4f + pml.right[i]*smove*0.4f;
 		}
 		wishvel[2] = 0;
 		VectorCopy (wishvel, wishdir);

@@ -369,9 +369,11 @@ void CG_EntityEvent(centity_t *cent, vec3_t position){
 	case EV_ALTERUP_START:
 		DEBUGNAME("EV_ALTERUP_START");
 		trap_S_StartSound(cent->lerpOrigin,es->number,CHAN_BODY,ci->auraConfig[ci->tierCurrent]->boostStartSound);
+		trap_S_StartSound(cent->lerpOrigin,es->number,CHAN_BODY,ci->tierConfig[ci->tierCurrent].alterUpVoice);
 		break;
 	case EV_ALTERDOWN_START:
 		DEBUGNAME("EV_ALTERDOWN_START");
+		trap_S_StartSound(cent->lerpOrigin,es->number,CHAN_BODY,ci->tierConfig[ci->tierCurrent].alterDownVoice);
 		break;
 	case EV_POWERINGUP_START:
 		DEBUGNAME("EV_POWERINGUP_START");

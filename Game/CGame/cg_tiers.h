@@ -39,4 +39,6 @@ typedef struct{
 	sfxHandle_t soundTransformUp;
 	sfxHandle_t soundTransformDown;
 	sfxHandle_t soundPoweringUp;
+	sfxHandle_t alterUpVoice;
+	sfxHandle_t alterDownVoice;
 }tierConfig_cg;

@@ -114,11 +114,14 @@ typedef struct{
 	animation_t	*animation;
 } lerpFrame_t;
 
+typedef enum{Legs,Torso,Head,Camera}modelPart_t;
+
+//Use modelPart_t for verbose access
 typedef struct{
-	lerpFrame_t		modelLerpFrames[4]; //0 = Legs, 1 = Torse, 2 = Head, 3 = Camera
+	lerpFrame_t		modelLerpFrames[4];
 	// needed to obtain tag positions after player entity has been processed.
 	// For linking beam attacks, particle systems, etc.
-	refEntity_t		modelEntities[4]; //0 = Legs, 1 = Torso, 2 = Head, 3 = Camera
+	refEntity_t		modelEntities[4];
 } playerEntity_t;
 
 //=================================================
@@ -851,7 +854,6 @@ qhandle_t		CG_StatusHandle(int task);
 //
 void			CG_Player(centity_t *cent),
 				CG_ResetPlayerEntity(centity_t *cent),
-				CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, qboolean auraAlways),
 				CG_NewClientInfo(int clientNum),
 				CG_SpawnLightSpeedGhost(centity_t *cent);
 sfxHandle_t		CG_CustomSound(int clientNum, const char *soundName);

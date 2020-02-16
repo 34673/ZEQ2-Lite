@@ -87,7 +87,8 @@ players//visor/animation.cfg, etc
 qboolean CG_ParseAnimationFile(const char *filename, clientInfo_t *ci, qboolean isCamera){
 	char			*token, *text_p, *prev,
 					text[32000];
-	int				i, len;
+	int				i;
+	unsigned int	len;
 	float			fps;
 	fileHandle_t	f;
 	animation_t		*animations;
@@ -225,7 +226,7 @@ qboolean CG_ParseAnimationFile(const char *filename, clientInfo_t *ci, qboolean 
 CG_RegisterClientModelname
 ==========================
 */
-static qboolean CG_RegisterClientModelname(clientInfo_t *ci, const char *modelName, const char *skinName, const char *headModelName, const char *headSkinName){
+static qboolean CG_RegisterClientModelname(clientInfo_t *ci, const char *modelName, const char *skinName){
 	if(!CG_RegisterClientModelnameWithTiers(ci, modelName, skinName)) return qfalse;
 	return qtrue;
 }
@@ -244,15 +245,16 @@ static void CG_LoadClientInfo(clientInfo_t *ci){
 	char singlePath[MAX_QPATH];
 	char loopPath[MAX_QPATH];
 	int i,tier,count,currentIndex,soundIndex,loopIndex,clientNum;
-	if(!CG_RegisterClientModelname(ci,ci->modelName,ci->skinName, ci->headModelName, ci->headSkinName)){
+	char filename[MAX_QPATH];
+	if(!CG_RegisterClientModelname(ci,ci->modelName,ci->skinName)){
 		strcpy(ci->modelName,DEFAULT_MODEL);
-		strcpy(ci->headModelName,DEFAULT_MODEL);
 		strcpy(ci->skinName,"default");
-		strcpy(ci->headSkinName,"default");
-		if(cg_buildScript.integer)
-			CG_Error("CG_RegisterClientModelname(%s, %s, %s, %s) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName);
-		if(!CG_RegisterClientModelname(ci, DEFAULT_MODEL, "default", DEFAULT_MODEL, "default"))
+		if(cg_buildScript.integer){
+			CG_Error("CG_RegisterClientModelname(%s, %s) failed", ci->modelName, ci->skinName);
+		}
+		if(!CG_RegisterClientModelname(ci, DEFAULT_MODEL, "default")){
 			CG_Error("DEFAULT_MODEL (%s) failed to register",DEFAULT_MODEL);
+		}
 	}
 	//sounds
 	dir = ci->modelName;
@@ -303,57 +305,62 @@ static void CG_LoadClientInfo(clientInfo_t *ci){
 	// reset any existing players and bodies, because they might be in bad
 	// frames for this new model
 	clientNum = ci - cgs.clientinfo;
-	for(i=0;i<MAX_GENTITIES;i++)
-		if(cg_entities[i].currentState.clientNum == clientNum && (cg_entities[i].currentState.eType == ET_INVISIBLE || cg_entities[i].currentState.eType == ET_PLAYER))
+	for(i=0;i<MAX_GENTITIES;i++){
+		qboolean isInvisible = cg_entities[i].currentState.eType == ET_INVISIBLE;
+		qboolean isPlayer = cg_entities[i].currentState.eType == ET_PLAYER;
+		if(cg_entities[i].currentState.clientNum == clientNum && (isInvisible || isPlayer)){
 			CG_ResetPlayerEntity(&cg_entities[i]);
+		}
+	}
 	// REFPOINT: Load the additional tiers' clientInfo here
 	CG_RegisterClientAura(clientNum,ci);
-	{
-		char filename[MAX_QPATH];
-		
-		Com_sprintf(filename, sizeof(filename), "players/%s/%s.grfx", ci->modelName, ci->skinName);
-		CG_weapGfx_Parse(filename, clientNum);
-	}
+	Com_sprintf(filename, sizeof(filename), "players/%s/%s.grfx", ci->modelName, ci->skinName);
+	CG_weapGfx_Parse(filename, clientNum);
 }
-
 /*======================
 CG_NewClientInfo
 ======================*/
 void CG_NewClientInfo(int clientNum){
-	clientInfo_t *ci;
+	clientInfo_t* ci;
 	clientInfo_t newInfo;
-	const char	*configstring;
-	const char	*v,*model;
-	char *skin;
+	const char* configstring;
+	const char* v;
+	const char* model;
+	char* skin;
 	ci = &cgs.clientinfo[clientNum];
 	configstring = CG_ConfigString(clientNum + CS_PLAYERS);
-	if (!configstring[0]){
-		memset(ci, 0, sizeof(*ci));
+	if(!configstring[0]){
+		memset(ci,0,sizeof(*ci));
 		return;
 	}
-	memset(&newInfo, 0, sizeof(newInfo));
-	v = Info_ValueForKey(configstring, "n");
-	Q_strncpyz(newInfo.name, v, sizeof(newInfo.name));
-	v = model = Info_ValueForKey(configstring, "model");
-	if((skin = strchr(v,'/')) == NULL)skin = "default";
-	else *skin++ = 0;
-	Q_strncpyz(newInfo.skinName, skin, sizeof(newInfo.skinName));
-	Q_strncpyz(newInfo.modelName, v, sizeof(newInfo.modelName));
-	v = Info_ValueForKey(configstring, "hmodel");
-	if(!v) v = model;
-	if((skin = strchr(v,'/')) == NULL) skin = "default";
-	else *skin++ = 0;
-	Q_strncpyz(newInfo.headModelName, v, sizeof(newInfo.headModelName));
-	v = Info_ValueForKey(configstring, "lmodel");
-	if(!v) v = model;
-	if((skin = strchr(v,'/')) == NULL) skin = "default";
-	else *skin++ = 0;
-	Q_strncpyz(newInfo.legsModelName, v, sizeof(newInfo.legsModelName));
-	v = Info_ValueForKey(configstring, "cmodel");
-	if(!v) v = model;
-	if((skin = strchr(v,'/')) == NULL) skin = "default";
-	else *skin++ = 0;
-	Q_strncpyz(newInfo.cameraModelName, v, sizeof(newInfo.cameraModelName));
+	memset(&newInfo,0,sizeof(newInfo));
+	v = Info_ValueForKey(configstring,"n");
+	Q_strncpyz(newInfo.name,v,sizeof(newInfo.name));
+	model = Info_ValueForKey(configstring,"model"); 
+	v = model;
+	skin = strchr(v,'/');
+	if(!skin){skin = "default";}
+	else{*skin++ = '\0';}
+	Q_strncpyz(newInfo.skinName,skin,sizeof(newInfo.skinName));
+	Q_strncpyz(newInfo.modelName,v,sizeof(newInfo.modelName));
+	v = Info_ValueForKey(configstring,"hmodel");
+	if(!v){v = model;}
+	skin = strchr(v,'/');
+	if(!skin){skin = "default";}
+	else{*skin++ = '\0';}
+	Q_strncpyz(newInfo.headModelName,v,sizeof(newInfo.headModelName));
+	v = Info_ValueForKey(configstring,"lmodel");
+	if(!v){v = model;}
+	skin = strchr(v,'/');
+	if(!skin){skin = "default";}
+	else{*skin++ = '\0';}
+	Q_strncpyz(newInfo.legsModelName,v,sizeof(newInfo.legsModelName));
+	v = Info_ValueForKey(configstring,"cmodel");
+	if(!v){v = model;}
+	skin = strchr(v,'/');
+	if(!skin){skin = "default";}
+	else{*skin++ = '\0';}
+	Q_strncpyz(newInfo.cameraModelName,v,sizeof(newInfo.cameraModelName));
 	newInfo.infoValid = qtrue;
 	*ci = newInfo;
 	CG_LoadClientInfo(ci);
@@ -490,109 +497,112 @@ static void CG_PlayerAnimation(centity_t *cent, int *legsOld, int *legs, float *
 	speedScale = 1;
 	ci = &cgs.clientinfo[clientNum];
 	// do the shuffle turn frames locally
-//	if(cent->pe.modelLerpFrames[0].yawing &&(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_IDLE)
-//		CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[0], ANIM_TURN, speedScale, qfalse);
+//	if(cent->pe.modelLerpFrames[Legs].yawing &&(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_IDLE)
+//		CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Legs], ANIM_TURN, speedScale, qfalse);
 //	else
-	for(i=0;i<4;i++) CG_RunLerpFrame(ci,&cent->pe.modelLerpFrames[0],cent->currentState.legsAnim,speedScale, qfalse);
-	*legsOld = cent->pe.modelLerpFrames[0].oldFrame;
-	*legs = cent->pe.modelLerpFrames[0].frame;
-	*legsBackLerp = cent->pe.modelLerpFrames[0].backlerp;
-	CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[1], cent->currentState.torsoAnim, speedScale, qfalse);
-	*torsoOld = cent->pe.modelLerpFrames[1].oldFrame;
-	*torso = cent->pe.modelLerpFrames[1].frame;
-	*torsoBackLerp = cent->pe.modelLerpFrames[1].backlerp;
-	CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[3], cent->currentState.torsoAnim, speedScale, qtrue);
-	*cameraOld = cent->pe.modelLerpFrames[3].oldFrame;
-	*camera = cent->pe.modelLerpFrames[3].frame;
-	*cameraBackLerp = cent->pe.modelLerpFrames[3].backlerp;
+	for(i=0;i<4;i++) CG_RunLerpFrame(ci,&cent->pe.modelLerpFrames[Legs],cent->currentState.legsAnim,speedScale, qfalse);
+	*legsOld = cent->pe.modelLerpFrames[Legs].oldFrame;
+	*legs = cent->pe.modelLerpFrames[Legs].frame;
+	*legsBackLerp = cent->pe.modelLerpFrames[Legs].backlerp;
+	CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Torso], cent->currentState.torsoAnim, speedScale, qfalse);
+	*torsoOld = cent->pe.modelLerpFrames[Torso].oldFrame;
+	*torso = cent->pe.modelLerpFrames[Torso].frame;
+	*torsoBackLerp = cent->pe.modelLerpFrames[Torso].backlerp;
+	CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Camera], cent->currentState.torsoAnim, speedScale, qtrue);
+	*cameraOld = cent->pe.modelLerpFrames[Camera].oldFrame;
+	*camera = cent->pe.modelLerpFrames[Camera].frame;
+	*cameraBackLerp = cent->pe.modelLerpFrames[Camera].backlerp;
 	// ADDING FOR ZEQ2
 	{
 		int	torsoAnimNum;
 		// NOTE: Torso animations take precedence over leg animations when deciding which head animation to play.
 		torsoAnimNum = cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT;
-		if(cg.predictedPlayerState.bitFlags & usingBoost){CG_RunLerpFrame(ci,&cent->pe.modelLerpFrames[2],ANIM_KI_CHARGE,speedScale,qfalse);}
-		else if(cent->currentState.eFlags & EF_AURA && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KI_CHARGE, speedScale, qfalse);}
-		else if(ci->auraConfig[tier]->auraAlways && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KI_CHARGE, speedScale, qfalse);}
-		else if(ANIM_FLY_UP == torsoAnimNum && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KI_CHARGE, speedScale, qfalse);}
-		else if(ANIM_FLY_DOWN == torsoAnimNum && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KI_CHARGE, speedScale, qfalse);}
-		else if(ANIM_FLOOR_RECOVER == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLOOR_RECOVER, speedScale, qfalse);}
-		else if(ANIM_WALK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_WALK, speedScale, qfalse);}
-		else if(ANIM_RUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_RUN, speedScale, qfalse);}
-		else if(ANIM_BACKRUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BACKRUN, speedScale, qfalse);}
-		else if(ANIM_JUMP_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_JUMP_UP, speedScale, qfalse);}
-		else if(ANIM_LAND_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_LAND_UP, speedScale, qfalse);}
-		else if(ANIM_JUMP_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_JUMP_FORWARD, speedScale, qfalse);}
-		else if(ANIM_LAND_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_LAND_FORWARD, speedScale, qfalse);}
-		else if(ANIM_JUMP_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_JUMP_BACK, speedScale, qfalse);}
-		else if(ANIM_LAND_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_LAND_BACK, speedScale, qfalse);}
-		else if(ANIM_SWIM_IDLE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SWIM_IDLE, speedScale, qfalse);}
-		else if(ANIM_SWIM == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SWIM, speedScale, qfalse);}
-		else if(ANIM_DASH_RIGHT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DASH_RIGHT, speedScale, qfalse);}
-		else if(ANIM_DASH_LEFT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DASH_LEFT, speedScale, qfalse);}
-		else if(ANIM_DASH_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DASH_FORWARD, speedScale, qfalse);}
-		else if(ANIM_DASH_BACKWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DASH_BACKWARD, speedScale, qfalse);}
-		else if(ANIM_KI_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_TRANS_UP, speedScale, qfalse);}
-		else if(ANIM_PL_DOWN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_PL_DOWN, speedScale, qfalse);}
-		else if(ANIM_PL_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_TRANS_UP, speedScale, qfalse);}
-		else if(ANIM_TRANS_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_TRANS_UP, speedScale, qfalse);}
-		else if(ANIM_TRANS_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_TRANS_BACK, speedScale, qfalse);}
-		else if(ANIM_FLY_IDLE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_IDLE, speedScale, qfalse);}
-		else if(ANIM_FLY_START == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_START, speedScale, qfalse);}
-		else if(ANIM_FLY_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_FORWARD, speedScale, qfalse);}
-		else if(ANIM_FLY_BACKWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_BACKWARD, speedScale, qfalse);}
-		else if(ANIM_FLY_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_UP, speedScale, qfalse);}
-		else if(ANIM_FLY_DOWN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_FLY_DOWN, speedScale, qfalse);}
-		else if(ANIM_STUNNED == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_STUNNED, speedScale, qfalse);}
-		else if(ANIM_PUSH == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_TRANS_UP, speedScale, qfalse);}
-		else if(ANIM_DEATH_GROUND == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DEATH_GROUND, speedScale, qfalse);}
-		else if(ANIM_DEATH_AIR == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DEATH_AIR, speedScale, qfalse);}
-		else if(ANIM_DEATH_AIR_LAND == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DEATH_AIR_LAND, speedScale, qfalse);}
-		else if(ANIM_STUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_STUN, speedScale, qfalse);}
-		else if(ANIM_DEFLECT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_DEFLECT, speedScale, qfalse);}
-		else if(ANIM_BLOCK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BLOCK, speedScale, qfalse);}
-		else if(ANIM_SPEED_MELEE_ATTACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SPEED_MELEE_ATTACK, speedScale, qfalse);}
-		else if(ANIM_SPEED_MELEE_DODGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SPEED_MELEE_DODGE, speedScale, qfalse);}
-		else if(ANIM_SPEED_MELEE_BLOCK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SPEED_MELEE_BLOCK, speedScale, qfalse);}
-		else if(ANIM_SPEED_MELEE_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_SPEED_MELEE_HIT, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK1, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK2, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK3 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK3, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK4 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK4, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK5 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK5, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_ATTACK6 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_ATTACK6, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT1, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT2, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT3 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT3, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT4 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT4, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT5 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT5, speedScale, qfalse);}
-		else if(ANIM_BREAKER_MELEE_HIT6 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_BREAKER_MELEE_HIT6, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_1_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_1_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_2_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_2_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_3_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_3_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_4_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_4_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_5_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_5_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_6_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_6_CHARGE, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_1_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_1_HIT, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_2_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_2_HIT, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_3_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_3_HIT, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_4_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_4_HIT, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_5_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_5_HIT, speedScale, qfalse);}
-		else if(ANIM_POWER_MELEE_6_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_POWER_MELEE_6_HIT, speedScale, qfalse);}
-		else if(ANIM_STUNNED_MELEE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_STUNNED_MELEE, speedScale, qfalse);}
-		else if(ANIM_KNOCKBACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KNOCKBACK, speedScale, qfalse);}
-		else if(ANIM_KNOCKBACK_HIT_WALL == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KNOCKBACK_HIT_WALL, speedScale, qfalse);}
-		else if(ANIM_KNOCKBACK_RECOVER_1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KNOCKBACK_RECOVER_1, speedScale, qfalse);}
-		else if(ANIM_KNOCKBACK_RECOVER_2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_KNOCKBACK_RECOVER_2, speedScale, qfalse);}
-		else if(ANIM_KI_ATTACK1_PREPARE <= torsoAnimNum && ANIM_KI_ATTACK6_ALT_FIRE >= torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], torsoAnimNum - ANIM_KI_ATTACK1_PREPARE + ANIM_KI_ATTACK1_PREPARE, speedScale, qfalse);}
+		if(cg.predictedPlayerState.bitFlags & usingBoost){CG_RunLerpFrame(ci,&cent->pe.modelLerpFrames[Head],ANIM_KI_CHARGE,speedScale,qfalse);}
+		else if(cent->currentState.eFlags & EF_AURA && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KI_CHARGE, speedScale, qfalse);}
+		else if(ci->auraConfig[tier]->auraAlways && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KI_CHARGE, speedScale, qfalse);}
+		else if(ANIM_FLY_UP == torsoAnimNum && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KI_CHARGE, speedScale, qfalse);}
+		else if(ANIM_FLY_DOWN == torsoAnimNum && ci->overrideHead){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KI_CHARGE, speedScale, qfalse);}
+		else if(ANIM_FLOOR_RECOVER == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLOOR_RECOVER, speedScale, qfalse);}
+		else if(ANIM_WALK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_WALK, speedScale, qfalse);}
+		else if(ANIM_RUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_RUN, speedScale, qfalse);}
+		else if(ANIM_BACKRUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BACKRUN, speedScale, qfalse);}
+		else if(ANIM_JUMP_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_JUMP_UP, speedScale, qfalse);}
+		else if(ANIM_LAND_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_LAND_UP, speedScale, qfalse);}
+		else if(ANIM_JUMP_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_JUMP_FORWARD, speedScale, qfalse);}
+		else if(ANIM_LAND_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_LAND_FORWARD, speedScale, qfalse);}
+		else if(ANIM_JUMP_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_JUMP_BACK, speedScale, qfalse);}
+		else if(ANIM_LAND_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_LAND_BACK, speedScale, qfalse);}
+		else if(ANIM_SWIM_IDLE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SWIM_IDLE, speedScale, qfalse);}
+		else if(ANIM_SWIM == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SWIM, speedScale, qfalse);}
+		else if(ANIM_DASH_RIGHT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DASH_RIGHT, speedScale, qfalse);}
+		else if(ANIM_DASH_LEFT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DASH_LEFT, speedScale, qfalse);}
+		else if(ANIM_DASH_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DASH_FORWARD, speedScale, qfalse);}
+		else if(ANIM_DASH_BACKWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DASH_BACKWARD, speedScale, qfalse);}
+		else if(ANIM_KI_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_TRANS_UP, speedScale, qfalse);}
+		else if(ANIM_PL_DOWN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_PL_DOWN, speedScale, qfalse);}
+		else if(ANIM_PL_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_TRANS_UP, speedScale, qfalse);}
+		else if(ANIM_TRANS_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_TRANS_UP, speedScale, qfalse);}
+		else if(ANIM_TRANS_BACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_TRANS_BACK, speedScale, qfalse);}
+		else if(ANIM_FLY_IDLE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_IDLE, speedScale, qfalse);}
+		else if(ANIM_FLY_START == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_START, speedScale, qfalse);}
+		else if(ANIM_FLY_FORWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_FORWARD, speedScale, qfalse);}
+		else if(ANIM_FLY_BACKWARD == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_BACKWARD, speedScale, qfalse);}
+		else if(ANIM_FLY_UP == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_UP, speedScale, qfalse);}
+		else if(ANIM_FLY_DOWN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_FLY_DOWN, speedScale, qfalse);}
+		else if(ANIM_STUNNED == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_STUNNED, speedScale, qfalse);}
+		else if(ANIM_PUSH == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_TRANS_UP, speedScale, qfalse);}
+		else if(ANIM_DEATH_GROUND == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DEATH_GROUND, speedScale, qfalse);}
+		else if(ANIM_DEATH_AIR == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DEATH_AIR, speedScale, qfalse);}
+		else if(ANIM_DEATH_AIR_LAND == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DEATH_AIR_LAND, speedScale, qfalse);}
+		else if(ANIM_STUN == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_STUN, speedScale, qfalse);}
+		else if(ANIM_DEFLECT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_DEFLECT, speedScale, qfalse);}
+		else if(ANIM_BLOCK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BLOCK, speedScale, qfalse);}
+		else if(ANIM_SPEED_MELEE_ATTACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SPEED_MELEE_ATTACK, speedScale, qfalse);}
+		else if(ANIM_SPEED_MELEE_DODGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SPEED_MELEE_DODGE, speedScale, qfalse);}
+		else if(ANIM_SPEED_MELEE_BLOCK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SPEED_MELEE_BLOCK, speedScale, qfalse);}
+		else if(ANIM_SPEED_MELEE_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_SPEED_MELEE_HIT, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK1, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK2, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK3 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK3, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK4 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK4, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK5 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK5, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_ATTACK6 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_ATTACK6, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT1, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT2, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT3 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT3, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT4 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT4, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT5 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT5, speedScale, qfalse);}
+		else if(ANIM_BREAKER_MELEE_HIT6 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_BREAKER_MELEE_HIT6, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_1_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_1_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_2_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_2_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_3_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_3_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_4_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_4_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_5_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_5_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_6_CHARGE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_6_CHARGE, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_1_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_1_HIT, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_2_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_2_HIT, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_3_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_3_HIT, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_4_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_4_HIT, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_5_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_5_HIT, speedScale, qfalse);}
+		else if(ANIM_POWER_MELEE_6_HIT == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_POWER_MELEE_6_HIT, speedScale, qfalse);}
+		else if(ANIM_STUNNED_MELEE == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_STUNNED_MELEE, speedScale, qfalse);}
+		else if(ANIM_KNOCKBACK == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KNOCKBACK, speedScale, qfalse);}
+		else if(ANIM_KNOCKBACK_HIT_WALL == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KNOCKBACK_HIT_WALL, speedScale, qfalse);}
+		else if(ANIM_KNOCKBACK_RECOVER_1 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KNOCKBACK_RECOVER_1, speedScale, qfalse);}
+		else if(ANIM_KNOCKBACK_RECOVER_2 == torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_KNOCKBACK_RECOVER_2, speedScale, qfalse);}
+		else if(ANIM_KI_ATTACK1_PREPARE <= torsoAnimNum && ANIM_KI_ATTACK6_ALT_FIRE >= torsoAnimNum){CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], torsoAnimNum - ANIM_KI_ATTACK1_PREPARE + ANIM_KI_ATTACK1_PREPARE, speedScale, qfalse);}
 		else{
-			if(cg.predictedPlayerState.lockedTarget > 0)
-				CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_IDLE_LOCKED, speedScale, qfalse);
-			else CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[2], ANIM_IDLE, speedScale, qfalse);
+			if(cg.predictedPlayerState.lockedTarget > 0){
+				CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_IDLE_LOCKED, speedScale, qfalse);
+			}
+			else{
+				CG_RunLerpFrame(ci, &cent->pe.modelLerpFrames[Head], ANIM_IDLE, speedScale, qfalse);
+			}
 		}
 	}
-	*headOld = cent->pe.modelLerpFrames[2].oldFrame;
-	*head = cent->pe.modelLerpFrames[2].frame;
-	*headBackLerp = cent->pe.modelLerpFrames[2].backlerp;
+	*headOld = cent->pe.modelLerpFrames[Head].oldFrame;
+	*head = cent->pe.modelLerpFrames[Head].frame;
+	*headBackLerp = cent->pe.modelLerpFrames[Head].backlerp;
 	// END ADDING
 }
 
@@ -603,21 +613,23 @@ PLAYER ANGLES
 CG_SwingAngles
 ==================
 */
-static void CG_SwingAngles(float destination, float swingTolerance, float clampTolerance, float speed, float *angle, qboolean *swinging){
-	float swing, move, scale;
+static void CG_SwingAngles(float destination,float swingTolerance,float clampTolerance,float speed,float* angle,qboolean* swinging){
+	float swing;
+	float move;
+	float scale;
 	if(!*swinging){
 		// see if a swing should be started
-		swing = AngleSubtract(*angle, destination);
-		if(swing > swingTolerance || swing < -swingTolerance) *swinging = qtrue;
+		swing = AngleSubtract(*angle,destination);
+		if(swing > swingTolerance || swing < -swingTolerance){*swinging = qtrue;}
 	}
-	if(!*swinging) return;
+	if(!*swinging){return;}
 	// modify the speed depending on the delta
 	// so it doesn't seem so linear
-	swing = AngleSubtract(destination, *angle);
+	swing = AngleSubtract(destination,*angle);
 	scale = fabs(swing);
-	if(scale < swingTolerance * .5f) scale = .5f;
-	else if(scale < swingTolerance) scale = 1.f;
-	else scale = 2.f;
+	if(scale < swingTolerance * 0.5f){scale = 0.5f;}
+	else if(scale < swingTolerance){scale = 1.0f;}
+	else{scale = 2.0f;}
 	// swing towards the destination angle
 	if(swing >= 0){
 		move = cg.frametime * scale * speed;
@@ -637,10 +649,8 @@ static void CG_SwingAngles(float destination, float swingTolerance, float clampT
 	}
 	// clamp to no more than tolerance
 	swing = AngleSubtract(destination, *angle);
-	if(swing > clampTolerance)
-		*angle = AngleMod(destination - (clampTolerance - 1));
-	else if(swing < -clampTolerance)
-		*angle = AngleMod(destination + (clampTolerance - 1));
+	if(swing > clampTolerance){*angle = AngleMod(destination - (clampTolerance - 1));}
+	else if(swing < -clampTolerance){*angle = AngleMod(destination + (clampTolerance - 1));}
 }
 
 /*
@@ -679,25 +689,25 @@ static void CG_PlayerAngles(centity_t *cent, vec3_t legs[3], vec3_t torso[3], ve
 		|| (cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) != ANIM_IDLE_LOCKED
 		|| (cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT) != ANIM_IDLE_LOCKED){
 		// if not standing still, always point all in the same direction
-		cent->pe.modelLerpFrames[1].yawing = qtrue;	// always center
-		cent->pe.modelLerpFrames[1].pitching = qtrue;	// always center
-		cent->pe.modelLerpFrames[0].yawing = qtrue;	// always center
+		cent->pe.modelLerpFrames[Torso].yawing = qtrue;	// always center
+		cent->pe.modelLerpFrames[Torso].pitching = qtrue;	// always center
+		cent->pe.modelLerpFrames[Legs].yawing = qtrue;	// always center
 	}
-	// adjust legs for movement dir
-	// don't let dead bodies twitch
-	if(cent->currentState.eFlags & EF_DEAD) dir = 0;
-	// don't let these animations adjust angles.
-	else if(((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) >= ANIM_DASH_RIGHT) && ((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) <= ANIM_DASH_BACKWARD))
-		dir = 0;
-	else{
-		dir = cent->currentState.angles2[YAW];
-		if(dir < 0 || dir > 7){
-			CG_Error("Bad player movement angle");
-			return;
-		}
+	// adjust legs for movement dir.
+	// don't let dead bodies twitch or let certain animations adjust angles
+	dir = cent->currentState.angles2[YAW];
+	if(dir < 0 || dir > 7){
+		CG_Error("Bad player movement angle");
+		return;
+	}
+	if(cent->currentState.eFlags & EF_DEAD){dir = 0;}
+	if((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) >= ANIM_DASH_RIGHT){
+		 if((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) <= ANIM_DASH_BACKWARD){
+			dir = 0;
+		 }
 	}
 	legsAngles[YAW] = headAngles[YAW] + movementOffsets[dir];
-	torsoAngles[YAW] = headAngles[YAW] + .25f * movementOffsets[dir];
+	torsoAngles[YAW] = headAngles[YAW] + 0.25f * movementOffsets[dir];
 	switch((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT)){
 		case ANIM_IDLE:
 		case ANIM_FLY_IDLE:
@@ -705,36 +715,34 @@ static void CG_PlayerAngles(centity_t *cent, vec3_t legs[3], vec3_t torso[3], ve
 		case ANIM_FLY_DOWN:
 		case ANIM_SWIM_IDLE:
 			if(((&cg.predictedPlayerState)->weaponstate != WEAPON_READY || cent->currentState.weaponstate != WEAPON_READY)){
-				CG_SwingAngles(torsoAngles[YAW], 25, 90, 1, &cent->pe.modelLerpFrames[1].yawAngle, &cent->pe.modelLerpFrames[1].yawing);
-				CG_SwingAngles(legsAngles[YAW], 40, 90, 1, &cent->pe.modelLerpFrames[0].yawAngle, &cent->pe.modelLerpFrames[0].yawing);
+				CG_SwingAngles(torsoAngles[YAW], 25, 90, 1, &cent->pe.modelLerpFrames[Torso].yawAngle, &cent->pe.modelLerpFrames[Torso].yawing);
+				CG_SwingAngles(legsAngles[YAW], 40, 90, 1, &cent->pe.modelLerpFrames[Legs].yawAngle, &cent->pe.modelLerpFrames[Legs].yawing);
 			}
-			break;
+		break;
 		default:
-			CG_SwingAngles(torsoAngles[YAW], 25, 90, 1, &cent->pe.modelLerpFrames[1].yawAngle, &cent->pe.modelLerpFrames[1].yawing);
-			CG_SwingAngles(legsAngles[YAW], 40, 90, 1, &cent->pe.modelLerpFrames[0].yawAngle, &cent->pe.modelLerpFrames[0].yawing);
-			break;
+			CG_SwingAngles(torsoAngles[YAW], 25, 90, 1, &cent->pe.modelLerpFrames[Torso].yawAngle, &cent->pe.modelLerpFrames[Torso].yawing);
+			CG_SwingAngles(legsAngles[YAW], 40, 90, 1, &cent->pe.modelLerpFrames[Legs].yawAngle, &cent->pe.modelLerpFrames[Legs].yawing);
+		break;
 	}
-	headAngles[YAW] = cent->pe.modelLerpFrames[1].yawAngle;
-	torsoAngles[YAW] = cent->pe.modelLerpFrames[1].yawAngle;
-	legsAngles[YAW] = cent->pe.modelLerpFrames[0].yawAngle;
-	if(headAngles[PITCH] > 180)
-		dest = (-360 + headAngles[PITCH]) * .75f;
-	else dest = headAngles[PITCH] * .75f;
-	CG_SwingAngles(dest, 15, 30, .1f, &cent->pe.modelLerpFrames[1].pitchAngle, &cent->pe.modelLerpFrames[1].pitching);
-	//torsoAngles[PITCH] = cent->pe.modelLerpFrames[1].pitchAngle;
+	headAngles[YAW] = cent->pe.modelLerpFrames[Torso].yawAngle;
+	torsoAngles[YAW] = cent->pe.modelLerpFrames[Torso].yawAngle;
+	legsAngles[YAW] = cent->pe.modelLerpFrames[Legs].yawAngle;
+	dest = headAngles[PITCH] > 180 ? (-360 + headAngles[PITCH]) * 0.75f : headAngles[PITCH] * 0.75f;
+	CG_SwingAngles(dest, 15, 30, 0.1f, &cent->pe.modelLerpFrames[Torso].pitchAngle, &cent->pe.modelLerpFrames[Torso].pitching);
+	//torsoAngles[PITCH] = cent->pe.modelLerpFrames[Torso].pitchAngle;
 	if(ci->fixedtorso || cent->currentState.weaponstate == WEAPON_CHARGING || cent->currentState.weaponstate == WEAPON_ALTCHARGING || 
 				(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_DEATH_GROUND || 
 				(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_DEATH_AIR || 
 				(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_DEATH_AIR_LAND ||
 				(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_KNOCKBACK_HIT_WALL ||
 				(cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == ANIM_FLOOR_RECOVER){
-		headAngles[PITCH] = 0.f;
-		torsoAngles[PITCH] = 0.f;
+		headAngles[PITCH] = 0.0f;
+		torsoAngles[PITCH] = 0.0f;
 	}
 	if(ci->fixedlegs){
 		legsAngles[YAW] = torsoAngles[YAW];
-		legsAngles[PITCH] = 0.f;
-		legsAngles[ROLL] = 0.f;
+		legsAngles[PITCH] = 0.0f;
+		legsAngles[ROLL] = 0.0f;
 	}
 	// ADDING FOR ZEQ2
 	// We're flying, so we change the entire body's directions altogether.
@@ -743,8 +751,9 @@ static void CG_PlayerAngles(centity_t *cent, vec3_t legs[3], vec3_t torso[3], ve
 		VectorCopy(cent->lerpAngles, torsoAngles);
 		VectorCopy(cent->lerpAngles, legsAngles);
 	}
-	else if((&cg.predictedPlayerState)->weaponstate != WEAPON_READY || cent->currentState.weaponstate != WEAPON_READY)
+	else if((&cg.predictedPlayerState)->weaponstate != WEAPON_READY || cent->currentState.weaponstate != WEAPON_READY){
 		VectorCopy(cent->lerpAngles, headAngles);
+	}
 	VectorCopy(cent->lerpAngles, cameraAngles);
 	// END ADDING
 	// pull the angles back out of the hierarchial chain
@@ -961,7 +970,7 @@ static qboolean CG_PlayerShadow(centity_t *cent, float *shadowPlane){
 	// add the mark as a temporary, so it goes directly to the renderer
 	// without taking a spot in the cg_marks array
 	CG_ImpactMark(cgs.media.shadowMarkShader, trace.endpos, trace.plane.normal, 
-		cent->pe.modelLerpFrames[0].yawAngle, alpha,alpha,alpha, 1, qfalse, 24, qtrue);
+		cent->pe.modelLerpFrames[Legs].yawAngle, alpha,alpha,alpha, 1, qfalse, 24, qtrue);
 	return qtrue;
 }
 
@@ -1078,21 +1087,6 @@ void CG_PlayerDirtPush(centity_t *cent, int scale, qboolean once){
 }
 
 /*
-===============
-CG_AddRefEntityWithPowerups
-
-Adds a piece with modifications or duplications for powerups
-Also called by CG_Missile for quad rockets, but nobody can tell...
-===============
-*/
-void CG_AddRefEntityWithPowerups(refEntity_t *ent, entityState_t *state, qboolean auraAlways){
-	trap_R_AddRefEntityToScene(ent);
-	if(!auraAlways){
-		trap_R_AddRefEntityToScene(ent);
-	}
-}
-
-/*
 =================
 CG_LightVerts
 =================
@@ -1166,8 +1160,9 @@ void CG_Player(centity_t *cent){
 	int				renderfx=0;
 	vec3_t			mins = {-15, -15, -24};
 	vec3_t			maxs = {15, 15, 32};
-	ci = CG_GetClientInfo(cent);
 	ps = &cg.snap->ps;
+	ci = CG_GetClientInfo(cent);
+	if(!ci){return;}
 	if(cg.resetValues){
 		ci->damageModelState = 0;
 		ci->damageTextureState = 0;
@@ -1187,21 +1182,30 @@ void CG_Player(centity_t *cent){
 	xyzspeed = sqrt(cent->currentState.pos.trDelta[0] * cent->currentState.pos.trDelta[0] +
 					cent->currentState.pos.trDelta[1] * cent->currentState.pos.trDelta[1] + 
 					cent->currentState.pos.trDelta[2] * cent->currentState.pos.trDelta[2]);
-	if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 1000){scale = 5;}
-	else if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 5462){scale = 6;}
-	else if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 10924){scale = 7;}
-	else if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 16386){scale = 8;}
-	else if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 21848){scale = 9;}
-	else if((cent->currentState.number == ps->clientNum) && ps->powerLevel[plCurrent] <= 27310){scale = 10;}
-	else{scale = 11;}
+	scale = 11;
+	if(cent->currentState.number == ps->clientNum){
+		if(ps->powerLevel[plCurrent] <= 1000){scale = 5;}
+		if(ps->powerLevel[plCurrent] <= 5462){scale = 6;}
+		if(ps->powerLevel[plCurrent] <= 10924){scale = 7;}
+		if(ps->powerLevel[plCurrent] <= 16386){scale = 8;}
+		if(ps->powerLevel[plCurrent] <= 21848){scale = 9;}
+		if(ps->powerLevel[plCurrent] <= 27310){scale = 10;}
+	}
 	CG_PlayerSplash(cent,10*scale);
-	if((cent->currentState.playerBitFlags & isBlinking) || (cent->currentState.playerBitFlags & usingZanzoken) || ((cent->currentState.number == ps->clientNum) && (ps->bitFlags & usingZanzoken) && !(ps->bitFlags & isUnconcious)
-		&& !(ps->bitFlags & isDead) && !(ps->bitFlags & isCrashed)))
+	if(cent->currentState.playerBitFlags & isBlinking){return;}
+	if(cent->currentState.playerBitFlags & usingZanzoken){return;}
+	if(cent->currentState.number == ps->clientNum &&
+		ps->bitFlags & usingZanzoken &&
+		!(ps->bitFlags & isUnconcious) &&
+		!(ps->bitFlags & isDead) &&
+		!(ps->bitFlags & isCrashed)){
 		return;
+	}
 	health = ((float)cent->currentState.attackPowerCurrent / (float)cent->currentState.attackPowerTotal) * 100;
 	damageState = health/10-1;
 	if(damageState < 0) damageState = 0;
-	damageModelState = damageTextureState = damageState;
+	damageModelState = damageState;
+	damageTextureState = damageState;
 	if(ci->damageModelState && damageModelState > (ci->damageModelState-1) && !ci->tierConfig[tier].damageModelsRevertHealed)
 		damageModelState = ci->damageModelState - 1;
 	if(ci->damageTextureState && damageTextureState > (ci->damageTextureState-1) && !ci->tierConfig[tier].damageTexturesRevertHealed)
@@ -1210,69 +1214,69 @@ void CG_Player(centity_t *cent){
 	ci->damageModelState = damageModelState + 1;
 	CG_PlayerSprites(cent);
 	memset(&modelEntities,0,sizeof(modelEntities));
-	CG_PlayerAngles(cent, modelEntities[0].axis, modelEntities[1].axis, modelEntities[2].axis, modelEntities[3].axis);
-	CG_PlayerAnimation(cent, &modelEntities[0].oldframe, &modelEntities[0].frame, &modelEntities[0].backlerp,
-						&modelEntities[1].oldframe, &modelEntities[1].frame, &modelEntities[1].backlerp,
-						&modelEntities[2].oldframe, &modelEntities[2].frame, &modelEntities[2].backlerp,
-						&modelEntities[3].oldframe, &modelEntities[3].frame, &modelEntities[3].backlerp);
+	CG_PlayerAngles(cent, modelEntities[Legs].axis, modelEntities[Torso].axis, modelEntities[Head].axis, modelEntities[Camera].axis);
+	CG_PlayerAnimation(cent, &modelEntities[Legs].oldframe, &modelEntities[Legs].frame, &modelEntities[Legs].backlerp,
+						&modelEntities[Torso].oldframe, &modelEntities[Torso].frame, &modelEntities[Torso].backlerp,
+						&modelEntities[Head].oldframe, &modelEntities[Head].frame, &modelEntities[Head].backlerp,
+						&modelEntities[Camera].oldframe, &modelEntities[Camera].frame, &modelEntities[Camera].backlerp);
 	shadow = CG_PlayerShadow(cent,&shadowPlane);
 	if(cg_shadows.integer == 3 && shadow)
 		renderfx |= RF_SHADOW_PLANE;
 	// use the same origin for all
 	renderfx |= RF_LIGHTING_ORIGIN;	
-	modelEntities[0].hModel = ci->modelDamageState[tier][2][damageModelState];
-	modelEntities[0].customSkin = ci->skinDamageState[tier][2][damageTextureState];
-	VectorCopy(cent->lerpOrigin,modelEntities[0].origin);
-	VectorCopy(cent->lerpOrigin,modelEntities[0].lightingOrigin);
-	modelEntities[0].shadowPlane = shadowPlane;
-	modelEntities[0].renderfx = renderfx;
+	modelEntities[Legs].hModel = ci->modelDamageState[tier][2][damageModelState];
+	modelEntities[Legs].customSkin = ci->skinDamageState[tier][2][damageTextureState];
+	VectorCopy(cent->lerpOrigin,modelEntities[Legs].origin);
+	VectorCopy(cent->lerpOrigin,modelEntities[Legs].lightingOrigin);
+	modelEntities[Legs].shadowPlane = shadowPlane;
+	modelEntities[Legs].renderfx = renderfx;
 	// don't positionally lerp at all
-	VectorCopy(modelEntities[0].origin, modelEntities[0].oldorigin);
-	if(!modelEntities[0].hModel) return;
+	VectorCopy(modelEntities[Legs].origin, modelEntities[Legs].oldorigin);
+	if(!modelEntities[Legs].hModel) return;
 	meshScale = ci->tierConfig[tier].meshScale;
-	modelEntities[1].hModel = ci->modelDamageState[tier][1][damageModelState];
-	modelEntities[1].customSkin = ci->skinDamageState[tier][1][damageTextureState];
-	if(!modelEntities[1].hModel) return;
-	VectorCopy(cent->lerpOrigin,modelEntities[1].lightingOrigin);
-	modelEntities[0].origin[2] += ci->tierConfig[tier].meshOffset;
+	modelEntities[Torso].hModel = ci->modelDamageState[tier][1][damageModelState];
+	modelEntities[Torso].customSkin = ci->skinDamageState[tier][1][damageTextureState];
+	if(!modelEntities[Torso].hModel) return;
+	VectorCopy(cent->lerpOrigin,modelEntities[Torso].lightingOrigin);
+	modelEntities[Legs].origin[2] += ci->tierConfig[tier].meshOffset;
 	for(;i<3;i++){
-		VectorScale(modelEntities[1].axis[i],meshScale,modelEntities[1].axis[i]);
-		VectorScale(modelEntities[0].axis[i],meshScale,modelEntities[0].axis[i]);		
+		VectorScale(modelEntities[Torso].axis[i],meshScale,modelEntities[Torso].axis[i]);
+		VectorScale(modelEntities[Legs].axis[i],meshScale,modelEntities[Legs].axis[i]);		
 	}
-	CG_PositionRotatedEntityOnTag( &modelEntities[1], &modelEntities[0], modelEntities[0].hModel, "tag_torso");
-	for(i=0;i<3;i++) VectorScale(modelEntities[1].axis[i],1/meshScale,modelEntities[1].axis[i]);
-	modelEntities[1].shadowPlane = shadowPlane;
-	modelEntities[1].renderfx = renderfx;
-	modelEntities[2].hModel = ci->modelDamageState[tier][0][damageModelState];
-	modelEntities[2].customSkin = ci->skinDamageState[tier][0][damageTextureState];
-	if(!modelEntities[2].hModel) return;
-	VectorCopy(cent->lerpOrigin, modelEntities[2].lightingOrigin);
-	CG_PositionRotatedEntityOnTag(&modelEntities[2], &modelEntities[1], modelEntities[1].hModel, "tag_head");
-	modelEntities[2].shadowPlane = shadowPlane;
-	modelEntities[2].renderfx = renderfx;
-	VectorCopy(cent->lerpOrigin,modelEntities[3].origin);
-	VectorCopy(cent->lerpOrigin,modelEntities[3].lightingOrigin);
-	modelEntities[3].hModel = ci->cameraModel[tier];
-	if(!modelEntities[3].hModel) return;
-	modelEntities[3].shadowPlane = shadowPlane;
-	modelEntities[3].renderfx = renderfx;
+	CG_PositionRotatedEntityOnTag( &modelEntities[Torso], &modelEntities[Legs], modelEntities[Legs].hModel, "tag_torso");
+	for(i=0;i<3;i++) VectorScale(modelEntities[Torso].axis[i],1/meshScale,modelEntities[Torso].axis[i]);
+	modelEntities[Torso].shadowPlane = shadowPlane;
+	modelEntities[Torso].renderfx = renderfx;
+	modelEntities[Head].hModel = ci->modelDamageState[tier][0][damageModelState];
+	modelEntities[Head].customSkin = ci->skinDamageState[tier][0][damageTextureState];
+	if(!modelEntities[Head].hModel) return;
+	VectorCopy(cent->lerpOrigin, modelEntities[Head].lightingOrigin);
+	CG_PositionRotatedEntityOnTag(&modelEntities[Head], &modelEntities[Torso], modelEntities[Torso].hModel, "tag_head");
+	modelEntities[Head].shadowPlane = shadowPlane;
+	modelEntities[Head].renderfx = renderfx;
+	VectorCopy(cent->lerpOrigin,modelEntities[Camera].origin);
+	VectorCopy(cent->lerpOrigin,modelEntities[Camera].lightingOrigin);
+	modelEntities[Camera].hModel = ci->cameraModel[tier];
+	if(!modelEntities[Camera].hModel) return;
+	modelEntities[Camera].shadowPlane = shadowPlane;
+	modelEntities[Camera].renderfx = renderfx;
 	// don't positionally lerp at all
-	VectorCopy(modelEntities[3].origin, modelEntities[3].oldorigin);	
-	CG_PositionRotatedEntityOnTag(&modelEntities[3], &modelEntities[1], modelEntities[1].hModel, "tag_torso");
-	CG_AddRefEntityWithPowerups(&modelEntities[0], &cent->currentState, ci->auraConfig[tier]->auraAlways);
-	CG_AddRefEntityWithPowerups(&modelEntities[1], &cent->currentState, ci->auraConfig[tier]->auraAlways);
-	CG_AddRefEntityWithPowerups(&modelEntities[2], &cent->currentState, ci->auraConfig[tier]->auraAlways);
-	CG_BreathPuffs(cent,&modelEntities[2]);
-	CG_BubblesTrail(cent,&modelEntities[2]);
-	CG_InnerAuraSpikes(cent, &modelEntities[2]);
-	memcpy(&(cent->pe.modelEntities[3]), &modelEntities[3], sizeof(refEntity_t));
-	memcpy(&(cent->pe.modelEntities[2]), &modelEntities[2], sizeof(refEntity_t));
-	memcpy(&(cent->pe.modelEntities[1]), &modelEntities[1], sizeof(refEntity_t));
-	memcpy(&(cent->pe.modelEntities[0]), &modelEntities[0], sizeof(refEntity_t));
+	VectorCopy(modelEntities[Camera].origin, modelEntities[Camera].oldorigin);	
+	CG_PositionRotatedEntityOnTag(&modelEntities[Camera], &modelEntities[Torso], modelEntities[Torso].hModel, "tag_torso");
+	trap_R_AddRefEntityToScene(&modelEntities[Legs]);
+	trap_R_AddRefEntityToScene(&modelEntities[Torso]);
+	trap_R_AddRefEntityToScene(&modelEntities[Head]);
+	CG_BreathPuffs(cent,&modelEntities[Head]);
+	CG_BubblesTrail(cent,&modelEntities[Head]);
+	CG_InnerAuraSpikes(cent, &modelEntities[Head]);
+	memcpy(&(cent->pe.modelEntities[Camera]), &modelEntities[Camera], sizeof(refEntity_t));
+	memcpy(&(cent->pe.modelEntities[Head]), &modelEntities[Head], sizeof(refEntity_t));
+	memcpy(&(cent->pe.modelEntities[Torso]), &modelEntities[Torso], sizeof(refEntity_t));
+	memcpy(&(cent->pe.modelEntities[Legs]), &modelEntities[Legs], sizeof(refEntity_t));
 	memcpy(&playerInfoDuplicate[cent->currentState.number], &cent->pe, sizeof(playerEntity_t));
 	if(onBodyQue) return;
 	CG_Camera(cent);
-	CG_AddPlayerWeapon(&modelEntities[1],NULL,cent);
+	CG_AddPlayerWeapon(&modelEntities[Torso],NULL,cent);
 	if((cent->currentState.eFlags & EF_AURA) || ci->auraConfig[tier]->auraAlways){
 		CG_AuraStart(cent);
 		if(!xyzspeed){ CG_PlayerDirtPush(cent,scale,qfalse);}
@@ -1282,12 +1286,12 @@ void CG_Player(centity_t *cent){
 	else{ CG_AuraEnd(cent);}
 	CG_AddAuraToScene(cent);
 	if(cg_drawBBox.value){
-		trap_R_ModelBounds(modelEntities[2].hModel, mins, maxs, modelEntities[2].frame);
-		CG_DrawBoundingBox(modelEntities[2].origin, mins, maxs);
-		trap_R_ModelBounds(modelEntities[1].hModel, mins, maxs, modelEntities[1].frame);
-		CG_DrawBoundingBox(modelEntities[1].origin, mins, maxs);
-		trap_R_ModelBounds(modelEntities[0].hModel, mins, maxs,modelEntities[0].frame);
-		CG_DrawBoundingBox(modelEntities[0].origin, mins, maxs);
+		trap_R_ModelBounds(modelEntities[Head].hModel, mins, maxs, modelEntities[Head].frame);
+		CG_DrawBoundingBox(modelEntities[Head].origin, mins, maxs);
+		trap_R_ModelBounds(modelEntities[Torso].hModel, mins, maxs, modelEntities[Torso].frame);
+		CG_DrawBoundingBox(modelEntities[Torso].origin, mins, maxs);
+		trap_R_ModelBounds(modelEntities[Legs].hModel, mins, maxs,modelEntities[Legs].frame);
+		CG_DrawBoundingBox(modelEntities[Legs].origin, mins, maxs);
 	}
 	if(ps->timers[tmKnockback]){
 		if(ps->timers[tmKnockback] > 0){
@@ -1369,34 +1373,34 @@ A player just came into view or teleported, so reset all animation info
 void CG_ResetPlayerEntity(centity_t *cent){
 	cent->errorTime = -99999;		// guarantee no error decay added
 	cent->extrapolated = qfalse;	
-	CG_ClearLerpFrame(&cgs.clientinfo[cent->currentState.clientNum], &cent->pe.modelLerpFrames[0], cent->currentState.legsAnim, qfalse);
-	CG_ClearLerpFrame(&cgs.clientinfo[cent->currentState.clientNum], &cent->pe.modelLerpFrames[1], cent->currentState.torsoAnim, qfalse);
+	CG_ClearLerpFrame(&cgs.clientinfo[cent->currentState.clientNum], &cent->pe.modelLerpFrames[Legs], cent->currentState.legsAnim, qfalse);
+	CG_ClearLerpFrame(&cgs.clientinfo[cent->currentState.clientNum], &cent->pe.modelLerpFrames[Torso], cent->currentState.torsoAnim, qfalse);
 	BG_EvaluateTrajectory(&cent->currentState, &cent->currentState.pos, cg.time, cent->lerpOrigin);
 	BG_EvaluateTrajectory(&cent->currentState, &cent->currentState.apos, cg.time, cent->lerpAngles);
 	VectorCopy(cent->lerpOrigin, cent->rawOrigin);
 	VectorCopy(cent->lerpAngles, cent->rawAngles);
-	memset(&cent->pe.modelLerpFrames[0], 0, sizeof(cent->pe.modelLerpFrames[0]));
-	cent->pe.modelLerpFrames[0].yawAngle = cent->rawAngles[YAW];
-	cent->pe.modelLerpFrames[0].yawing = qfalse;
-	cent->pe.modelLerpFrames[0].pitchAngle = 0;
-	cent->pe.modelLerpFrames[0].pitching = qfalse;
-	memset(&cent->pe.modelLerpFrames[1], 0, sizeof(cent->pe.modelLerpFrames[0]));
-	cent->pe.modelLerpFrames[1].yawAngle = cent->rawAngles[YAW];
-	cent->pe.modelLerpFrames[1].yawing = qfalse;
-	cent->pe.modelLerpFrames[1].pitchAngle = cent->rawAngles[PITCH];
-	cent->pe.modelLerpFrames[1].pitching = qfalse;
-	memset(&cent->pe.modelLerpFrames[3], 0, sizeof(cent->pe.modelLerpFrames[3]));
-	cent->pe.modelLerpFrames[3].yawAngle = cent->rawAngles[YAW];
-	cent->pe.modelLerpFrames[3].yawing = qfalse;
-	cent->pe.modelLerpFrames[3].pitchAngle = cent->rawAngles[PITCH];
-	cent->pe.modelLerpFrames[3].pitching = qfalse;
-	if(cg_debugPosition.integer) CG_Printf("%i ResetPlayerEntity yaw=%f\n", cent->currentState.number, cent->pe.modelLerpFrames[1].yawAngle);
+	memset(&cent->pe.modelLerpFrames[Legs], 0, sizeof(cent->pe.modelLerpFrames[Legs]));
+	cent->pe.modelLerpFrames[Legs].yawAngle = cent->rawAngles[YAW];
+	cent->pe.modelLerpFrames[Legs].yawing = qfalse;
+	cent->pe.modelLerpFrames[Legs].pitchAngle = 0;
+	cent->pe.modelLerpFrames[Legs].pitching = qfalse;
+	memset(&cent->pe.modelLerpFrames[Torso], 0, sizeof(cent->pe.modelLerpFrames[Legs]));
+	cent->pe.modelLerpFrames[Torso].yawAngle = cent->rawAngles[YAW];
+	cent->pe.modelLerpFrames[Torso].yawing = qfalse;
+	cent->pe.modelLerpFrames[Torso].pitchAngle = cent->rawAngles[PITCH];
+	cent->pe.modelLerpFrames[Torso].pitching = qfalse;
+	memset(&cent->pe.modelLerpFrames[Camera], 0, sizeof(cent->pe.modelLerpFrames[Camera]));
+	cent->pe.modelLerpFrames[Camera].yawAngle = cent->rawAngles[YAW];
+	cent->pe.modelLerpFrames[Camera].yawing = qfalse;
+	cent->pe.modelLerpFrames[Camera].pitchAngle = cent->rawAngles[PITCH];
+	cent->pe.modelLerpFrames[Camera].pitching = qfalse;
+	if(cg_debugPosition.integer) CG_Printf("%i ResetPlayerEntity yaw=%f\n", cent->currentState.number, cent->pe.modelLerpFrames[Torso].yawAngle);
 }
 
 void CG_SpawnLightSpeedGhost(centity_t *cent){
-		 if(random() < .2f) trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound1);
-	else if(random() < .4f) trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound2);
-	else if(random() < .6f) trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound3);
-	else if(random() < .8f) trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound4);
-	else 					trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound5);
+	if(random() < .2f){trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound1);}
+	if(random() < .4f){trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound2);}
+	if(random() < .6f){trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound3);}
+	if(random() < .8f){trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound4);}
+	if(random() >= .8f){trap_S_StartSound(cent->lerpOrigin, ENTITYNUM_NONE, CHAN_BODY, cgs.media.lightspeedSound5);}
 }

@@ -233,6 +233,16 @@ void parseTier(char *path,tierConfig_cg *tier){
 				if(!token[0]){break;}
 				tier->requirementHealthMaximum = atoi(token);
 			}
+			else if(!Q_stricmp(token,"alterUpVoice")){
+				token = COM_Parse(&parse);
+				if(!token[0]){break;}
+				tier->alterUpVoice = trap_S_RegisterSound(token,qfalse);
+			}
+			else if(!Q_stricmp(token,"alterDownVoice")){
+				token = COM_Parse(&parse);
+				if(!token[0]){break;}
+				tier->alterDownVoice = trap_S_RegisterSound(token,qfalse);
+			}
 			else if(!Q_stricmp(token,"poweringUp")){
 				token = COM_Parse(&parse);
 				if(!token[0]){break;}

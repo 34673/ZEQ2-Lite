@@ -249,7 +249,7 @@ void G_FindTeams(void){
 	int j;
 	int c = 0;
 	int c2 = 0;
-	for(i=MAX_CLIENTS,e=g_entities+i;i<level.num_entities;i++,e++){
+	for(i=1,e=g_entities+i;i<level.num_entities;i++,e++){
 		if(!e->inuse || !e->team){continue;}
 		c++;
 		c2++;

@@ -213,7 +213,7 @@ CG_DirtPush
 
 ==================
 */
-void CG_DirtPush(vec3_t org, vec3_t dir, int size){
+void CG_DirtPush(vec3_t org, int size){
 	localEntity_t	*le;
 	refEntity_t		*re;
 
@@ -706,22 +706,12 @@ localEntity_t *CG_MakeExplosion(vec3_t origin, vec3_t dir,
 	return ex;
 }
 
-/*=================
-CG_Bleed
-This is the spurt of blood when a character gets hit
-=================*/
-void CG_Bleed(vec3_t origin, int entityNum){
-	// Other functions are dependant of this one.
-	// Only remove all traces of it when it was made clear nothing
-	// like that will be used in the future.
-}
-
 /*
 ======================
 CG_MakeUserExplosion
 ======================
 */
-void CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGraphics, int powerups, int number) {
+void CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGraphics, int powerups) {
 	float			angle;
 	localEntity_t	*expShell, *expShock;
 	int				offset, attackChargeLvl;

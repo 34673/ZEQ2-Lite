@@ -805,7 +805,7 @@ static void PSys_ParseFile(char *filename, int *num){
 					*text_p,
 					*token,
 					sysName[MAX_QPATH];
-	int				len;
+	unsigned int	len;
 
 	// Try to open the file
 	len = trap_FS_FOpenFile(filename, &file, FS_READ);

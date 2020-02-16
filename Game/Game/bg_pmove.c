@@ -184,7 +184,7 @@ void PM_StopDirections(void){
 	pm->cmd.rightmove = 0;
 }
 void PM_CheckKnockback(void){
-	vec3_t pre_vel,post_vel,wishvel,wishdir,direction;
+	vec3_t post_vel,wishvel,wishdir,direction;
 	qboolean vertical;
 	float scale,wishspeed;
 	int i,speed;
@@ -242,7 +242,6 @@ void PM_CheckKnockback(void){
 		wishspeed = VectorNormalize(wishdir);
 		PM_Accelerate(wishdir,wishspeed,50);
 		VectorNormalize(pm->ps->velocity);
-		VectorCopy(pm->ps->velocity,pre_vel);
 		speed = pm->ps->powerups[PW_KNOCKBACK_SPEED];
 		if((pm->cmd.buttons & BUTTON_ALT_ATTACK) && (pm->ps->timers[tmKnockback] < 4000)){
 			pm->ps->powerLevel[plUseFatigue] += ((float)pm->ps->timers[tmKnockback] / 5000.0) * (0.2 * pm->ps->powerLevel[plFatigue]);
@@ -293,10 +292,9 @@ void PM_StopZanzoken(void){
 	pm->ps->timers[tmZanzoken] = -500;
 }
 void PM_CheckZanzoken(void){
-	vec3_t pre_vel, post_vel,minSize,maxSize,forward,up,end;
+	vec3_t post_vel;
 	float stepCost;
 	int speed,cost,transfer;
-	trace_t trace;
 	if(!(pm->ps->options & canZanzoken)){return;}
 	if(pm->ps->timers[tmZanzoken] < 0){
 		pm->ps->timers[tmZanzoken] += pml.msec;
@@ -327,7 +325,6 @@ void PM_CheckZanzoken(void){
 			pm->ps->measureTimers[mtZanzoken] -= 50;
 		}
 		VectorNormalize(pm->ps->velocity);
-		VectorCopy(pm->ps->velocity,pre_vel);
 		if(pm->ps->lockedTarget > 0){speed *= 1.5;}
 		VectorScale(pm->ps->velocity,speed,pm->ps->velocity);
 		VectorNormalize2(pm->ps->velocity,post_vel);
@@ -743,12 +740,11 @@ qboolean PM_CheckTransform(void){
 	return qfalse;
 }
 void PM_CheckPowerLevel(void){
-	int plSpeed,amount,limit;
+	int limit;
 	int *timers,*powerLevel;
 	float lower,raise,recovery;
 	float statScale;
 	float fatigueScale;
-	float check;
 	static float fractionPool = 0;
 	int pushLimit;
 	int newValue;
@@ -1022,8 +1018,10 @@ void PM_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce){
 PM_Friction
 ==================*/
 void PM_Friction(void){
-	float speed,newspeed,control,drop;
-	speed = VectorLength(pm->ps->velocity);
+	float speed = VectorLength(pm->ps->velocity);
+	float newspeed;
+	float control;
+	float drop = 0.0f;
 	if(speed < 5){
 		PM_StopDash();
 		VectorClear(pm->ps->velocity);
@@ -1165,8 +1163,8 @@ void PM_CheckBlink(void){
 }
 void PM_CheckJump(void){
 	int jumpPower;
-	float jumpScale,jumpEmphasis;
-	vec3_t pre_vel,post_vel;
+	float jumpEmphasis;
+	vec3_t post_vel;
 	if(!(pm->ps->options & canJump)){return;}
 	if(pm->ps->timers[tmOnGround] > 1000){PM_StopJumpChain();}
 	if(pm->cmd.buttons & BUTTON_JUMP && (pm->ps->bitFlags & nearGround)){
@@ -1244,7 +1242,6 @@ void PM_CheckJump(void){
 		}
 		pm->ps->velocity[2] = 0;
 		VectorNormalize(pm->ps->velocity);
-		VectorCopy(pm->ps->velocity,pre_vel);
 		VectorScale(pm->ps->velocity,jumpEmphasis,pm->ps->velocity);
 		VectorNormalize2(pm->ps->velocity,post_vel);
 		pm->ps->velocity[2] = truePower;
@@ -1316,7 +1313,6 @@ void PM_FlyMove(void){
 	vec3_t	wishdir;
 	float	soarCost;
 	float	wishspeed;
-	float	fadeSpeed;
 	float	scale;
 	if(!(pm->ps->options & canFly)){
 		pm->ps->bitFlags &= ~usingFlight;
@@ -1361,7 +1357,6 @@ void PM_FlyMove(void){
 		if(pm->cmd.buttons & BUTTON_BOOST){
 			if(soarCost){soarCost = pm->ps->powerLevel[plMaximum] * 0.002;}
 		}
-		fadeSpeed = 2.0;
 		while(pm->ps->timers[tmSoar] > 10){
 			pm->ps->timers[tmSoar] -= 10;
 			pm->ps->powerLevel[plUseFatigue] +=	soarCost;
@@ -1405,8 +1400,8 @@ void PM_AirMove(void){
 	float		scale;
 	usercmd_t	cmd;
 	backupDrift = pm->cmd.forwardmove;
-	if((!pm->ps->powerups[PW_DRIFTING] && pm->ps->timers[tmMeleeIdle] >= 0) &&
-		(pml.onGround || ((pm->ps->bitFlags & usingAlter || pm->ps->timers[tmTransform]) && !VectorLength(pm->ps->velocity))
+	if((!pm->ps->powerups[PW_DRIFTING] && pm->ps->timers[tmMeleeIdle] >= 0) && (pml.onGround
+		|| ((pm->ps->bitFlags & usingAlter || pm->ps->timers[tmTransform]) && !VectorLength(pm->ps->velocity))
 		&& !(pm->ps->bitFlags & isUnconcious) && !(pm->ps->bitFlags & isDead) && !(pm->ps->bitFlags & isCrashed))){return;}
 	if(pm->ps->bitFlags & isGuiding){return;}
 	if(!(pm->ps->bitFlags & usingFlight) && pm->ps->options & canBallFlip){
@@ -1786,7 +1781,6 @@ PM_GroundTrace
 =============*/
 void PM_GroundTrace(void){
 	vec3_t		point;
-	vec3_t		distanceVector;
 	trace_t		trace;
 	if(pm->ps->bitFlags & usingSoar){return;}
 	VectorSubtract(pm->ps->origin,pml.gravityNormal,point);
@@ -2419,14 +2413,13 @@ void PM_MeleeIdle(void){
 	}
 }
 void PM_Melee(void){
-	int meleeCharge,enemyState,state,option,damage,distance,animation,direction,entity;
-	qboolean charging,movingForward,idleTime,enemyChanged,enemyDefense;
+	int meleeCharge,enemyState,state,damage,distance,animation,direction;
+	qboolean charging,enemyChanged,enemyDefense;
 	qtime_t realRandom;
 	trap_RealTime(&realRandom);
 	if(pm->ps->persistant[PERS_TEAM] == TEAM_SPECTATOR || pm->ps->bitFlags & isStruggling || pm->ps->timers[tmMeleeIdle] < 0){return;}
 	charging = (pm->ps->weaponstate == WEAPON_CHARGING || pm->ps->weaponstate == WEAPON_ALTCHARGING) ? qtrue : qfalse;
 	state = pm->ps->stats[stMeleeState];
-	idleTime = qfalse;
 	distance = 6000;
 	pm->ps->timers[tmUpdateMelee] += pml.msec;
 	// ===================
@@ -2879,9 +2872,7 @@ void PM_Weapon(void){
 	int	*alt_weaponInfo;
 	int chargeRate;
 	int costPrimary,costSecondary;
-	int i;
 	float energyScale;
-	qboolean usable;
 	float powerScale = ((float)pm->ps->powerLevel[plCurrent] / 1000.0) * pm->ps->baseStats[stEnergyAttack];
 	pm->ps->currentSkill[WPSTAT_CHANGED] = 0;
 	PM_CheckWeaponSelectionMode();
@@ -3413,9 +3404,6 @@ PmoveSingle
 ================*/
 void trap_SnapVector(float *v );
 void PmoveSingle(pmove_t *pmove){
-	int state;
-	vec3_t fixedDirection;
-	vec3_t fixedAngles;
 	qboolean meleeRange;
 	pm = pmove;
 	c_pmove++;
@@ -3430,13 +3418,7 @@ void PmoveSingle(pmove_t *pmove){
 	if(pml.msec < 1){pml.msec = 1;}
 	else if(pml.msec > 200){pml.msec = 200;}
 	if(abs(pm->cmd.forwardmove)> 64 || abs(pm->cmd.rightmove)> 64){pm->cmd.buttons &= ~BUTTON_WALKING;}
-	//CrossProduct(pm->ps->viewangles,pml.gravityDirection,fixedDirection);
-	//VectorScale(fixedDirection,-1,fixedDirection);
-	//rossProduct(fixedDirection,pml.gravityDirection,fixedDirection);
-	//vectoangles(fixedDirection,fixedAngles);
-	//VectorCopy(fixedAngles,pm->ps->viewangles);
 	AngleVectors(pm->ps->viewangles,pml.forward,pml.right,pml.up);
-	//VectorCopy(pml.gravityNormal,pml.up);
 	pml.previous_waterlevel = pmove->waterlevel;
 	PM_Impede();
 	PM_Burn();

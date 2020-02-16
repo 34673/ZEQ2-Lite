@@ -259,7 +259,7 @@ void CG_DrawScreenEffects(void){
 /*================
 CG_HUD
 ================*/
-void CG_DrawHUD(playerState_t *ps, int clientNum, int x, int y, qboolean flipped){
+void CG_DrawHUD(playerState_t *ps, int clientNum, int x, int y){
 	const char			*powerLevelString;
 	int 				powerLevelOffset;
 	long	 			powerLevelDisplay;
@@ -340,11 +340,11 @@ static void CG_DrawStatusBar(void){
 		lockedTargetPS.powerLevel[plMaximum] = ps->lockonData[lkPowerMaximum];
 		lockedTargetPS.powerLevel[plFatigue] = lockedTargetPS.powerLevel[plMaximum];
 		lockedTargetPS.powerLevel[plTierCurrent] = cgs.clientinfo[lockedTargetPS.clientNum].tierCurrent;
-		CG_DrawHUD(ps, ps->clientNum, 0, 0, qfalse);
-		CG_DrawHUD(&lockedTargetPS, lockedTargetPS.clientNum, 320, 0, qtrue);
+		CG_DrawHUD(ps, ps->clientNum, 0, 0);
+		CG_DrawHUD(&lockedTargetPS, lockedTargetPS.clientNum, 320, 0);
 	}
 	else{
-		CG_DrawHUD(ps, ps->clientNum, 0, 408, qfalse);
+		CG_DrawHUD(ps, ps->clientNum, 0, 408);
 		if(charging) return;
 		if(tier){
 			activeTier = &ci->tierConfig[ci->tierCurrent];
@@ -661,7 +661,7 @@ void CG_DrawScreenFlash(void){
 CG_DrawActive
 Perform all drawing needed to completely fill the screen
 =====================*/
-void CG_DrawActive(stereoFrame_t stereoView){
+void CG_DrawActive(void){
 	vec4_t		water = {.25f, .5f, 1.f, .1f};
 	int			contents;
 

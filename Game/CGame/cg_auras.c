@@ -539,7 +539,7 @@ static void CG_Aura_AddDLight(centity_t *player,auraState_t *state,auraConfig_t 
 /*==================
 CG_Aura_DimLight
 ==================*/
-static void CG_Aura_DimLight(centity_t *player,auraState_t *state,auraConfig_t *config){
+static void CG_Aura_DimLight(auraState_t *state,auraConfig_t *config){
 	if(state->isActive){
 		if(state->lightAmt < config->lightMax){
 			state->lightAmt += config->lightGrowthRate * (cg.frametime / 25.0f);
@@ -570,7 +570,7 @@ void CG_AddAuraToScene(centity_t *player){
 	state = &auraStates[clientNum];
 	config = &state->configurations[tier];
 	VectorCopy(player->lerpOrigin,state->origin);
-	CG_Aura_DimLight(player,state,config);
+	CG_Aura_DimLight(state,config);
 	CG_Aura_AddSounds(player,state,config);
 	CG_Aura_AddTrail(player,state,config);
 	CG_Aura_AddDebris(player,state,config);

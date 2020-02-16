@@ -84,133 +84,12 @@ localEntity_t* CG_AllocLocalEntity(void){
 }
 
 /*
-====================================================================================
-
-FRAGMENT PROCESSING
-
-A fragment localentity interacts with the environment in some way (hitting walls),
-or generates more localentities along a trail.
-
-====================================================================================
-CG_BloodTrail
-Leave expanding blood puffs behind gibs
-================
-*/
-void CG_BloodTrail(localEntity_t *le){}
-
-/*
-================
-CG_FragmentBounceMark
-================
-*/
-void CG_FragmentBounceMark(localEntity_t *le, trace_t *trace){}
-
-/*
-================
-CG_FragmentBounceSound
-================
-*/
-void CG_FragmentBounceSound(localEntity_t *le, trace_t *trace){}
-
-/*
-================
-CG_ReflectVelocity
-================
-*/
-void CG_ReflectVelocity(localEntity_t *le, trace_t *trace){
-	vec3_t	velocity;
-	float	dot;
-	int		hitTime;
-
-	// reflect the velocity on the trace plane
-	hitTime = cg.time - cg.frametime + cg.frametime * trace->fraction;
-	BG_EvaluateTrajectoryDelta(NULL, &le->pos, hitTime, velocity);
-	dot = DotProduct(velocity, trace->plane.normal);
-	VectorMA(velocity, -2*dot, trace->plane.normal, le->pos.trDelta);
-	VectorScale(le->pos.trDelta, le->bounceFactor, le->pos.trDelta);
-	VectorCopy(trace->endpos, le->pos.trBase);
-	le->pos.trTime = cg.time;
-	// check for stop, making sure that even on low FPS systems it doesn't bobble
-	if(trace->allsolid || (trace->plane.normal[2] > 0 && (le->pos.trDelta[2] < 40 || le->pos.trDelta[2] < -cg.frametime * le->pos.trDelta[2]))){
-		le->pos.trType = TR_STATIONARY;
-	}
-}
-
-/*
-================
-CG_AddFragment
-================
-*/
-void CG_AddFragment(localEntity_t *le){
-	vec3_t	newOrigin;
-	trace_t	trace;
-
-	if(le->pos.trType == TR_STATIONARY){
-		// sink into the ground if near the removal time
-		int		t;
-		float	oldZ;
-		
-		t = le->endTime - cg.time;
-		if(t < SINK_TIME){
-			// we must use an explicit lighting origin, otherwise the
-			// lighting would be lost as soon as the origin went
-			// into the ground
-			VectorCopy(le->refEntity.origin, le->refEntity.lightingOrigin);
-			le->refEntity.renderfx |= RF_LIGHTING_ORIGIN;
-			oldZ = le->refEntity.origin[2];
-			le->refEntity.origin[2] -= 16 * (1.0f - (float)t / SINK_TIME);
-			trap_R_AddRefEntityToScene(&le->refEntity);
-			le->refEntity.origin[2] = oldZ;
-		}
-		else{
-			trap_R_AddRefEntityToScene(&le->refEntity);
-		}
-		return;
-	}
-	// calculate new position
-	BG_EvaluateTrajectory(NULL, &le->pos, cg.time, newOrigin);
-	// trace a line from previous position to new position
-	CG_Trace(&trace, le->refEntity.origin, NULL, NULL, newOrigin, -1, CONTENTS_SOLID);
-	if(trace.fraction == 1.0f){
-		// still in free fall
-		VectorCopy(newOrigin, le->refEntity.origin);
-		if(le->leFlags & LEF_TUMBLE){
-			vec3_t angles;
-
-			BG_EvaluateTrajectory(NULL, &le->angles, cg.time, angles);
-			AnglesToAxis(angles, le->refEntity.axis);
-		}
-		trap_R_AddRefEntityToScene(&le->refEntity);
-		// add a blood trail
-		if(le->leBounceSoundType == LEBS_BLOOD)
-			CG_BloodTrail(le);
-		return;
-	}
-	// if it is in a nodrop zone, remove it
-	// this keeps gibs from waiting at the bottom of pits of death
-	// and floating levels
-	if(CG_PointContents(trace.endpos, 0) & CONTENTS_NODROP) {
-		CG_FreeLocalEntity(le);
-		return;
-	}
-	// leave a mark
-	CG_FragmentBounceMark(le, &trace);
-	// do a bouncy sound
-	CG_FragmentBounceSound(le, &trace);
-	// reflect the velocity on the trace plane
-	CG_ReflectVelocity(le, &trace);
-	trap_R_AddRefEntityToScene(&le->refEntity);
-}
-
-/*
 =====================================================================
 
 TRIVIAL LOCAL ENTITIES
 
 These only do simple scaling or modulation before passing to the renderer
 =====================================================================
-CG_AddFadeNo
-====================
 */
 void CG_AddFadeNo(localEntity_t *le){
 	refEntity_t *re;
@@ -229,12 +108,6 @@ void CG_AddFadeNo(localEntity_t *le){
 		trap_R_AddLightToScene(re->origin, light, le->lightColor[0], le->lightColor[1], le->lightColor[2]);
 	}
 }
-
-/*
-====================
-CG_AddFadeRGB
-====================
-*/
 void CG_AddFadeRGB(localEntity_t *le){
 	refEntity_t* re;
 	float		c;
@@ -247,12 +120,6 @@ void CG_AddFadeRGB(localEntity_t *le){
 	re->shaderRGBA[2] = le->color[2] * c;
 	trap_R_AddRefEntityToScene(re);
 }
-
-/*
-====================
-CG_AddFadeAlpha
-====================
-*/
 void CG_AddFadeAlpha(localEntity_t *le){
 	refEntity_t* re;
 	float		c;
@@ -263,12 +130,6 @@ void CG_AddFadeAlpha(localEntity_t *le){
 	re->shaderRGBA[3] = le->color[3] * c;
 	trap_R_AddRefEntityToScene(re);
 }
-
-/*
-==================
-CG_AddMoveScaleFade
-==================
-*/
 static void CG_AddMoveScaleFade(localEntity_t *le){
 	refEntity_t* re;
 	float		c;
@@ -297,7 +158,6 @@ static void CG_AddMoveScaleFade(localEntity_t *le){
 	}
 	trap_R_AddRefEntityToScene(re);
 }
-
 /*
 ===================
 CG_AddScaleFade
@@ -384,12 +244,6 @@ static void CG_AddFallScaleFade(localEntity_t* le){
 	}
 	trap_R_AddRefEntityToScene(re);
 }
-
-/*
-================
-CG_AddExplosion
-================
-*/
 static void CG_AddExplosion(localEntity_t* ex){
 	refEntity_t* ent;
 	ent = &ex->refEntity;
@@ -403,11 +257,6 @@ static void CG_AddExplosion(localEntity_t* ex){
 		trap_R_AddLightToScene(ent->origin,light,ex->lightColor[0],ex->lightColor[1],ex->lightColor[2]);
 	}
 }
-/*
-========================
-CG_AddStraightBeamFade
-========================
-*/
 static void CG_AddStraightBeamFade(localEntity_t *le){
 	refEntity_t	*ent;		// reference entity stored in the local entity
 	float		RGBfade;	// stores the amount of fade to apply to the RGBA values
@@ -433,11 +282,6 @@ static void CG_AddStraightBeamFade(localEntity_t *le){
 	// Restore the start vector
 	VectorCopy(start, ent->origin);
 }
-/*
-====================
-CG_AddZEQExplosion
-====================
-*/
 static void CG_AddZEQExplosion(localEntity_t *le){
 	refEntity_t* ent;
 	float c;
@@ -489,12 +333,6 @@ static void CG_AddZEQExplosion(localEntity_t *le){
 		trap_R_AddLightToScene(ent->origin, lightRad, light * le->lightColor[0], light * le->lightColor[1], light * le->lightColor[2]);
 	}
 }
-
-/*
-====================
-CG_AddZEQSplash
-====================
-*/
 static void CG_AddZEQSplash( localEntity_t *le ) {
 	refEntity_t	*ent;
 	float		c, RGBfade;
@@ -521,12 +359,6 @@ static void CG_AddZEQSplash( localEntity_t *le ) {
 	VectorCopy(tmpAxes[1], ent->axis[1]);
 	VectorCopy(tmpAxes[2], ent->axis[2]);
 }
-
-/*
-================
-CG_AddSpriteExplosion
-================
-*/
 static void CG_AddSpriteExplosion( localEntity_t *le ) {
 	refEntity_t	re;
 	float		c;
@@ -552,14 +384,6 @@ static void CG_AddSpriteExplosion( localEntity_t *le ) {
 		trap_R_AddLightToScene(re.origin, light, le->lightColor[0], le->lightColor[1], le->lightColor[2]);
 	}
 }
-
-//==============================================================================
-/*
-===================
-CG_AddLocalEntities
-
-===================
-*/
 void CG_AddLocalEntities( void ) {
 	localEntity_t *le, *next;
 
@@ -597,9 +421,6 @@ void CG_AddLocalEntities( void ) {
 			break;
 		case LE_STRAIGHTBEAM_FADE:
 			CG_AddStraightBeamFade(le);
-			break;
-		case LE_FRAGMENT:				// gibs and brass
-			CG_AddFragment(le);
 			break;
 		case LE_MOVE_SCALE_FADE:		// water bubbles
 			CG_AddMoveScaleFade(le);

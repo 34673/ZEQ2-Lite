@@ -104,6 +104,10 @@ if it _would_ be called, it would always hault
 parsing.
 */
 qboolean CG_weapGfx_ParseDummy(cg_weapGfxParser_t *parser, cg_weapGfxCategoryIndex_t category, int field){
+	//Doing dumb things to silence compiler warnings 
+	parser = parser;
+	category = category;
+	field = field;
 	return qfalse;
 }
 /*

@@ -367,7 +367,7 @@ qboolean CG_weapGfx_NextSym(cg_weapGfxScanner_t *scanner, cg_weapGfxToken_t *tok
 }
 //Loads a new scriptfile into a scanner's memory.
 qboolean CG_weapGfx_LoadFile(cg_weapGfxScanner_t *scanner, char *filename){
-	int len;
+	unsigned int len;
 	qhandle_t file;
 	Q_strncpyz(scanner->filename, filename, sizeof(scanner->filename));
 	// Grab filehandle

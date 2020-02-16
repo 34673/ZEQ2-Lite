@@ -831,7 +831,7 @@ void			CG_DrawChat(char *text),
 				CG_DrawScreenEffects(void),
 				CG_CenterPrint(const char *str, int y, int charWidth),
 				CG_DrawHead(float x, float y, float w, float h, int clientNum, vec3_t headAngles),
-				CG_DrawActive(stereoFrame_t stereoView),
+				CG_DrawActive(void),
 				CG_Text_Paint(float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int style);
 int				CG_Text_Width(const char *text, float scale, int limit),
 				CG_Text_Height(const char *text, float scale, int limit);
@@ -913,14 +913,13 @@ void			CG_BuildSolidList(void),
 				CG_RailTrail(clientInfo_t *ci, vec3_t start, vec3_t end),
 				CG_GrappleTrail(centity_t *ent, const weaponInfo_t *wi),
 				CG_AddViewWeapon(playerState_t *ps),
-				CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent),
+				CG_AddPlayerWeapon(refEntity_t *parent, centity_t *cent),
 				CG_DrawWeaponSelect(void),
 // FIXME: Should these be in drawtools instead?
 //        Should these be generalized for use in all manual poly drawing functions? (probably, yes...)
 				CG_DrawLine(vec3_t start, vec3_t end, float width, qhandle_t shader, float RGBModulate),
 				CG_DrawLineRGBA(vec3_t start, vec3_t end, float width, qhandle_t shader, vec4_t RGBA),
-				CG_UserMissileHitWall(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, qboolean inAir),
-				CG_UserMissileHitPlayer(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, int entityNum),
+				CG_UserMissileHitWall(int weapon, int clientNum, int powerups, vec3_t origin, vec3_t dir, qboolean inAir),
 //
 // cg_marks.c
 //
@@ -944,16 +943,15 @@ void			CG_PlayerSplash(centity_t *cent, int scale),
 				CG_BubbleTrail(vec3_t start, vec3_t end, float spacing),
 				CG_SpawnEffect(vec3_t org),
 				CG_WaterRipple(vec3_t org, int size, qboolean single),
-				CG_DirtPush(vec3_t org, vec3_t dir, int size),
+				CG_DirtPush(vec3_t org, int size),
 				CG_WaterSplash(vec3_t org, int size),
 				CG_LightningEffect(vec3_t org, clientInfo_t *ci, int tier),
 				CG_BigLightningEffect(vec3_t org),
 				CG_SpeedMeleeEffect(vec3_t org, int tier),
 				CG_PowerMeleeEffect(vec3_t org, int tier),
 				CG_PowerStruggleEffect(vec3_t org, int size);
-				// CG_Bleed(vec3_t origin, int entityNum),
 localEntity_t	*CG_MakeExplosion(vec3_t origin, vec3_t dir, qhandle_t hModel, qhandle_t shader, int msec, qboolean isSprite);
-void			CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGraphics, int powerups, int number),
+void			CG_MakeUserExplosion(vec3_t origin, vec3_t dir, cg_userWeapon_t *weaponGraphics, int powerups),
 				CG_CreateStraightBeamFade(vec3_t start, vec3_t end, cg_userWeapon_t *weaponGraphics),
 //
 // cg_snapshot.c

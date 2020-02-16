@@ -44,7 +44,7 @@ void CG_BuildSolidList(void){
 	for(;i<snap->numEntities;i++){
 		cent = &cg_entities[snap->entities[i].number];
 		ent = &cent->currentState;
-		if(ent->eType == ET_ITEM || ent->eType == ET_PUSH_TRIGGER || ent->eType == ET_TELEPORT_TRIGGER){
+		if(ent->eType == ET_PUSH_TRIGGER || ent->eType == ET_TELEPORT_TRIGGER){
 			cg_triggerEntities[cg_numTriggerEntities] = cent;
 			cg_numTriggerEntities++;
 			continue;
@@ -159,7 +159,6 @@ static void CG_InterpolatePlayerState(qboolean grabAngles){
 		out->velocity[i] = prev->ps.velocity[i] + f * (next->ps.velocity[i] - prev->ps.velocity[i]);
 	}
 }
-static void CG_TouchItem(centity_t *cent){return;}
 //Predict push triggers and items
 static void CG_TouchTriggerPrediction(void){
 	int				i=0;
@@ -175,10 +174,6 @@ static void CG_TouchTriggerPrediction(void){
 	for(;i<cg_numTriggerEntities;i++){
 		cent = cg_triggerEntities[i];
 		ent = &cent->currentState;
-		if(ent->eType == ET_ITEM && !spectator){
-			CG_TouchItem(cent);
-			continue;
-		}
 		if(ent->solid != SOLID_BMODEL){continue;}
 		cmodel = trap_CM_InlineModel(ent->modelindex);
 		if (!cmodel){continue;}

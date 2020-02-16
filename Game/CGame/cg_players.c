@@ -1083,7 +1083,7 @@ void CG_PlayerDirtPush(centity_t *cent, int scale, qboolean once){
 	if(trace.fraction == 1.f) return;
 	VectorCopy(trace.endpos, end);
 	end[2] += 8;
-	CG_DirtPush(end,trace.plane.normal,scale);
+	CG_DirtPush(end,scale);
 }
 
 /*
@@ -1276,7 +1276,7 @@ void CG_Player(centity_t *cent){
 	memcpy(&playerInfoDuplicate[cent->currentState.number], &cent->pe, sizeof(playerEntity_t));
 	if(onBodyQue) return;
 	CG_Camera(cent);
-	CG_AddPlayerWeapon(&modelEntities[Torso],NULL,cent);
+	CG_AddPlayerWeapon(&modelEntities[Torso],cent);
 	if((cent->currentState.eFlags & EF_AURA) || ci->auraConfig[tier]->auraAlways){
 		CG_AuraStart(cent);
 		if(!xyzspeed){ CG_PlayerDirtPush(cent,scale,qfalse);}

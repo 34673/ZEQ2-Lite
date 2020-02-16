@@ -209,7 +209,7 @@ static void CG_AddPlayerWeaponFlash(refEntity_t *parent, cg_userWeapon_t *weapon
 	// add dynamic light
 	if(weaponGraphics->flashDlightRadius){trap_R_AddLightToScene(flash->origin, 100*weaponGraphics->flashDlightRadius, weaponGraphics->flashDlightColor[0],weaponGraphics->flashDlightColor[1], weaponGraphics->flashDlightColor[2]);}
 }
-void CG_AddPlayerWeapon(refEntity_t *parent, playerState_t *ps, centity_t *cent){
+void CG_AddPlayerWeapon(refEntity_t *parent, centity_t *cent){
 	cg_userWeapon_t		*weaponGraphics;
 	orientation_t		orient;
 	refEntity_t			refEnt;
@@ -414,7 +414,7 @@ void CG_FireWeapon(centity_t *cent, qboolean altFire){
 	}
 }
 //Caused by an EV_MISSILE_MISS event
-void CG_UserMissileHitWall(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, qboolean inAir){
+void CG_UserMissileHitWall(int weapon, int clientNum, int powerups, vec3_t origin, vec3_t dir, qboolean inAir){
 	cg_userWeapon_t *weaponGraphics;
 	vec3_t end;
 	trace_t tr;
@@ -431,7 +431,7 @@ void CG_UserMissileHitWall(int weapon, int clientNum, int powerups, int number, 
 		if(weaponGraphics->explosionSound[c]){trap_S_StartSound(origin, ENTITYNUM_WORLD, CHAN_AUTO, weaponGraphics->explosionSound[c]);}
 	}
 	// Create Explosion
-	CG_MakeUserExplosion(origin, dir, weaponGraphics, powerups, number);
+	CG_MakeUserExplosion(origin, dir, weaponGraphics, powerups);
 	if(!inAir){
 		vec3_t tempAxis[3];
 		VectorNormalize2(dir, tempAxis[0]);
@@ -462,7 +462,4 @@ void CG_UserMissileHitWall(int weapon, int clientNum, int powerups, int number, 
 		CG_CreateStraightBeamFade( cgs.clientinfo[ clientNum ].weaponTagPos0, origin, weaponGraphics);
 	}
 */
-}
-void CG_UserMissileHitPlayer(int weapon, int clientNum, int powerups, int number, vec3_t origin, vec3_t dir, int entityNum){
-	CG_UserMissileHitWall(weapon, clientNum, powerups, number, origin, dir, qtrue);
 }

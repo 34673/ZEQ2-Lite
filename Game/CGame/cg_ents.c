@@ -357,7 +357,7 @@ CG_TrailFunc_SpiralBeam_Helper
 */
 // Helper function to make CG_TrailFunc_SpiralBeam
 // more readable.
-void CG_TrailFunc_SpiralBeam_Helper(entityState_t *es, centity_t *ent, int time, vec3_t origin){
+void CG_TrailFunc_SpiralBeam_Helper(entityState_t *es, int time, vec3_t origin){
 	cg_userWeapon_t	*weaponGraphics;
 	vec3_t			tmpAxis[3];
 
@@ -397,10 +397,10 @@ void CG_TrailFunc_SpiralBeam( centity_t *ent ) {
 	t = startTime +step;
 	// if object (e.g. grenade) is stationary, don't show tail
 	if (es->pos.trType == TR_STATIONARY) return;
-	CG_TrailFunc_SpiralBeam_Helper(es, ent, startTime, lastPos);	
+	CG_TrailFunc_SpiralBeam_Helper(es, startTime, lastPos);	
 	// Build segments
 	for(;t<=ent->trailTime;t+=step){
-		CG_TrailFunc_SpiralBeam_Helper(es, ent, t, lastPos2);
+		CG_TrailFunc_SpiralBeam_Helper(es, t, lastPos2);
 		le = CG_AllocLocalEntity();
 		re = &le->refEntity;
 		le->leType = LE_FADE_ALPHA;
@@ -416,7 +416,7 @@ void CG_TrailFunc_SpiralBeam( centity_t *ent ) {
 		AxisClear(re->axis);
 		VectorCopy(lastPos2, lastPos);
 	}
-	CG_TrailFunc_SpiralBeam_Helper(es, ent, ent->trailTime, lastPos2);
+	CG_TrailFunc_SpiralBeam_Helper(es, ent->trailTime, lastPos2);
 	le = CG_AllocLocalEntity();
 	re = &le->refEntity;
 	le->leType = LE_FADE_ALPHA;

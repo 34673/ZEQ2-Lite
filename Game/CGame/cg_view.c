@@ -555,7 +555,7 @@ void CG_DrawActiveFrame(int serverTime, stereoFrame_t stereoView, qboolean demoP
 		if(cg_timescaleFadeSpeed.value){trap_Cvar_Set("timescale", va("%f", cg_timescale.value));}
 	}
 	// actually issue the rendering calls
-	CG_DrawActive(stereoView);
+	CG_DrawActive();
 	CG_CheckMusic();
 	trap_Cvar_VariableStringBuffer("cl_paused", var, sizeof(var));
 	cgs.clientPaused = atoi(var);

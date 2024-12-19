@@ -57,14 +57,6 @@ void P_DamageFeedback(gentity_t* player){
 	//client->damage_armor = 0;
 	client->damage_knockback = 0;
 }
-/*
-=============
-P_WorldEffects
-
-Check for lava / slime contents and drowning
-=============
-*/
-void P_WorldEffects(gentity_t* ent){}
 void G_SetClientSound(gentity_t* ent){ent->client->ps.loopSound = 0;}
 //==============================================================
 void ClientImpacts(gentity_t *ent,pmove_t *pm){
@@ -543,9 +535,6 @@ void ClientEndFrame( gentity_t *ent ) {
 	if ( level.intermissiontime ) {
 		return;
 	}
-
-	// burn from lava, etc
-	P_WorldEffects( ent );
 
 	// apply all the damage taken this frame
 	P_DamageFeedback( ent );

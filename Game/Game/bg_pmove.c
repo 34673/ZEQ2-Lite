@@ -19,34 +19,32 @@ along with Quake III Arena source code; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
-//
 // bg_pmove.c -- both games player movement code
 // takes a playerstate and a usercmd as input and returns a modifed playerstate
-
 #include "../../Shared/q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
 #include "bg_userweapons.h"
 #include "g_tiers.h"
-pmove_t		*pm;
-pml_t		pml;
+pmove_t* pm;
+pml_t pml;
 // movement parameters
-float	pm_stopspeed = 100.0f;
-float	pm_swimScale = 0.80f;
-float	pm_accelerate = 10.0f;
-float	pm_airaccelerate = 15.0f;
-float	pm_wateraccelerate = 4.0f;
-float	pm_flyaccelerate = 15.0f;
-float	pm_dashaccelerate = 15.0f;
-float	pm_friction = 15.0f;
-float	pm_waterfriction = 1.0f;
-float	pm_flightfriction = 15.0f;
-float	pm_spectatorfriction = 7.0f;
-int		c_pmove = 0;
+float pm_stopspeed = 100.0f;
+float pm_swimScale = 0.80f;
+float pm_accelerate = 10.0f;
+float pm_airaccelerate = 15.0f;
+float pm_wateraccelerate = 4.0f;
+float pm_flyaccelerate = 15.0f;
+float pm_dashaccelerate = 15.0f;
+float pm_friction = 15.0f;
+float pm_waterfriction = 1.0f;
+float pm_flightfriction = 15.0f;
+float pm_spectatorfriction = 7.0f;
+int c_pmove = 0;
 /*===============
 DECLARATIONS
 ===============*/
-int trap_RealTime( qtime_t *qtime );
+int trap_RealTime(qtime_t* qtime);
 int PM_CheckDirection(vec3_t direction,qboolean player);
 void PM_StopBoost(void);
 void PM_StopBlink(void);
@@ -69,41 +67,46 @@ void PM_ContinueLegsAnim(int anim);
 void PM_ContinueTorsoAnim(int anim);
 void PM_Accelerate(vec3_t wishdir,float wishspeed,float accel);
 void PM_WeaponRelease(void);
-float PM_CmdScale(usercmd_t *cmd);
+float PM_CmdScale(usercmd_t* cmd);
 void PM_CheckContextOperations(void);
 /*===================
 PM_StartTorsoAnim
 ===================*/
 void PM_StartTorsoAnim(int anim){
-	pm->ps->torsoAnim = ((pm->ps->torsoAnim & ANIM_TOGGLEBIT)^ ANIM_TOGGLEBIT) | anim;
+	pm->ps->torsoAnim = ((pm->ps->torsoAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT) | anim;
 }
 void PM_StartLegsAnim(int anim){
-	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && !(VectorLength(pm->ps->velocity)== 0.0f)){return;}
-	pm->ps->legsAnim = ((pm->ps->legsAnim & ANIM_TOGGLEBIT)^ ANIM_TOGGLEBIT ) | anim;
-}
-
-void PM_ContinueLegsAnim(int anim){
-	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && !(VectorLength(pm->ps->velocity)== 0.0f)){return;}
-	if((pm->ps->legsAnim & ~ANIM_TOGGLEBIT)== anim){
+	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && VectorLength(pm->ps->velocity)){
 		return;
 	}
-	PM_StartLegsAnim(anim );
+	pm->ps->legsAnim = ((pm->ps->legsAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT ) | anim;
+}
+void PM_ContinueLegsAnim(int anim){
+	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && VectorLength(pm->ps->velocity)){
+		return;
+	}
+	if((pm->ps->legsAnim & ~ANIM_TOGGLEBIT) == anim){
+		return;
+	}
+	PM_StartLegsAnim(anim);
 }
 
 void PM_ContinueTorsoAnim(int anim){
 	if((pm->ps->torsoAnim & ~ANIM_TOGGLEBIT)== anim){
 		return;
 	}
-	PM_StartTorsoAnim(anim );
+	PM_StartTorsoAnim(anim);
 }
 void PM_ForceTorsoAnim(int anim){
 	pm->ps->torsoTimer = 0;
 	PM_StartTorsoAnim(anim);
 }
 void PM_ForceLegsAnim(int anim){
-	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && !(VectorLength(pm->ps->velocity)== 0.0f)){return;}
+	if((pm->ps->bitFlags & isGuiding) && (pm->cmd.buttons & BUTTON_ANY) && VectorLength(pm->ps->velocity)){
+		return;
+	}
 	pm->ps->legsTimer = 0;
-	PM_StartLegsAnim(anim );
+	PM_StartLegsAnim(anim);
 }
 /*===================
 FREEZE
@@ -112,7 +115,9 @@ void PM_Freeze(void){
 	if(pm->ps->timers[tmFreeze] > 0){
 		pm->ps->timers[tmFreeze] -= pml.msec;
 		VectorClear(pm->ps->velocity);
-		if(pm->ps->timers[tmFreeze]<0){pm->ps->timers[tmFreeze] = 0;}
+		if(pm->ps->timers[tmFreeze] < 0){
+			pm->ps->timers[tmFreeze] = 0;
+		}
 	}
 }
 /*================
@@ -154,22 +159,21 @@ BLIND
 void PM_Blind(void){
 	if(pm->ps->timers[tmBlind] > 0){
 		pm->ps->timers[tmBlind] -= pml.msec;
-		if(pm->ps->timers[tmBlind]<0){pm->ps->timers[tmBlind] = 0;}
+		if(pm->ps->timers[tmBlind] < 0){
+			pm->ps->timers[tmBlind] = 0;
+		}
 	}
 }
 /*===================
 CHECK LOOPING SOUND
 ===================*/
 void PM_CheckLoopingSound(void){
-	if(pm->ps->timers[tmKnockback] ||
-		pm->ps->timers[tmMeleeCharge] != 0 ||
-		pm->ps->timers[tmMeleeIdle]  ||
-		pm->ps->bitFlags & usingMelee ||
-		//pm->ps->bitFlags & isUnconcious ||
-		pm->ps->bitFlags & isCrashed ||
-		pm->ps->bitFlags & isDead){
-		PM_AddEvent(EV_STOPLOOPINGSOUND);
-	}
+	if(pm->ps->timers[tmKnockback]){PM_AddEvent(EV_STOPLOOPINGSOUND);}
+	else if(pm->ps->timers[tmMeleeCharge]){PM_AddEvent(EV_STOPLOOPINGSOUND);}
+	else if(pm->ps->timers[tmMeleeIdle]){PM_AddEvent(EV_STOPLOOPINGSOUND);}
+	else if(pm->ps->bitFlags & usingMelee){PM_AddEvent(EV_STOPLOOPINGSOUND);}
+	else if(pm->ps->bitFlags & isCrashed){PM_AddEvent(EV_STOPLOOPINGSOUND);}
+	else if(pm->ps->bitFlags & isDead){PM_AddEvent(EV_STOPLOOPINGSOUND);}
 }
 /*===================
 KNOCKBACK
@@ -184,11 +188,14 @@ void PM_StopDirections(void){
 	pm->cmd.rightmove = 0;
 }
 void PM_CheckKnockback(void){
-	vec3_t post_vel,wishvel,wishdir,direction;
-	qboolean vertical;
-	float scale,wishspeed;
-	int i,speed;
-	vertical = qfalse;
+	vec3_t post_vel;
+	vec3_t wishvel;
+	vec3_t wishdir;
+	vec3_t direction;
+	qboolean vertical = qfalse;
+	float scale;
+	float wishspeed;
+	int speed;
 	//if(pm->ps->timers[tmFreeze]){return;}
 	if(pm->ps->timers[tmKnockback] < 0){
 		pm->ps->timers[tmKnockback] += pml.msec;
@@ -235,7 +242,7 @@ void PM_CheckKnockback(void){
 			pm->ps->timers[tmKnockback] = 0;
 		}
 		scale = PM_CmdScale(&pm->cmd);
-		for(i=0;i<3;i++){
+		for(int i=0;i<3;i++){
 			wishvel[i] = scale * pml.forward[i] * pm->cmd.forwardmove + scale * pml.right[i] * pm->cmd.rightmove + scale * pml.up[i] * pm->cmd.upmove;
 		}
 		VectorCopy(wishvel,wishdir);
@@ -262,7 +269,8 @@ void PM_CheckKnockback(void){
 }
 void PM_Crash(qboolean vertical){
 	if(pm->ps->bitFlags & isCrashed){return;}
-	pm->ps->powerLevel[plDamageGeneric] = pm->ps->bitFlags & usingSoar ? VectorLength(pm->ps->velocity) * 0.03 : VectorLength(pm->ps->velocity) * 0.3;
+	pm->ps->powerLevel[plDamageGeneric] = VectorLength(pm->ps->velocity);
+	pm->ps->powerLevel[plDamageGeneric] *= pm->ps->bitFlags & usingSoar ? 0.03f : 0.3f;
 	pm->ps->timers[tmCrash] = vertical ? -2500 : 2500;
 	pm->ps->bitFlags |= isCrashed;
 	PM_AddEvent(EV_CRASH);
@@ -273,10 +281,12 @@ void PM_Crash(qboolean vertical){
 TALK
 ===================*/
 void PM_CheckTalk(void){
-	if(pm->cmd.buttons & BUTTON_TALK){pm->ps->eFlags |= EF_TALK;}
-	else{pm->ps->eFlags &= ~EF_TALK;}
 	if(pm->cmd.buttons & BUTTON_TALK){
 		pm->cmd.buttons = BUTTON_TALK;
+		pm->ps->eFlags |= EF_TALK;
+	}
+	else{
+		pm->ps->eFlags &= ~EF_TALK;
 	}
 }
 /*===============
@@ -294,51 +304,57 @@ void PM_StopZanzoken(void){
 void PM_CheckZanzoken(void){
 	vec3_t post_vel;
 	float stepCost;
-	int speed,cost,transfer;
+	int speed;
+	int cost;
+	int transfer;
 	if(!(pm->ps->options & canZanzoken)){return;}
 	if(pm->ps->timers[tmZanzoken] < 0){
 		pm->ps->timers[tmZanzoken] += pml.msec;
-		if(pm->ps->timers[tmZanzoken] >= 0){pm->ps->timers[tmZanzoken] = 0;}
-		else{return;}
+		if(pm->ps->timers[tmZanzoken] >= 0){
+			pm->ps->timers[tmZanzoken] = 0;
+		}
+		else{
+			return;
+		}
 	}
-	if((pm->ps->powerLevel[plFatigue] <= pm->ps->powerLevel[plMaximum] * 0.15)){
+	if(pm->ps->powerLevel[plFatigue] <= pm->ps->powerLevel[plMaximum] * 0.15f){
 		PM_StopZanzoken();
 		return;
 	}
 	if(pm->ps->bitFlags & usingSoar || pm->ps->bitFlags & isPreparing || pm->ps->bitFlags & usingMelee){return;}
 	if(pm->ps->timers[tmZanzoken] > 0){
-		stepCost = ((pm->ps->powerLevel[plMaximum] * 0.09) * pm->ps->baseStats[stZanzokenCost]) / (pm->ps->timers[tmZanzoken] / 50.0);
-		speed = (pm->ps->powerLevel[plCurrent] / 13.1) + (pm->ps->baseStats[stZanzokenSpeed] * 4000);
+		stepCost = ((pm->ps->powerLevel[plMaximum] * 0.09f) * pm->ps->baseStats[stZanzokenCost]) / (pm->ps->timers[tmZanzoken] / 50.0f);
+		speed = (pm->ps->powerLevel[plCurrent] / 13.1f) + (pm->ps->baseStats[stZanzokenSpeed] * 4000);
 		pm->ps->measureTimers[mtZanzokenDistance] -= pml.msec;
 		if(pm->ps->measureTimers[mtZanzokenDistance] < 0 || (!(pm->cmd.buttons & BUTTON_TELEPORT) && !(pm->ps->bitFlags & usingQuickZanzoken))){
 			PM_StopZanzoken();
 		}
 		else{
-		pm->ps->measureTimers[mtZanzoken] += pml.msec;
-		while(pm->ps->measureTimers[mtZanzoken] > 50){
-			pm->ps->buffers[bfZanzokenCost] += stepCost;
-			if(pm->ps->buffers[bfZanzokenCost] > 1 && !(pm->ps->bitFlags & usingQuickZanzoken)){
-				transfer = (int)pm->ps->buffers[bfZanzokenCost];
-				pm->ps->powerLevel[plUseFatigue] += transfer;
-				pm->ps->buffers[bfZanzokenCost] -= transfer;
+			pm->ps->measureTimers[mtZanzoken] += pml.msec;
+			while(pm->ps->measureTimers[mtZanzoken] > 50){
+				pm->ps->buffers[bfZanzokenCost] += stepCost;
+				if(pm->ps->buffers[bfZanzokenCost] > 1 && !(pm->ps->bitFlags & usingQuickZanzoken)){
+					transfer = (int)pm->ps->buffers[bfZanzokenCost];
+					pm->ps->powerLevel[plUseFatigue] += transfer;
+					pm->ps->buffers[bfZanzokenCost] -= transfer;
+				}
+				pm->ps->measureTimers[mtZanzoken] -= 50;
 			}
-			pm->ps->measureTimers[mtZanzoken] -= 50;
-		}
-		VectorNormalize(pm->ps->velocity);
-		if(pm->ps->lockedTarget > 0){speed *= 1.5;}
-		VectorScale(pm->ps->velocity,speed,pm->ps->velocity);
-		VectorNormalize2(pm->ps->velocity,post_vel);
+			VectorNormalize(pm->ps->velocity);
+			if(pm->ps->lockedTarget > 0){speed *= 1.5f;}
+			VectorScale(pm->ps->velocity,speed,pm->ps->velocity);
+			VectorNormalize2(pm->ps->velocity,post_vel);
 		}
 	}
 	else if(pm->cmd.buttons & BUTTON_TELEPORT){
 		PM_StopDash();
 		pm->ps->bitFlags |= usingZanzoken;
 		pm->ps->bitFlags &= ~usingQuickZanzoken;
-		pm->ps->timers[tmZanzoken] = (pm->ps->powerLevel[plFatigue] * 0.01) + (pm->ps->baseStats[stZanzokenDistance] * 500);
+		pm->ps->timers[tmZanzoken] = pm->ps->powerLevel[plFatigue] * 0.01f + pm->ps->baseStats[stZanzokenDistance] * 500;
 		pm->ps->measureTimers[mtZanzokenDistance] = pm->ps->timers[tmZanzoken];
-		cost = (pm->ps->powerLevel[plMaximum] * 0.03) * pm->ps->baseStats[stZanzokenCost];
-		if(pm->ps->lockedTarget > 0){cost *= 0.8;}
-		if(pm->ps->bitFlags & usingJump){cost *= 0.4;}
+		cost = pm->ps->powerLevel[plMaximum] * 0.03f * pm->ps->baseStats[stZanzokenCost];
+		if(pm->ps->lockedTarget > 0){cost *= 0.8f;}
+		if(pm->ps->bitFlags & usingJump){cost *= 0.4f;}
 		pm->ps->powerLevel[plUseFatigue] += cost;
 		PM_AddEvent(EV_ZANZOKEN_START);
 	}
@@ -349,21 +365,21 @@ void PM_CheckZanzoken(void){
 		pm->ps->bitFlags |= usingQuickZanzoken;
 		pm->ps->timers[tmZanzoken] = pm->ps->baseStats[stZanzokenQuickDistance] * 500;
 		pm->ps->measureTimers[mtZanzokenDistance] = pm->ps->timers[tmZanzoken];
-		cost = (pm->ps->powerLevel[plMaximum] * 0.01) * pm->ps->baseStats[stZanzokenQuickCost];
+		cost = (pm->ps->powerLevel[plMaximum] * 0.01f) * pm->ps->baseStats[stZanzokenQuickCost];
 		pm->ps->powerLevel[plUseFatigue] += cost;
 		PM_AddEvent(EV_ZANZOKEN_START);
 
 	}
-
-
 }
 /*===============
 POWER LEVEL
 ===============*/
 void PM_UsePowerLevel(void){
-	int newValue,amount,stat,useType,limit;
-	useType = 0;
-	limit = pm->ps->powerLevel[plLimit];
+	int newValue;
+	int amount;
+	int stat;
+	int useType = 0;
+	int limit = pm->ps->powerLevel[plLimit];
 	while(useType < 4){
 		stat = useType == 1 ? pm->ps->powerLevel[plFatigue] : pm->ps->powerLevel[plCurrent];
 		stat = useType == 2 ? pm->ps->powerLevel[plHealth] : stat;
@@ -382,7 +398,7 @@ void PM_UsePowerLevel(void){
 		if(useType == 1){
 			pm->ps->powerLevel[plFatigue] = newValue;
 			if(pm->ps->powerLevel[plFatigue] < 0){
-				amount = (pm->ps->powerLevel[plFatigue]*-1)*0.75;
+				amount = (pm->ps->powerLevel[plFatigue] * -1) * 0.75f;
 				if(pm->ps->powerLevel[plHealth] - amount <= 0){
 					amount = pm->ps->powerLevel[plHealth] - 1;
 				}
@@ -529,40 +545,6 @@ void PM_CheckStatus(void){
 			}
 		}
 	}
-	/*else if(pm->ps->powerLevel[plFatigue] <= 0){
-		if(pm->ps->powerups[PW_STATE] != -1){
-			pm->ps->bitFlags |= isUnconcious;
-			pm->ps->bitFlags &= ~isStruggling;
-			pm->ps->powerups[PW_STATE] = -1;
-			pm->ps->timers[tmFreeze] = 0;
-			pm->ps->powerLevel[plCurrent] = 1;
-			PM_StopMovement();
-			PM_StopFlight();
-			PM_StopBoost();
-			PM_WeaponRelease();
-			PM_AddEvent(EV_UNCONCIOUS);
-			if(pm->ps->powerLevel[plFatigue] > -2500){
-				pm->ps->powerLevel[plFatigue] = -2500;
-			}
-		}
-		else{
-			pm->ps->powerLevel[plFatigue] += pml.msec / 2;
-			if(pm->ps->bitFlags & atopGround){
-				if(!(pm->ps->bitFlags & nearGround)){
-					PM_ContinueTorsoAnim(ANIM_DEATH_AIR_LAND);
-					PM_ContinueLegsAnim(ANIM_DEATH_AIR_LAND);
-				}
-				else{
-					PM_ContinueTorsoAnim(ANIM_DEATH_GROUND);
-					PM_ContinueLegsAnim(ANIM_DEATH_GROUND);
-				}
-			}
-			else{
-				PM_ContinueTorsoAnim(ANIM_DEATH_AIR);
-				PM_ContinueLegsAnim(ANIM_DEATH_AIR);
-			}
-		}
-	}*/
 	else{
 		if(pm->ps->powerups[PW_STATE] == -1){
 			if(pm->ps->timers[tmRecover] <= 0){pm->ps->timers[tmRecover] = 2000;}
@@ -631,7 +613,6 @@ void PM_CheckSpecificSequences(signed char buttonValue, int index, int tapTime){
 	pm->ps->sequenceTimers[oppositeButtonIndex] = (oppositeButtonSequenceTime * 10) + oppositeButtonSequenceStatus;
 	pm->ps->sequenceTimers[index] = (sequenceTime * 10) + sequenceStatus;
 }
-
 void PM_CheckSequences(void){
 	int index;
 	int buttonIndex = 1;
@@ -664,35 +645,29 @@ void PM_CheckSequences(void){
 	PM_CheckSpecificSequences(pm->cmd.upmove, index+4, 250);
 }
 
-void PM_CheckContextOperations(void)
-{
+void PM_CheckContextOperations(void){
 	//Transforming operations
 	if(pm->cmd.buttons & BUTTON_POWERLEVEL){
-		if(pm->cmd.weapon - 1 != pm->ps->powerLevel[plTierCurrent])
-		{
+		if(pm->cmd.weapon - 1 != pm->ps->powerLevel[plTierCurrent]){
 			pm->ps->powerLevel[plTierSelectionMode] = 0;
 			pm->cmd.tier = pm->cmd.weapon- 1;
 			pm->cmd.weapon = pm->ps->weapon;
 			pm->cmd.tierSelectionMode = pm->cmd.weaponSelectionMode;
 			pm->cmd.weaponSelectionMode = 0;
 		}
-		else if(pm->cmd.weaponSelectionMode > 0)
-		{
+		else if(pm->cmd.weaponSelectionMode > 0){
 			pm->cmd.tierSelectionMode = pm->cmd.weaponSelectionMode;
 			pm->cmd.weaponSelectionMode = 0;
 		}
 	}
 }
-
 qboolean PM_CheckTransform(void){
 	if(!(pm->ps->options & canTransform)){
 		pm->ps->powerLevel[plTierChanged] = 1;
 		return qfalse;
 	}
-
 	pm->ps->powerLevel[plTierDesired] = pm->cmd.tier;
 	pm->ps->powerLevel[plTierSelectionMode] = pm->cmd.tierSelectionMode;
-
 	pm->ps->timers[tmUpdateTier] += pml.msec;
 	if(pm->ps->timers[tmUpdateTier] > 300){
 		pm->ps->timers[tmUpdateTier] = 0;
@@ -701,7 +676,6 @@ qboolean PM_CheckTransform(void){
 		else if(pm->ps->stats[stTransformState] == 2){PM_AddEvent(EV_TIERUP_FIRST);}
 		pm->ps->stats[stTransformState] = 0;
 	}
-
 	if(pm->ps->timers[tmTransform] == 1){
 		pm->ps->timers[tmTransform] = -100;
 		PM_AddEvent(EV_SYNCTIER);
@@ -741,8 +715,11 @@ qboolean PM_CheckTransform(void){
 }
 void PM_CheckPowerLevel(void){
 	int limit;
-	int *timers,*powerLevel;
-	float lower,raise,recovery;
+	int* timers;
+	int* powerLevel;
+	float lower;
+	float raise;
+	float recovery;
 	float statScale;
 	float fatigueScale;
 	static float fractionPool = 0;
@@ -1385,8 +1362,6 @@ void PM_FlyMove(void){
 	wishspeed = VectorNormalize(wishdir);
 	PM_Accelerate(wishdir,wishspeed,pm_flyaccelerate);
 }
-
-
 /*===================
 PM_AirMove
 ===================*/

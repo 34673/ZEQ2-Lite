@@ -94,7 +94,6 @@ typedef struct{
 }spawn_t;
 void SP_info_player_start(gentity_t* ent);
 void SP_info_player_deathmatch(gentity_t* ent);
-void SP_info_player_intermission(gentity_t* ent);
 void SP_func_plat(gentity_t* ent);
 void SP_func_static(gentity_t* ent);
 void SP_func_rotating(gentity_t* ent);
@@ -135,7 +134,6 @@ spawn_t	spawns[] ={
 	// information for things controlled by other processes
 	{"info_player_start",SP_info_player_start},
 	{"info_player_deathmatch",SP_info_player_deathmatch},
-	{"info_player_intermission",SP_info_player_intermission},
 	{"info_null",SP_info_null},
 	{"info_notnull",SP_info_notnull},		// use target_position instead
 	{"info_camp",SP_info_camp},

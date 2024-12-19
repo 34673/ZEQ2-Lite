@@ -198,6 +198,7 @@ void Main_MenuEvent (void* ptr, int event) {
 		UI_CreditMenu();
 		break;
 	case ID_SAGAS:
+		MainMenu_Save();
 		UI_SagasMenu();
 		break;
 	case ID_MODEL:

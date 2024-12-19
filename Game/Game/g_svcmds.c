@@ -304,10 +304,6 @@ qboolean ConsoleCommand(void){
 		Svcmd_GameMem_f();
 		return qtrue;
 	}
-	if(!Q_stricmp(cmd,"abort_podium")){
-		Svcmd_AbortPodium_f();
-		return qtrue;
-	}
 	if(!Q_stricmp(cmd,"addip")){
 		Svcmd_AddIP_f();
 		return qtrue;

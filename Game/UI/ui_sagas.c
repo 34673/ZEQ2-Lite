@@ -83,39 +83,6 @@ static void UI_Sagas_ParseInfos( char *sagaDir, char *sagaDesc ) {
 	s_sagas.list.numitems++;
 }
 
-
-#if 0 // bk001204 - unused
-/*
-===============
-UI_Sagas_LoadSagasFromFile
-===============
-*/
-static void UI_Sagas_LoadSagasFromFile( char *filename ) {
-	int				len;
-	fileHandle_t	f;
-	char			buf[1024];
-
-	len = trap_FS_FOpenFile( filename, &f, FS_READ );
-	if(!f){
-		trap_Print( va( S_COLOR_RED "file not found: %s\n", filename ) );
-		return;
-	}
-	if(len >= sizeof(buf)){
-		trap_Print(va(S_COLOR_RED "file too large: %s is %i, max allowed is %i", filename, len, sizeof(buf)));
-		trap_FS_FCloseFile(f);
-		return;
-	}
-	trap_FS_Read(buf, len, f);
-	buf[len] = 0;
-	trap_FS_FCloseFile(f);
-	
-	len = strlen(filename);
-	if(!Q_stricmp(filename + len - 5,".saga")){filename[len-5] = '\0';}
-	UI_Sagas_ParseInfos(filename, buf);
-}
-#endif
-
-
 /*
 ===============
 UI_Sagas_LoadSagas
@@ -230,7 +197,8 @@ static void UI_Sagas_MenuInit(void) {
 UI_SagasMenu
 ===============
 */
-void UI_SagasMenu( void ) {
+void UI_SagasMenu(void){
+	uis.menuamount = 0;
 	UI_Sagas_MenuInit();
 	UI_PushMenu( &s_sagas.menu );
 }

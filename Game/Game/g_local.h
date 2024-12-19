@@ -277,7 +277,7 @@ typedef struct {
 
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
-extern struct gclient_s {
+struct gclient_s {
 	// ps MUST be the first element, because the server expects it
 	playerState_t	ps;				// communicated by server to clients
 
@@ -521,7 +521,7 @@ void Weapon_HookThink (gentity_t *ent);
 //
 // g_client.c
 //
-team_t TeamCount( int ignoreClientNum, int team );
+team_t TeamCount(int ignoreClientNum,unsigned int team);
 team_t PickTeam( int ignoreClientNum );
 void SetClientViewAngle( gentity_t *ent, vec3_t angle );
 gentity_t *SelectSpawnPoint (vec3_t avoidPoint, vec3_t origin, vec3_t angles );
@@ -554,13 +554,6 @@ void G_GetMuzzleSettings(vec3_t muzzle_g, vec3_t forward_g, vec3_t right_g, vec3
 // END ADDING
 
 //
-// p_hud.c
-//
-void MoveClientToIntermission (gentity_t *client);
-void G_SetStats (gentity_t *ent);
-void DeathmatchScoreboardMessage (gentity_t *client);
-
-//
 // g_cmds.c
 //
 
@@ -572,7 +565,6 @@ void DeathmatchScoreboardMessage (gentity_t *client);
 //
 // g_main.c
 //
-void FindIntermissionPoint( void );
 void G_RunThink (gentity_t *ent);
 void QDECL G_LogPrintf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void SendScoreboardMessageToAllClients( void );

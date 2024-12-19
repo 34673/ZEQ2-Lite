@@ -8,237 +8,187 @@
 /*=======================
 GetMissileOwnerEntity
 =======================*/
-gentity_t *GetMissileOwnerEntity (gentity_t *missile) {
-	gentity_t *parent;
-
-	parent = missile->parent;
-	while((parent->s.eType != ET_PLAYER)&&(parent->s.eType != ET_INVISIBLE)) {
-		parent = GetMissileOwnerEntity( parent );
+gentity_t* GetMissileOwnerEntity(gentity_t* missile) {
+	gentity_t* parent = missile->parent;
+	while(parent->s.eType != ET_PLAYER && parent->s.eType != ET_INVISIBLE){
+		parent = GetMissileOwnerEntity(parent);
 	}
 	return parent;
 }
 /*---------------------------------
   T H I N K   F U N C T I O N S
 ---------------------------------*/
-
-// Prototypes
-void Think_NormalMissile (gentity_t *self);
-void Think_NormalMissileStruggle (gentity_t *self);
-static void Think_NormalMissileBurnPlayer (gentity_t *self);
-static void Think_NormalMissileRidePlayer (gentity_t *self);
-static void Think_NormalMissileStrugglePlayer (gentity_t *self);
-static void G_StruggleUserMissile( gentity_t *self, gentity_t *other );
-static void G_PushUserMissile( gentity_t *self, gentity_t *other );
-static void G_BounceUserMissile( gentity_t *self, trace_t *trace );
-void G_UserWeaponDamage(gentity_t *target,gentity_t *inflictor,gentity_t *attacker,vec3_t dir,vec3_t point,int damage,int dflags,int knockback);
-void G_LocationImpact(vec3_t point, gentity_t* targ, gentity_t* attacker);
-
+void Think_NormalMissile(gentity_t *self);
+void Think_NormalMissileStruggle(gentity_t *self);
+static void Think_NormalMissileBurnPlayer(gentity_t *self);
+static void Think_NormalMissileRidePlayer(gentity_t *self);
+static void Think_NormalMissileStrugglePlayer(gentity_t* self);
+static void G_StruggleUserMissile(gentity_t* self,gentity_t* other);
+static void G_PushUserMissile(gentity_t* self,gentity_t* other);
+static void G_BounceUserMissile(gentity_t* self,trace_t* trace);
+void G_UserWeaponDamage(gentity_t* target,gentity_t* inflictor,gentity_t* attacker,vec3_t dir,vec3_t point,int damage,int dflags,int knockback);
+void G_LocationImpact(vec3_t point,gentity_t* targ, gentity_t* attacker);
 /*
 ===============
 Think_ProxDet
 ===============
 */
-void Think_ProxDet( gentity_t *self ) {
-	int			i; // loop variable
-	gentity_t	*target_ent;
-	gentity_t	*target_owner;
-	vec3_t		midbody;
-	float		proxDistance;	// The distance between a potential
-								// target and the missile.
-
-	for (i = 0; i < level.maxclients; i++) {
-		// Here we use target_ent to point to potential targets
+void Think_ProxDet(gentity_t* self){
+	int i;
+	gentity_t* target_ent;
+	gentity_t* target_owner;
+	vec3_t midbody;
+	float proxDistance;
+	for(i=0;i<level.maxclients;i++){
 		target_ent = &g_entities[i];
-		target_owner = GetMissileOwnerEntity( self );
-
-		// We don't bother with non-used clients, ourselves,
-		// or clients on our team.
-		if ( !target_ent->inuse ) continue;
-		if ( target_ent == target_owner ) continue;
-
+		target_owner = GetMissileOwnerEntity(self);
+		if(!target_ent->inuse || target_ent == target_owner){continue;}
 		// Judge the distance from the middle of the body, not the feet
-		midbody[0] = target_ent->r.currentOrigin[0] + 
-			(target_ent->r.mins[0] + target_ent->r.maxs[0]) * 0.5;
-		midbody[1] = target_ent->r.currentOrigin[1] + 
-			(target_ent->r.mins[1] + target_ent->r.maxs[1]) * 0.5;
-		midbody[2] = target_ent->r.currentOrigin[2] + 
-			(target_ent->r.mins[2] + target_ent->r.maxs[2]) * 0.5;
-
-		proxDistance = Distance(midbody, self->r.currentOrigin);
-
-		// We don't detonate on this entity if it's not within homing range.
-		if ( proxDistance > self->homRange ) continue;
-
-		
-		// We're within range and have to detonate with the next think.
+		midbody[0] = target_ent->r.currentOrigin[0] + (target_ent->r.mins[0] + target_ent->r.maxs[0]) * 0.5;
+		midbody[1] = target_ent->r.currentOrigin[1] + (target_ent->r.mins[1] + target_ent->r.maxs[1]) * 0.5;
+		midbody[2] = target_ent->r.currentOrigin[2] + (target_ent->r.mins[2] + target_ent->r.maxs[2]) * 0.5;
+		proxDistance = Distance(midbody,self->r.currentOrigin);
+		if(proxDistance > self->homRange){continue;}
 		self->think = G_ExplodeUserWeapon;
-
-		// Force premature exit of Bounded Linear Search
-		i = level.maxclients;
+		break;
 	}
-
 	// If the weapon has existed too long, make the next think detonate it.
-	if ( ( self->missileSpawnTime + self->maxMissileTime ) <= level.time) {
-	  self->think = G_ExplodeUserWeapon;
+	if((self->missileSpawnTime + self->maxMissileTime) <= level.time){
+		self->think = G_ExplodeUserWeapon;
 	}
 	self->nextthink = level.time + FRAMETIME;
 }
-
-
 /*
 ==============
 Think_Guided
 ==============
 */
-void Think_Guided (gentity_t *self) {
-	vec3_t forward, right, up; 
+void Think_Guided(gentity_t* self){
+	vec3_t forward;
+	vec3_t right;
+	vec3_t up; 
 	vec3_t muzzle;
 	float dist;
-	gentity_t *owner = GetMissileOwnerEntity(self);
-
-	self->s.dashDir[1] = self->powerLevelCurrent; // Use this free field to transfer current power level
+	gentity_t* owner = GetMissileOwnerEntity(self);
+	self->s.dashDir[1] = self->powerLevelCurrent;
 	if(self->isDrainable && self->s.eType != ET_BEAMHEAD){
-		self->powerLevelCurrent -= (float)self->powerLevelTotal * 0.01;
+		self->powerLevelCurrent -= (float)self->powerLevelTotal * 0.01f;
 	}
-	if (self->powerLevelCurrent <= 0) {
+	if(self->powerLevelCurrent <= 0){
 		G_RemoveUserWeapon(self);
 		return;
 	}
 	if((owner->client->ps.bitFlags & usingBoost) && self->s.eType == ET_BEAMHEAD){
-		self->powerLevelCurrent += 1 + ((float)self->powerLevelTotal * 0.005);
-		self->speed += 10 + ((float)owner->client->ps.powerLevel[plMaximum] * 0.0003);
+		self->powerLevelCurrent += 1 + (float)self->powerLevelTotal * 0.005f;
+		self->speed += 10 + (float)owner->client->ps.powerLevel[plMaximum] * 0.0003f;
 	}
-
-	// If our weapon's owner can't be found, skip anything related to guiding.
-	if (!owner){G_Printf( S_COLOR_YELLOW "WARNING: Think_Guided reports unknown fired weapon!\n" );}
+	if(!owner){
+		G_Printf(S_COLOR_YELLOW "WARNING: Think_Guided reports unknown fired weapon!\n");
+	}
 	else{
-		AngleVectors( owner->client->ps.viewangles, forward, right, up );
-		CalcMuzzlePoint( owner, forward, right, up, muzzle );
-		VectorCopy( self->r.currentOrigin, self->s.pos.trBase );	
-		VectorSubtract( muzzle, self->r.currentOrigin, muzzle );
-		dist = VectorLength( muzzle ) + SOLID_ADD;
-		VectorScale( forward, dist, forward );
-		VectorAdd( forward, muzzle, muzzle );
-		VectorNormalize( muzzle );
-		VectorScale( muzzle, self->speed, forward );
-		VectorCopy( forward, self->s.pos.trDelta );
-		vectoangles( muzzle, self->s.angles );
-		SnapVector( self->s.pos.trDelta );
+		AngleVectors(owner->client->ps.viewangles,forward,right,up);
+		CalcMuzzlePoint(owner,forward,right,up,muzzle);
+		VectorCopy(self->r.currentOrigin,self->s.pos.trBase);	
+		VectorSubtract(muzzle,self->r.currentOrigin,muzzle);
+		dist = VectorLength(muzzle) + SOLID_ADD;
+		VectorScale(forward,dist,forward);
+		VectorAdd(forward,muzzle,muzzle);
+		VectorNormalize(muzzle);
+		VectorScale(muzzle,self->speed,forward);
+		VectorCopy(forward,self->s.pos.trDelta);
+		vectoangles(muzzle,self->s.angles);
+		SnapVector(self->s.pos.trDelta);
 		self->s.pos.trType = TR_LINEAR;
 		self->s.pos.trTime = level.time;
 	}
 	// If we're dealing with a beam, we have to record beamsections.
-	if (self->s.eType == ET_BEAMHEAD) {
+	if(self->s.eType == ET_BEAMHEAD) {
 		// Have we reached the time at which to start a new section?
-		if ( ( self->sectionSpawnTime + self->newSectionTime ) <= level.time ) {
+		if((self->sectionSpawnTime + self->newSectionTime) <= level.time){
 			// FIXME: HOOKUP TO SERVERSIDE BEAMTABLES
 			// Reset the timer for the drop of the next beamsection.
 			self->sectionSpawnTime = level.time;
 		}
-	} // END OF BEAM SECTIONS
+	}
 	// If the weapon has existed too long, make the next think detonate it.
 	self->nextthink = level.time + FRAMETIME;
 }
-
-
 /*
 ==============
 Think_Homing
 ==============
 */
-void Think_Homing (gentity_t *self) {
-	gentity_t	*target_ent, *target_owner;
-	float		target_length;
-	int			i;
-	vec3_t		target_dir, forward, midbody;
-	trace_t		tr;
-	
-	vec3_t		chosen_dir;
-	float		chosen_length;
-	gentity_t	*missileOwner = GetMissileOwnerEntity(self);
-
-	self->s.dashDir[1] = self->powerLevelCurrent; // Use this free field to transfer current power level
+void Think_Homing(gentity_t* self){
+	gentity_t* target_ent;
+	gentity_t* target_owner;
+	float target_length;
+	int i;
+	vec3_t target_dir;
+	vec3_t forward;
+	vec3_t midbody;
+	trace_t tr;
+	vec3_t chosen_dir;
+	float chosen_length;
+	gentity_t* missileOwner = GetMissileOwnerEntity(self);
+	self->s.dashDir[1] = self->powerLevelCurrent;
 	if(self->isDrainable){
-		self->powerLevelCurrent -= (float)self->powerLevelTotal * 0.01;
+		self->powerLevelCurrent -= (float)self->powerLevelTotal * 0.01f;
 	}
-	if (self->powerLevelCurrent <= 0) {
+	if(self->powerLevelCurrent <= 0){
 		G_RemoveUserWeapon(self);
 		return;
 	}
-
 	// Best way to get forward vector for this rocket?
-	VectorCopy(self->s.pos.trDelta, forward);
+	VectorCopy(self->s.pos.trDelta,forward);
 	VectorNormalize(forward);
-
 	// Set the base position
-	VectorCopy( self->r.currentOrigin, self->s.pos.trBase );
+	VectorCopy(self->r.currentOrigin,self->s.pos.trBase);
 	self->s.pos.trTime = level.time;
 	self->s.pos.trType = TR_LINEAR;
-
 	// Set the first choice to an 'empty' one.
-	VectorCopy(forward, chosen_dir);
+	VectorCopy(forward,chosen_dir);
 	chosen_length = -1;
-
-	// Cycle through the clients for a qualified target
-	for (i = 0; i < level.maxclients; i++) {
+	for(i=0;i<level.maxclients;i++){
 		// Here we use target_ent to point to potential targets
 		target_ent = &g_entities[i];
-		target_owner = GetMissileOwnerEntity( self );
-
-		if (!target_ent->inuse) continue;
-		if (target_ent == target_owner) continue;
-
+		target_owner = GetMissileOwnerEntity(self);
+		if(!target_ent->inuse || target_ent == target_owner){continue;}
 		// Aim for the body, not the feet
-		midbody[0] = target_ent->r.currentOrigin[0] + 
-			(target_ent->r.mins[0] + target_ent->r.maxs[0]) * 0.5;
-		midbody[1] = target_ent->r.currentOrigin[1] + 
-			(target_ent->r.mins[1] + target_ent->r.maxs[1]) * 0.5;
-		midbody[2] = target_ent->r.currentOrigin[2] + 
-			(target_ent->r.mins[2] + target_ent->r.maxs[2]) * 0.5;
-
+		midbody[0] = target_ent->r.currentOrigin[0] + (target_ent->r.mins[0] + target_ent->r.maxs[0]) * 0.5f;
+		midbody[1] = target_ent->r.currentOrigin[1] + (target_ent->r.mins[1] + target_ent->r.maxs[1]) * 0.5f;
+		midbody[2] = target_ent->r.currentOrigin[2] + (target_ent->r.mins[2] + target_ent->r.maxs[2]) * 0.5f;
 		// Get the distance
-		VectorSubtract(midbody, self->r.currentOrigin, target_dir);
+		VectorSubtract(midbody,self->r.currentOrigin,target_dir);
 		target_length = VectorLength(target_dir);
-
 		// We don't home in on this entity if its not within range.
-		if ( target_length > self->homRange ) continue;
-
+		if(target_length > self->homRange){continue;}
 		// Quick normalization of target_dir since 
 		// we already have the length
 		target_dir[0] /= target_length;
 		target_dir[1] /= target_length;
 		target_dir[2] /= target_length;
-
 		// We don't home in on this entity if its outside our view 'funnel' either.
-		if ( DotProduct(forward, target_dir) < cos(DEG2RAD(self->homAngle)) ) continue;
-
-		trap_Trace( &tr,  self->r.currentOrigin, NULL, NULL, 
-			self->r.currentOrigin, ENTITYNUM_NONE, MASK_SHOT );
-		if ( target_ent != &g_entities[tr.entityNum] ) continue;
-
+		if(DotProduct(forward,target_dir) < cos(DEG2RAD(self->homAngle))){continue;}
+		trap_Trace(&tr,self->r.currentOrigin,NULL,NULL,self->r.currentOrigin,ENTITYNUM_NONE,MASK_SHOT);
+		if(target_ent != &g_entities[tr.entityNum]){continue;}
 		// Only pick this target if it's the closest to the missile,
 		// but keep in account that there might not have been a pick
 		// yet!
-		if ( (target_length > chosen_length) && (chosen_length >= 0) ) continue;
-
-		VectorCopy(target_dir, chosen_dir);
+		if(target_length > chosen_length && chosen_length >= 0){continue;}
+		VectorCopy(target_dir,chosen_dir);
 		chosen_length = target_length;
 	}
-
 	// Set the new direction.
 	// FIXME: Does this remain the same if chosen_dir == forward? (aka no target found)
-	VectorMA(forward, 0.05, chosen_dir, chosen_dir);
+	VectorMA(forward,0.05f,chosen_dir,chosen_dir);
 	VectorNormalize(chosen_dir);
-	VectorScale(chosen_dir, self->speed, self->s.pos.trDelta);
-
+	VectorScale(chosen_dir,self->speed,self->s.pos.trDelta);
 	// If the weapon has existed too long, make the next think detonate it.
-	if ( ( self->missileSpawnTime + self->maxMissileTime ) <= level.time ) {
-	  self->think = G_ExplodeUserWeapon;
+	if((self->missileSpawnTime + self->maxMissileTime) <= level.time){
+		self->think = G_ExplodeUserWeapon;
 	}
 	self->nextthink = level.time + FRAMETIME;
 }
-
-
 /*
 ======================
 Think_CylinderHoming

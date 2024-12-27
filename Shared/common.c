@@ -750,11 +750,11 @@ typedef struct zonedebug_s {
 	char *label;
 	char *file;
 	int line;
-	int allocSize;
+	size_t allocSize;
 } zonedebug_t;
 
 typedef struct memblock_s {
-	int		size;           // including the header and possibly tiny fragments
+	size_t	size;           // including the header and possibly tiny fragments
 	int     tag;            // a tag of 0 is a free block
 	struct memblock_s       *next, *prev;
 	int     id;        		// should be ZONEID
@@ -764,8 +764,8 @@ typedef struct memblock_s {
 } memblock_t;
 
 typedef struct {
-	int		size;			// total bytes malloced, including header
-	int		used;			// total bytes used
+	size_t	size;			// total bytes malloced, including header
+	size_t		used;			// total bytes used
 	memblock_t	blocklist;	// start / end cap for linked list
 	memblock_t	*rover;
 } memzone_t;
@@ -783,7 +783,7 @@ static void Z_CheckHeap( void );
 Z_ClearZone
 ========================
 */
-static void Z_ClearZone( memzone_t *zone, int size ) {
+static void Z_ClearZone( memzone_t *zone, size_t size ) {
 	memblock_t	*block;
 	
 	// set the entire zone to one free block
@@ -808,7 +808,7 @@ static void Z_ClearZone( memzone_t *zone, int size ) {
 Z_AvailableZoneMemory
 ========================
 */
-static int Z_AvailableZoneMemory( memzone_t *zone ) {
+static size_t Z_AvailableZoneMemory( memzone_t *zone ) {
 	return zone->size - zone->used;
 }
 
@@ -817,7 +817,7 @@ static int Z_AvailableZoneMemory( memzone_t *zone ) {
 Z_AvailableMemory
 ========================
 */
-int Z_AvailableMemory( void ) {
+size_t Z_AvailableMemory( void ) {
 	return Z_AvailableZoneMemory( mainzone );
 }
 
@@ -922,12 +922,12 @@ Z_TagMalloc
 ================
 */
 #ifdef ZONE_DEBUG
-void *Z_TagMallocDebug( int size, int tag, char *label, char *file, int line ) {
-	int		allocSize;
+void *Z_TagMallocDebug( size_t size, int tag, char *label, char *file, int line ) {
+	size_t		allocSize;
 #else
-void *Z_TagMalloc( int size, int tag ) {
+void *Z_TagMalloc( size_t size, int tag ) {
 #endif
-	int		extra;
+	size_t		extra;
 	memblock_t	*start, *rover, *new, *base;
 	memzone_t *zone;
 
@@ -962,11 +962,21 @@ void *Z_TagMalloc( int size, int tag ) {
 #ifdef ZONE_DEBUG
 			Z_LogHeap();
 
-			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone: %s, line: %d (%s)",
+		#if INTPTR_MAX == INT64_MAX
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %llu bytes from the %s zone: %s, line: %d (%s)",
 								size, zone == smallzone ? "small" : "main", file, line, label);
+		#else
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %u bytes from the %s zone: %s, line: %d (%s)",
+								size, zone == smallzone ? "small" : "main", file, line, label);
+		#endif
 #else
-			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes from the %s zone",
+		#if INTPTR_MAX == INT64_MAX
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %llu bytes from the %s zone",
 								size, zone == smallzone ? "small" : "main");
+		#else
+			Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %u bytes from the %s zone",
+								size, zone == smallzone ? "small" : "main");
+		#endif
 #endif
 			return NULL;
 		}
@@ -1020,9 +1030,9 @@ Z_Malloc
 ========================
 */
 #ifdef ZONE_DEBUG
-void *Z_MallocDebug( int size, char *label, char *file, int line ) {
+void *Z_MallocDebug( size_t size, char *label, char *file, int line ) {
 #else
-void *Z_Malloc( int size ) {
+void *Z_Malloc( size_t size ) {
 #endif
 	void	*buf;
 	
@@ -1039,11 +1049,11 @@ void *Z_Malloc( int size ) {
 }
 
 #ifdef ZONE_DEBUG
-void *S_MallocDebug( int size, char *label, char *file, int line ) {
+void *S_MallocDebug( size_t size, char *label, char *file, int line ) {
 	return Z_TagMallocDebug( size, TAG_SMALL, label, file, line );
 }
 #else
-void *S_Malloc( int size ) {
+void *S_Malloc( size_t size ) {
 	return Z_TagMalloc( size, TAG_SMALL );
 }
 #endif
@@ -1079,11 +1089,12 @@ Z_LogZoneHeap
 void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 #ifdef ZONE_DEBUG
 	char dump[32], *ptr;
-	int  i, j;
+	size_t i;
+	int j;
 #endif
 	memblock_t	*block;
 	char		buf[4096];
-	int size, allocSize, numBlocks;
+	size_t size, allocSize, numBlocks;
 
 	if (!logfile || !FS_Initialized())
 		return;
@@ -1107,7 +1118,11 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 				}
 			}
 			dump[j] = '\0';
-			Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s) [%s]\r\n", block->d.allocSize, block->d.file, block->d.line, block->d.label, dump);
+		#if INTPTR_MAX == INT64_MAX
+			Com_sprintf(buf, sizeof(buf), "size = %8llu: %s, line: %d (%s) [%s]\r\n", block->d.allocSize, block->d.file, block->d.line, block->d.label, dump);
+		#else
+			Com_sprintf(buf, sizeof(buf), "size = %8u: %s, line: %d (%s) [%s]\r\n", block->d.allocSize, block->d.file, block->d.line, block->d.label, dump);
+		#endif
 			FS_Write(buf, strlen(buf), logfile);
 			allocSize += block->d.allocSize;
 #endif
@@ -1121,9 +1136,17 @@ void Z_LogZoneHeap( memzone_t *zone, char *name ) {
 #else
 	allocSize = numBlocks * sizeof(memblock_t); // + 32 bit alignment
 #endif
-	Com_sprintf(buf, sizeof(buf), "%d %s memory in %d blocks\r\n", size, name, numBlocks);
+#if INTPTR_MAX == INT64_MAX
+	Com_sprintf(buf, sizeof(buf), "%llu %s memory in %llu blocks\r\n", size, name, numBlocks);
+#else
+	Com_sprintf(buf, sizeof(buf), "%u %s memory in %u blocks\r\n", size, name, numBlocks);
+#endif
 	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d %s memory overhead\r\n", size - allocSize, name);
+#if INTPTR_MAX == INT64_MAX
+	Com_sprintf(buf, sizeof(buf), "%llu %s memory overhead\r\n", size - allocSize, name);
+#else
+	Com_sprintf(buf, sizeof(buf), "%u %s memory overhead\r\n", size - allocSize, name);
+#endif
 	FS_Write(buf, strlen(buf), logfile);
 }
 
@@ -1222,18 +1245,18 @@ Goals:
 
 typedef struct {
 	int		magic;
-	int		size;
+	size_t		size;
 } hunkHeader_t;
 
 typedef struct {
-	int		mark;
-	int		permanent;
-	int		temp;
-	int		tempHighwater;
+	size_t		mark;
+	size_t		permanent;
+	size_t		temp;
+	size_t		tempHighwater;
 } hunkUsed_t;
 
 typedef struct hunkblock_s {
-	int size;
+	size_t size;
 	byte printed;
 	struct hunkblock_s *next;
 	char *label;
@@ -1247,10 +1270,10 @@ static	hunkUsed_t	hunk_low, hunk_high;
 static	hunkUsed_t	*hunk_permanent, *hunk_temp;
 
 static	byte	*s_hunkData = NULL;
-static	int		s_hunkTotal;
+static	size_t		s_hunkTotal;
 
-static	int		s_zoneTotal;
-static	int		s_smallZoneTotal;
+static	size_t		s_zoneTotal;
+static	size_t		s_smallZoneTotal;
 
 
 /*
@@ -1260,18 +1283,23 @@ Com_Meminfo_f
 */
 void Com_Meminfo_f( void ) {
 	memblock_t	*block;
-	int			zoneBytes, zoneBlocks;
-	int			smallZoneBytes;
-	int			rendererBytes;
-	int			unused;
+	size_t			zoneBytes, zoneBlocks;
+	size_t			smallZoneBytes;
+	size_t			rendererBytes;
+	size_t			unused;
 
 	zoneBytes = 0;
 	rendererBytes = 0;
 	zoneBlocks = 0;
 	for (block = mainzone->blocklist.next ; ; block = block->next) {
 		if ( Cmd_Argc() != 1 ) {
-			Com_Printf ("block:%p    size:%7i    tag:%3i\n",
-				(void *)block, block->size, block->tag);
+			#if INTPTR_MAX == INT64_MAX
+				Com_Printf ("block:%p    size:%7llu    tag:%3i\n",
+					(void *)block, block->size, block->tag);
+			#else
+				Com_Printf ("block:%p    size:%7u    tag:%3i\n",
+					(void *)block, block->size, block->tag);
+			#endif
 		}
 		if ( block->tag ) {
 			zoneBytes += block->size;
@@ -1303,25 +1331,45 @@ void Com_Meminfo_f( void ) {
 			break;			// all blocks have been hit	
 		}
 	}
-
-	Com_Printf( "%8i bytes total hunk\n", s_hunkTotal );
-	Com_Printf( "%8i bytes total zone\n", s_zoneTotal );
+#if INTPTR_MAX == INT64_MAX
+	Com_Printf( "%8llu bytes total hunk\n", s_hunkTotal );
+	Com_Printf( "%8llu bytes total zone\n", s_zoneTotal );
 	Com_Printf( "\n" );
-	Com_Printf( "%8i low mark\n", hunk_low.mark );
-	Com_Printf( "%8i low permanent\n", hunk_low.permanent );
+	Com_Printf( "%8llu low mark\n", hunk_low.mark );
+	Com_Printf( "%8llu low permanent\n", hunk_low.permanent );
 	if ( hunk_low.temp != hunk_low.permanent ) {
-		Com_Printf( "%8i low temp\n", hunk_low.temp );
+		Com_Printf( "%8llu low temp\n", hunk_low.temp );
 	}
-	Com_Printf( "%8i low tempHighwater\n", hunk_low.tempHighwater );
+	Com_Printf( "%8llu low tempHighwater\n", hunk_low.tempHighwater );
 	Com_Printf( "\n" );
-	Com_Printf( "%8i high mark\n", hunk_high.mark );
-	Com_Printf( "%8i high permanent\n", hunk_high.permanent );
+	Com_Printf( "%8llu high mark\n", hunk_high.mark );
+	Com_Printf( "%8llu high permanent\n", hunk_high.permanent );
 	if ( hunk_high.temp != hunk_high.permanent ) {
-		Com_Printf( "%8i high temp\n", hunk_high.temp );
+		Com_Printf( "%8llu high temp\n", hunk_high.temp );
 	}
-	Com_Printf( "%8i high tempHighwater\n", hunk_high.tempHighwater );
+	Com_Printf( "%8llu high tempHighwater\n", hunk_high.tempHighwater );
 	Com_Printf( "\n" );
-	Com_Printf( "%8i total hunk in use\n", hunk_low.permanent + hunk_high.permanent );
+	Com_Printf( "%8llu total hunk in use\n", hunk_low.permanent + hunk_high.permanent );
+#else
+	Com_Printf( "%8u bytes total hunk\n", s_hunkTotal );
+	Com_Printf( "%8u bytes total zone\n", s_zoneTotal );
+	Com_Printf( "\n" );
+	Com_Printf( "%8u low mark\n", hunk_low.mark );
+	Com_Printf( "%8u low permanent\n", hunk_low.permanent );
+	if ( hunk_low.temp != hunk_low.permanent ) {
+		Com_Printf( "%8u low temp\n", hunk_low.temp );
+	}
+	Com_Printf( "%8u low tempHighwater\n", hunk_low.tempHighwater );
+	Com_Printf( "\n" );
+	Com_Printf( "%8u high mark\n", hunk_high.mark );
+	Com_Printf( "%8u high permanent\n", hunk_high.permanent );
+	if ( hunk_high.temp != hunk_high.permanent ) {
+		Com_Printf( "%8u high temp\n", hunk_high.temp );
+	}
+	Com_Printf( "%8u high tempHighwater\n", hunk_high.tempHighwater );
+	Com_Printf( "\n" );
+	Com_Printf( "%8u total hunk in use\n", hunk_low.permanent + hunk_high.permanent );
+#endif
 	unused = 0;
 	if ( hunk_low.tempHighwater > hunk_low.permanent ) {
 		unused += hunk_low.tempHighwater - hunk_low.permanent;
@@ -1329,12 +1377,21 @@ void Com_Meminfo_f( void ) {
 	if ( hunk_high.tempHighwater > hunk_high.permanent ) {
 		unused += hunk_high.tempHighwater - hunk_high.permanent;
 	}
-	Com_Printf( "%8i unused highwater\n", unused );
+#if INTPTR_MAX == INT64_MAX
+	Com_Printf( "%8llu unused highwater\n", unused );
 	Com_Printf( "\n" );
-	Com_Printf( "%8i bytes in %i zone blocks\n", zoneBytes, zoneBlocks	);
-	Com_Printf( "        %8i bytes in dynamic renderer\n", rendererBytes );
-	Com_Printf( "        %8i bytes in dynamic other\n", zoneBytes - rendererBytes );
-	Com_Printf( "        %8i bytes in small Zone memory\n", smallZoneBytes );
+	Com_Printf( "%8llu bytes in %llu zone blocks\n", zoneBytes, zoneBlocks	);
+	Com_Printf( "        %8llu bytes in dynamic renderer\n", rendererBytes );
+	Com_Printf( "        %8llu bytes in dynamic other\n", zoneBytes - rendererBytes );
+	Com_Printf( "        %8llu bytes in small Zone memory\n", smallZoneBytes );
+#else
+	Com_Printf( "%8u unused highwater\n", unused );
+	Com_Printf( "\n" );
+	Com_Printf( "%8u bytes in %u zone blocks\n", zoneBytes, zoneBlocks	);
+	Com_Printf( "        %8u bytes in dynamic renderer\n", rendererBytes );
+	Com_Printf( "        %8u bytes in dynamic other\n", zoneBytes - rendererBytes );
+	Com_Printf( "        %8u bytes in small Zone memory\n", smallZoneBytes );
+#endif
 }
 
 /*
@@ -1346,7 +1403,7 @@ Touch all known used data to make sure it is paged in
 */
 void Com_TouchMemory( void ) {
 	int		start, end;
-	int		i, j;
+	size_t	i, j;
 	unsigned	sum;
 	memblock_t	*block;
 
@@ -1420,7 +1477,11 @@ void Com_InitZoneMemory( void ) {
 
 	mainzone = calloc( s_zoneTotal, 1 );
 	if ( !mainzone ) {
-		Com_Error( ERR_FATAL, "Zone data failed to allocate %i megs", s_zoneTotal / (1024*1024) );
+	#if INTPTR_MAX == INT64_MAX
+		Com_Error( ERR_FATAL, "Zone data failed to allocate %llu megs", s_zoneTotal / (1024*1024) );
+	#else
+		Com_Error( ERR_FATAL, "Zone data failed to allocate %u megs", s_zoneTotal / (1024*1024) );
+	#endif
 	}
 	Z_ClearZone( mainzone, s_zoneTotal );
 
@@ -1434,7 +1495,7 @@ Hunk_Log
 void Hunk_Log( void) {
 	hunkblock_t	*block;
 	char		buf[4096];
-	int size, numBlocks;
+	size_t size, numBlocks;
 
 	if (!logfile || !FS_Initialized())
 		return;
@@ -1444,16 +1505,27 @@ void Hunk_Log( void) {
 	FS_Write(buf, strlen(buf), logfile);
 	for (block = hunkblocks ; block; block = block->next) {
 #ifdef HUNK_DEBUG
-		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", block->size, block->file, block->line, block->label);
+#if INTPTR_MAX == INT64_MAX
+		Com_sprintf(buf, sizeof(buf), "size = %8llu: %s, line: %d (%s)\r\n", block->size, block->file, block->line, block->label);
+#else
+		Com_sprintf(buf, sizeof(buf), "size = %8u: %s, line: %d (%s)\r\n", block->size, block->file, block->line, block->label);
+#endif
 		FS_Write(buf, strlen(buf), logfile);
 #endif
 		size += block->size;
 		numBlocks++;
 	}
-	Com_sprintf(buf, sizeof(buf), "%d Hunk memory\r\n", size);
+#if INTPTR_MAX == INT64_MAX
+	Com_sprintf(buf, sizeof(buf), "%llu Hunk memory\r\n", size);
 	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
+	Com_sprintf(buf, sizeof(buf), "%llu hunk blocks\r\n", numBlocks);
 	FS_Write(buf, strlen(buf), logfile);
+#else
+	Com_sprintf(buf, sizeof(buf), "%u Hunk memory\r\n", size);
+	FS_Write(buf, strlen(buf), logfile);
+	Com_sprintf(buf, sizeof(buf), "%u hunk blocks\r\n", numBlocks);
+	FS_Write(buf, strlen(buf), logfile);
+#endif
 }
 
 /*
@@ -1464,7 +1536,7 @@ Hunk_SmallLog
 void Hunk_SmallLog( void) {
 	hunkblock_t	*block, *block2;
 	char		buf[4096];
-	int size, locsize, numBlocks;
+	size_t size, locsize, numBlocks;
 
 	if (!logfile || !FS_Initialized())
 		return;
@@ -1492,16 +1564,27 @@ void Hunk_SmallLog( void) {
 			block2->printed = qtrue;
 		}
 #ifdef HUNK_DEBUG
-		Com_sprintf(buf, sizeof(buf), "size = %8d: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
+	#if INTPTR_MAX == INT64_MAX
+		Com_sprintf(buf, sizeof(buf), "size = %8llu: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
+	#else
+		Com_sprintf(buf, sizeof(buf), "size = %8u: %s, line: %d (%s)\r\n", locsize, block->file, block->line, block->label);
+	#endif
 		FS_Write(buf, strlen(buf), logfile);
 #endif
 		size += block->size;
 		numBlocks++;
 	}
-	Com_sprintf(buf, sizeof(buf), "%d Hunk memory\r\n", size);
+#if INTPTR_MAX == INT64_MAX
+	Com_sprintf(buf, sizeof(buf), "%llu Hunk memory\r\n", size);
 	FS_Write(buf, strlen(buf), logfile);
-	Com_sprintf(buf, sizeof(buf), "%d hunk blocks\r\n", numBlocks);
+	Com_sprintf(buf, sizeof(buf), "%llu hunk blocks\r\n", numBlocks);
 	FS_Write(buf, strlen(buf), logfile);
+#else
+	Com_sprintf(buf, sizeof(buf), "%u Hunk memory\r\n", size);
+	FS_Write(buf, strlen(buf), logfile);
+	Com_sprintf(buf, sizeof(buf), "%u hunk blocks\r\n", numBlocks);
+	FS_Write(buf, strlen(buf), logfile);
+#endif
 }
 
 /*
@@ -1511,9 +1594,8 @@ Com_InitHunkZoneMemory
 */
 void Com_InitHunkMemory( void ) {
 	cvar_t	*cv;
-	int nMinAlloc;
+	size_t nMinAlloc;
 	char *pMsg = NULL;
-
 	// make sure the file system has allocated and "not" freed any temp blocks
 	// this allows the config and product id files ( journal files too ) to be loaded
 	// by the file system without redunant routines in the file system utilizing different 
@@ -1529,23 +1611,34 @@ void Com_InitHunkMemory( void ) {
 	// if we are not dedicated min allocation is 56, otherwise min is 1
 	if (com_dedicated && com_dedicated->integer) {
 		nMinAlloc = MIN_DEDICATED_COMHUNKMEGS;
-		pMsg = "Minimum com_hunkMegs for a dedicated server is %i, allocating %i megs.\n";
+	#if INTPTR_MAX == INT64_MAX
+		pMsg = "Minimum com_hunkMegs for a dedicated server is %llu, allocating %llu megs.\n";
+	#else
+		pMsg = "Minimum com_hunkMegs for a dedicated server is %u, allocating %u megs.\n";
+	#endif
 	}
 	else {
 		nMinAlloc = MIN_COMHUNKMEGS;
-		pMsg = "Minimum com_hunkMegs is %i, allocating %i megs.\n";
+	#if INTPTR_MAX == INT64_MAX
+		pMsg = "Minimum com_hunkMegs is %llu, allocating %llu megs.\n";
+	#else
+		pMsg = "Minimum com_hunkMegs is %u, allocating %u megs.\n";
+	#endif
 	}
 
 	if ( cv->integer < nMinAlloc ) {
 		s_hunkTotal = 1024 * 1024 * nMinAlloc;
 	    Com_Printf(pMsg, nMinAlloc, s_hunkTotal / (1024 * 1024));
 	} else {
-		s_hunkTotal = cv->integer * 1024 * 1024;
+		s_hunkTotal = (size_t)cv->integer * 1024 * 1024;
 	}
-
 	s_hunkData = calloc( s_hunkTotal + 31, 1 );
 	if ( !s_hunkData ) {
-		Com_Error( ERR_FATAL, "Hunk data failed to allocate %i megs", s_hunkTotal / (1024*1024) );
+	#if INTPTR_MAX == INT64_MAX
+		Com_Error( ERR_FATAL, "Hunk data failed to allocate %llu megs", s_hunkTotal / (1024*1024) );
+	#else
+		Com_Error( ERR_FATAL, "Hunk data failed to allocate %u megs", s_hunkTotal / (1024*1024) );
+	#endif
 	}
 	// cacheline align
 	s_hunkData = (byte *) ( ( (intptr_t)s_hunkData + 31 ) & ~31 );
@@ -1566,8 +1659,8 @@ void Com_InitHunkMemory( void ) {
 Hunk_MemoryRemaining
 ====================
 */
-int	Hunk_MemoryRemaining( void ) {
-	int		low, high;
+size_t	Hunk_MemoryRemaining( void ) {
+	size_t		low, high;
 
 	low = hunk_low.permanent > hunk_low.temp ? hunk_low.permanent : hunk_low.temp;
 	high = hunk_high.permanent > hunk_high.temp ? hunk_high.permanent : hunk_high.temp;
@@ -1678,9 +1771,9 @@ Allocate permanent (until the hunk is cleared) memory
 =================
 */
 #ifdef HUNK_DEBUG
-void *Hunk_AllocDebug( int size, ha_pref preference, char *label, char *file, int line ) {
+void *Hunk_AllocDebug( size_t size, ha_pref preference, char *label, char *file, int line ) {
 #else
-void *Hunk_Alloc( int size, ha_pref preference ) {
+void *Hunk_Alloc( size_t size, ha_pref preference ) {
 #endif
 	void	*buf;
 
@@ -1711,10 +1804,17 @@ void *Hunk_Alloc( int size, ha_pref preference ) {
 #ifdef HUNK_DEBUG
 		Hunk_Log();
 		Hunk_SmallLog();
-
-		Com_Error(ERR_DROP, "Hunk_Alloc failed on %i: %s, line: %d (%s)", size, file, line, label);
+	#if INTPTR_MAX == INT64_MAX
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %llu: %s, line: %d (%s)", size, file, line, label);
+	#else
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %u: %s, line: %d (%s)", size, file, line, label);
+	#endif
 #else
-		Com_Error(ERR_DROP, "Hunk_Alloc failed on %i", size);
+	#if INTPTR_MAX == INT64_MAX
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %llu", size);
+	#else
+		Com_Error(ERR_DROP, "Hunk_Alloc failed on %u", size);
+	#endif
 #endif
 	}
 
@@ -1756,7 +1856,7 @@ Multiple files can be loaded in temporary memory.
 When the files-in-use count reaches zero, all temp memory will be deleted
 =================
 */
-void *Hunk_AllocateTempMemory( int size ) {
+void *Hunk_AllocateTempMemory( size_t size ) {
 	void		*buf;
 	hunkHeader_t	*hdr;
 
@@ -1774,7 +1874,11 @@ void *Hunk_AllocateTempMemory( int size ) {
 	size = PAD(size, sizeof(intptr_t)) + sizeof( hunkHeader_t );
 
 	if ( hunk_temp->temp + hunk_permanent->permanent + size > s_hunkTotal ) {
-		Com_Error( ERR_DROP, "Hunk_AllocateTempMemory: failed on %i", size );
+	#if INTPTR_MAX == INT64_MAX
+		Com_Error( ERR_DROP, "Hunk_AllocateTempMemory: failed on %llu", size );
+	#else
+		Com_Error( ERR_DROP, "Hunk_AllocateTempMemory: failed on %u", size );
+	#endif
 	}
 
 	if ( hunk_temp == &hunk_low ) {

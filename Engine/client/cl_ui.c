@@ -925,7 +925,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return LAN_CompareServers( args[1], args[2], args[3], args[4], args[5] );
 
 	case UI_MEMORY_REMAINING:
-		return Hunk_MemoryRemaining();
+		return Hunk_MemoryRemaining() > UINT_MAX ? UINT_MAX - 1 : Hunk_MemoryRemaining();
 
 	case UI_R_REGISTERFONT:
 		re.RegisterFont( VMA(1), args[2], VMA(3));

@@ -602,7 +602,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CL_SetUserCmdValue( args[1], VMF(2), args[3], args[4], args[5] );
 		return 0;
 	case CG_MEMORY_REMAINING:
-		return Hunk_MemoryRemaining();
+		return Hunk_MemoryRemaining() > UINT_MAX ? UINT_MAX - 1 : Hunk_MemoryRemaining();
   case CG_KEY_ISDOWN:
 		return Key_IsDown( args[1] );
   case CG_KEY_GETCATCHER:

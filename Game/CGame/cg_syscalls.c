@@ -348,7 +348,7 @@ void		testPrintFloat( char *string, float f ) {
 	syscall( CG_TESTPRINTFLOAT, string, PASSFLOAT(f) );
 }
 
-int trap_MemoryRemaining( void ) {
+size_t trap_MemoryRemaining( void ) {
 	return syscall( CG_MEMORY_REMAINING );
 }
 

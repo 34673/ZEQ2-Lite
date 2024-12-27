@@ -310,7 +310,7 @@ int trap_LAN_CompareServers( int source, int sortKey, int sortDir, int s1, int s
 	return syscall( UI_LAN_COMPARESERVERS, source, sortKey, sortDir, s1, s2 );
 }
 
-int trap_MemoryRemaining( void ) {
+size_t trap_MemoryRemaining( void ) {
 	return syscall( UI_MEMORY_REMAINING );
 }
 

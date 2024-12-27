@@ -577,7 +577,8 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 				vmInterpret_t interpret ) {
 	vm_t		*vm;
 	vmHeader_t	*header;
-	int			i, remaining, retval;
+	int			i, retval;
+	size_t remaining;
 	char filename[MAX_OSPATH];
 	void *startSearch = NULL;
 
@@ -680,9 +681,11 @@ vm_t *VM_Create( const char *module, intptr_t (*systemCalls)(intptr_t *),
 	// the stack is implicitly at the end of the image
 	vm->programStack = vm->dataMask + 1;
 	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE;
-
-	Com_Printf("%s loaded in %d bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining());
-
+#if INTPTR_MAX == INT64_MAX
+	Com_Printf("%s loaded in %llu bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining());
+#else
+	Com_Printf("%s loaded in %u bytes on the hunk\n", module, remaining - Hunk_MemoryRemaining());
+#endif
 	return vm;
 }
 

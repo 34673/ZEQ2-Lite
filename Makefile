@@ -233,6 +233,8 @@ ifndef DEBUG_CFLAGS
 DEBUG_CFLAGS=-ggdb -O0
 endif
 
+LANGUAGE_STANDARD =-std=gnu17
+
 #############################################################################
 
 BD=$(BUILD_DIR)/Debug-$(PLATFORM)-$(ARCH)
@@ -342,7 +344,7 @@ ifneq (,$(findstring "$(COMPILE_PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu
 endif
 
 ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu"))
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON -DARCH_STRING=\\\"$(ARCH)\\\"
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 
@@ -630,9 +632,12 @@ ifdef MINGW
     $(error Cannot find a suitable cross compiler for $(PLATFORM))
   endif
 
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON
 
+  ifeq ($(ARCH),x86)
+    BASE_CFLAGS += -Wl,--large-address-aware
+  endif
   # In the absence of wspiapi.h, require Windows XP or later
   ifeq ($(shell test -e $(CMDIR)/wspiapi.h; echo $$?),1)
     BASE_CFLAGS += -DWINVER=0x501
@@ -758,7 +763,7 @@ ifeq ($(PLATFORM),freebsd)
 
   # flags
   BASE_CFLAGS = \
-    -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+    $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
   HAVE_VM_COMPILED = true
@@ -812,7 +817,7 @@ else # ifeq freebsd
 
 ifeq ($(PLATFORM),openbsd)
 
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 
@@ -895,7 +900,7 @@ ifeq ($(PLATFORM),netbsd)
   SHLIBLDFLAGS=-shared $(LDFLAGS)
   THREAD_LIBS=-lpthread
 
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
+  BASE_CFLAGS = $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
 
   ifeq ($(ARCH),x86)
     HAVE_VM_COMPILED=true
@@ -951,7 +956,7 @@ ifeq ($(PLATFORM),sunos)
     endif
   endif
 
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
+  BASE_CFLAGS = $(LANGUAGE_STANDARD) -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
     -pipe -DUSE_ICON
   CLIENT_CFLAGS += $(SDL_CFLAGS)
 

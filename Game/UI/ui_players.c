@@ -1080,7 +1080,7 @@ static qboolean UI_ParseAnimationFile( const char *filename, animation_t *animat
 	char		*token;
 	float		fps;
 	int			skip;
-	char		text[32000];
+	static char		text[32000];
 	fileHandle_t	f;
 
 	memset( animations, 0, sizeof( animation_t ) * MAX_ANIMATIONS );

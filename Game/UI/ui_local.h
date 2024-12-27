@@ -617,7 +617,7 @@ int				trap_LAN_ServerStatus( const char *serverAddress, char *serverStatus, int
 void			trap_LAN_ClearPing( int n );
 void			trap_LAN_GetPing( int n, char *buf, int buflen, int *pingtime );
 void			trap_LAN_GetPingInfo( int n, char *buf, int buflen );
-int				trap_MemoryRemaining( void );
+size_t				trap_MemoryRemaining( void );
 
 //
 // ui_teamorders.c

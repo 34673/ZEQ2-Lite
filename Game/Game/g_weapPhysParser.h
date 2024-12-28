@@ -93,6 +93,15 @@ typedef enum {
 	ERROR_OVERRIDING_WITH_HIGHER_ACCESS
 } g_weapPhysError_t;
 
+typedef enum{
+	CAT_PHYSICS,
+	CAT_COSTS,
+	CAT_DETONATION,
+	CAT_MUZZLE,
+	CAT_TRAJECTORY,
+	CAT_REQUIREMENT,
+	CAT_RESTRICT
+}g_weapPhysCategoryIndex_t;
 
 // --< Storage structures >--
 
@@ -106,6 +115,7 @@ typedef struct {
 
 typedef struct {
 	char	script[MAX_SCRIPT_LENGTH];
+	g_weapPhysCategoryIndex_t category;
 	int		line;
 	char	*pos;
 	char	filename[MAX_QPATH];
@@ -147,17 +157,6 @@ typedef struct {
 	g_weapPhysDefinitionRef_t	definitionRef[MAX_DEFINES];
 	g_weapPhysLinkRef_t			linkRef[MAX_LINKS];
 } g_weapPhysParser_t;
-
-typedef enum {
-	CAT_PHYSICS,
-	CAT_COSTS,
-	CAT_DETONATION,
-	CAT_MUZZLE,
-	CAT_TRAJECTORY,
-	CAT_REQUIREMENT,
-	CAT_RESTRICT
-} g_weapPhysCategoryIndex_t;
-
 
 // Prototype these, so definition of G_weapPhysFields doesn'tAlr complain
 qboolean G_weapPhys_ParseMovement( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
@@ -210,10 +209,17 @@ typedef struct {
 	char		*fieldname;
 	qboolean	(*parseFunc)( g_weapPhysParser_t*, g_weapPhysCategoryIndex_t, int );
 } g_weapPhysField_t;
-
+typedef struct{
+	char* name;
+	g_weapPhysField_t* fields;
+}g_weapPhysCategory_t;
+typedef struct{
+	char* symbol;
+	int tokenType;
+}g_weapPhysSyntax_t;
 // --< Shared variables (located in G_weapPhysScanner.c) >--
 extern g_weapPhysField_t g_weapPhysFields[];
-extern char *g_weapPhysCategories[];
+extern char* g_weapPhysCategories[];
 
 
 // --< Accesible functions >--

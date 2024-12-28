@@ -52,6 +52,29 @@ g_weapPhysField_t g_weapPhysFields[] = {
 	{"FOV",					G_weapPhys_ParseFOV				},	// Trajectory  --NOTE: Use for homing angles!
 	{"",					G_weapPhys_ParseDummy			}	// Terminator dummy function
 };
+g_weapPhysSyntax_t g_weapPhysSyntax[] = {
+	{"=",TOKEN_EQUALS},
+	{"+",TOKEN_PLUS},
+	{"|",TOKEN_COLON},
+	{"{",TOKEN_OPENBLOCK},
+	{"}",TOKEN_CLOSEBLOCK},
+	{"(",TOKEN_OPENVECTOR},
+	{")",TOKEN_CLOSEVECTOR},
+	{"[",TOKEN_OPENRANGE},
+	{"]",TOKEN_CLOSERANGE},
+	{"",-1}
+};
+g_weapPhysSyntax_t g_weapPhysSyntaxKeywords[] = {
+	{"import",TOKEN_IMPORT},
+	{"private",TOKEN_PRIVATE},
+	{"protected",TOKEN_PROTECTED},
+	{"public",TOKEN_PUBLIC},
+	{"weapon",TOKEN_WEAPON},
+	{"true",TOKEN_TRUE},
+	{"false",TOKEN_FALSE},
+	{"null",TOKEN_NULL},
+	{"",-1}
+};
 /*
 ========================
 G_weapPhys_ErrorHandle
@@ -105,253 +128,109 @@ G_weapPhys_NextSym
 Scans the next symbol in the scanner's
 loaded scriptfile.
 */
-qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *token){
-	// Skip non-relevant characters
-	while (1){
-		// Skip leading whitespace
-		while( (*scanner->pos) <= ' '){
-			if(!*scanner->pos){
-				break;
-			}
-			if(*scanner->pos == '\n'){
-				scanner->line++;
-			}
-			scanner->pos++;
+qboolean G_weapPhys_NextSym(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* token){
+	int index = 0;
+	int length = 0;
+	char* start = NULL;
+	//Skippables
+	while(1){
+		while(scanner->pos[0] <= ' '){
+			if(!scanner->pos[0]){break;}
+			if(scanner->pos[0] == '\n'){scanner->line += 1;}
+			scanner->pos += 1;
 		}
-		// Skip double slash comments
 		if(scanner->pos[0] == '/' && scanner->pos[1] == '/'){
-			scanner->pos += 2;
-			while (*scanner->pos && *scanner->pos != '\n'){
-				scanner->pos++;
-			}
+			char* newLine = strchr(scanner->pos,'\n');
+			scanner->pos = newLine ? newLine : scanner->pos + 2;
 		}
-		// Skip /* */ comments
 		else if(scanner->pos[0] == '/' && scanner->pos[1] == '*'){
-			scanner->pos += 2;
-			while ( *scanner->pos && ( scanner->pos[0] != '*' || scanner->pos[1] != '/')){
-				scanner->pos++;
-			}
-			if(*scanner->pos){
-				scanner->pos += 2;
-			}
-		} else{
-			break;
+			char* endComment = strstr(scanner->pos,"*/");
+			scanner->pos = endComment ? endComment + 2 : scanner->pos + 2;
 		}
+		else{break;}
 	}
-	// Handle quoted strings
-	if(*scanner->pos == '\"'){
-		int len;
-		len = 0;
-		scanner->pos++;
-		while (1){
-			if(!(*scanner->pos)){
-				G_weapPhys_Error( ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				return qfalse;
-			}
-			if(*scanner->pos == '\n'){
-				scanner->line++;
-			}
-			if(*scanner->pos == '\"'){
-				scanner->pos++;
-				break;
-			}
-			if((len < (MAX_TOKENSTRING_LENGTH-1)) && ( *scanner->pos >= ' ')){
-				token->stringval[len] = *scanner->pos;
-				len++;
-			} else{
-				G_weapPhys_Error( ERROR_STRING_TOOBIG, scanner, NULL, NULL);
-				return qfalse;
-			}
-			scanner->pos++;
+	//Strings
+	if(scanner->pos[0] == '\"'){
+		char* endString = strchr(++scanner->pos,'\"');
+		length = endString - scanner->pos;
+		if(!endString){
+			return G_weapPhys_Error(ERROR_PREMATURE_EOF,scanner,NULL,NULL);
 		}
-		token->stringval[len] = '\0';
-		token->tokenSym = TOKEN_STRING;
-		return qtrue;
+		if(length >= MAX_TOKENSTRING_LENGTH - 1){
+			return G_weapPhys_Error(ERROR_STRING_TOOBIG,scanner,NULL,NULL);
+		}
+		Q_strncpyz(token->stringval,scanner->pos,length + 1);
+		scanner->pos = endString + 1;
+		return token->tokenSym = TOKEN_STRING;
 	}
-	// Handle numbers (including support for negative ones)
-	if((( *scanner->pos >= '0' ) && ( *scanner->pos <= '9' )) || (*scanner->pos == '-')){
-		int len;
-		qboolean dot;
-		len = 0;
-		dot = qfalse;
-		do {
-			if(len < (MAX_TOKENSTRING_LENGTH-1)){
-				token->stringval[len] = *scanner->pos;
-				len++;
-			} else{
-				G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL);
-				return qfalse;
+	//Numbers
+	if(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+		qboolean dot = qfalse;
+		start = scanner->pos;
+		length = 0;
+		while(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+			if(length >= MAX_TOKENSTRING_LENGTH-1){
+				return G_weapPhys_Error(ERROR_TOKEN_TOOBIG,scanner,NULL,NULL);
 			}
-			scanner->pos++;
-			if(( *scanner->pos == '.' ) && !dot){
-				dot = qtrue;
-				if(len < (MAX_TOKENSTRING_LENGTH-1)){
-					token->stringval[len] = *scanner->pos;
-					len++;
-				} else{
-					G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL);
-					return qfalse;
-				}
-				scanner->pos++;
+			length = ++scanner->pos - start;
+			if(scanner->pos[0] != '.' || dot){continue;}
+			if(length >= MAX_TOKENSTRING_LENGTH-1){
+				return G_weapPhys_Error(ERROR_TOKEN_TOOBIG,scanner,NULL,NULL);
 			}
-		} while ( ( *scanner->pos >= '0' ) && ( *scanner->pos <= '9' ));
-		if(dot){
-			token->tokenSym = TOKEN_FLOAT;
-		} else{
-			token->tokenSym = TOKEN_INTEGER;
+			dot = qtrue;
+			length = ++scanner->pos - start;
 		}
-		token->stringval[len] = '\0';
-		token->floatval = atof( token->stringval);
-		token->intval = ceil( token->floatval);
-		return qtrue;
+		Q_strncpyz(token->stringval,start,length + 1);
+		token->floatval = atof(token->stringval);
+		token->intval = ceil(token->floatval);
+		return token->tokenSym = dot ? TOKEN_FLOAT : TOKEN_INTEGER;
 	}
-	// Handle operators
-	switch ( *scanner->pos){
-	case '=':
-		scanner->pos++;
-		token->stringval[0] = '=';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_EQUALS;
-		return qtrue;
-		break;
-	case '+':
-		scanner->pos++;
-		token->stringval[0] = '+';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_PLUS;
-		return qtrue;
-		break;
-	case '|':
-		scanner->pos++;
-		token->stringval[0] = '|';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_COLON;
-		return qtrue;
-		break;
-	case '{':
-		scanner->pos++;
-		token->stringval[0] = '{';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_OPENBLOCK;
-		return qtrue;
-		break;
-	case '}':
-		scanner->pos++;
-		token->stringval[0] = '}';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_CLOSEBLOCK;
-		return qtrue;
-		break;
-	case '(':
-		scanner->pos++;
-		token->stringval[0] = '(';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_OPENVECTOR;
-		return qtrue;
-		break;
-	case ')':
-		scanner->pos++;
-		token->stringval[0] = ')';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_CLOSEVECTOR;
-		return qtrue;
-		break;
-	case '[':
-		scanner->pos++;
-		token->stringval[0] = '[';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_OPENRANGE;
-		return qtrue;
-		break;
-	case ']':
-		scanner->pos++;
-		token->stringval[0] = ']';
-		token->stringval[1] = '\0';
-		token->tokenSym = TOKEN_CLOSERANGE;
-		return qtrue;
-		break;
-	default:
-		break;
+	//Syntax symbols
+	for(index=0;strcmp(g_weapPhysSyntax[index].symbol,"");++index){
+		g_weapPhysSyntax_t* syntax = &g_weapPhysSyntax[index];
+		if(scanner->pos[0] != syntax->symbol[0]){continue;}
+		scanner->pos += 1;
+		strcpy(token->stringval,syntax->symbol);
+		return token->tokenSym = syntax->tokenType;
 	}
-	// Handle keywords
-	{
-		int len;
-		int i;
-		len = 0;
-		while ( ((*scanner->pos >= 'a') && (*scanner->pos <= 'z')) ||
-				((*scanner->pos >= 'A') && (*scanner->pos <= 'Z'))){// <-- Make sure we only have words
-			if(len < MAX_TOKENSTRING_LENGTH){
-				token->stringval[len] = *scanner->pos;
-				len++;
-			} else{
-				G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL);
-				return qfalse;
-			}
-			scanner->pos++;
+	//Keywords
+	start = scanner->pos;
+	length = 0;
+	while((scanner->pos[0] >= 'a' && scanner->pos[0] <= 'z') || (scanner->pos[0] >= 'A' && scanner->pos[0] <= 'Z')){
+		if(length > MAX_TOKENSTRING_LENGTH-1){
+			return G_weapPhys_Error(ERROR_TOKEN_TOOBIG,scanner,NULL,NULL);
 		}
-		token->stringval[len] = '\0';
-		// Check if the keyword is a category.
-		for ( i = 0; strcmp( g_weapPhysCategories[i], ""); i++){
-			if(!Q_stricmp( g_weapPhysCategories[i], token->stringval)){
-				token->identifierIndex = i;
-				token->tokenSym = TOKEN_CATEGORY;
-				return qtrue;
-			}
-		}
-		// Check if the keyword is a field.
-		for ( i = 0; strcmp( g_weapPhysFields[i].fieldname, ""); i++){
-			// NOTE:
-			// Need to do this comparison case independantly. Q_stricmp is case
-			// independant, so use this instead of standard library function strcmp.
-			if(!Q_stricmp( g_weapPhysFields[i].fieldname, token->stringval)){
-				token->identifierIndex = i;
-				token->tokenSym = TOKEN_FIELD;
-				return qtrue;
-			}
-		}
-		// Check if the keyword is 'import', 'private', 'protected', 'public',
-		// 'weapon', 'true', 'false', or 'null'.
-		if(!Q_stricmp( token->stringval, "import")){
-			token->tokenSym = TOKEN_IMPORT;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "private")){
-			token->tokenSym = TOKEN_PRIVATE;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "protected")){
-			token->tokenSym = TOKEN_PROTECTED;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "public")){
-			token->tokenSym = TOKEN_PUBLIC;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "weapon")){
-			token->tokenSym = TOKEN_WEAPON;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "true")){
-			token->tokenSym = TOKEN_TRUE;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "false")){
-			token->tokenSym = TOKEN_FALSE;
-			return qtrue;
-		}
-		if(!Q_stricmp( token->stringval, "null")){
-			token->tokenSym = TOKEN_NULL;
+		length = ++scanner->pos - start;
+	}
+	Q_strncpyz(token->stringval,start,length + 1);
+	for(index=0;strcmp(g_weapPhysSyntaxKeywords[index].symbol,"");++index){
+		g_weapPhysSyntax_t* syntax = &g_weapPhysSyntaxKeywords[index];
+		if(Q_stricmp(token->stringval,syntax->symbol)){continue;}
+		return token->tokenSym = syntax->tokenType;
+	}
+	// Check if the keyword is a category.
+	for ( index = 0; strcmp( g_weapPhysCategories[index], ""); index++){
+		if(!Q_stricmp( g_weapPhysCategories[index], token->stringval)){
+			token->identifierIndex = index;
+			token->tokenSym = TOKEN_CATEGORY;
 			return qtrue;
 		}
 	}
-	// Handle end of file
-	if(*scanner->pos == '\0'){
-		token->tokenSym = TOKEN_EOF;
-		return qfalse;
+	// Check if the keyword is a field.
+	for ( index = 0; strcmp( g_weapPhysFields[index].fieldname, ""); index++){
+		// NOTE:
+		// Need to do this comparison case independantly. Q_stricmp is case
+		// independant, so use this instead of standard library function strcmp.
+		if(!Q_stricmp( g_weapPhysFields[index].fieldname, token->stringval)){
+			token->identifierIndex = index;
+			token->tokenSym = TOKEN_FIELD;
+			return qtrue;
+		}
 	}
-	// Return an error, because the scanned symbol is invalid
-	G_weapPhys_Error( ERROR_UNKNOWN_SYMBOL, scanner, token->stringval, NULL);
-	return qfalse;
+	if(scanner->pos[0] == '\0'){
+		return token->tokenSym = TOKEN_EOF;
+	}
+	return G_weapPhys_Error(ERROR_UNKNOWN_SYMBOL,scanner,token->stringval,NULL);
 }
 qboolean G_weapPhys_Scan(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* token){
 	if(G_weapPhys_NextSym(scanner,token)){return qtrue;}

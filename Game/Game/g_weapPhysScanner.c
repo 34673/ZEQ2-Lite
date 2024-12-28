@@ -63,7 +63,7 @@ G_weapPhys_ErrorHandle
 ========================
 Sends feedback on script errors to the console.
 */
-void G_weapPhys_ErrorHandle( g_weapPhysError_t errorNr, g_weapPhysScanner_t *scanner, char *string1, char *string2 ) {
+qboolean G_weapPhys_Error( g_weapPhysError_t errorNr, g_weapPhysScanner_t *scanner, char *string1, char *string2 ) {
 	char	*file;
 	int		line;
 
@@ -203,6 +203,7 @@ void G_weapPhys_ErrorHandle( g_weapPhysError_t errorNr, g_weapPhysScanner_t *sca
 		G_Printf( "WEAPONSCRIPT ERROR: Unknown error occured.\n" );
 		break;
 	}
+	return qfalse;
 }
 
 
@@ -267,7 +268,7 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 		while (1) {
 
 			if ( !(*scanner->pos) ) {
-				G_weapPhys_ErrorHandle( ERROR_PREMATURE_EOF, scanner, NULL, NULL );
+				G_weapPhys_Error( ERROR_PREMATURE_EOF, scanner, NULL, NULL );
 				return qfalse;
 			}
 
@@ -284,7 +285,7 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 				token->stringval[len] = *scanner->pos;
 				len++;
 			} else {
-				G_weapPhys_ErrorHandle( ERROR_STRING_TOOBIG, scanner, NULL, NULL );
+				G_weapPhys_Error( ERROR_STRING_TOOBIG, scanner, NULL, NULL );
 				return qfalse;
 			}
 
@@ -311,7 +312,7 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 				token->stringval[len] = *scanner->pos;
 				len++;
 			} else {
-				G_weapPhys_ErrorHandle( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
+				G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
 				return qfalse;
 			}
 
@@ -323,7 +324,7 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 					token->stringval[len] = *scanner->pos;
 					len++;
 				} else {
-					G_weapPhys_ErrorHandle( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
+					G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
 					return qfalse;
 				}
 
@@ -437,7 +438,7 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 				token->stringval[len] = *scanner->pos;
 				len++;
 			} else {
-				G_weapPhys_ErrorHandle( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
+				G_weapPhys_Error( ERROR_TOKEN_TOOBIG, scanner, NULL, NULL );
 				return qfalse;
 			}
 
@@ -519,11 +520,13 @@ qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *to
 	}
 
 	// Return an error, because the scanned symbol is invalid
-	G_weapPhys_ErrorHandle( ERROR_UNKNOWN_SYMBOL, scanner, token->stringval, NULL );
+	G_weapPhys_Error( ERROR_UNKNOWN_SYMBOL, scanner, token->stringval, NULL );
 	return qfalse;
 }
-
-
+qboolean G_weapPhys_Scan(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* token){
+	if(G_weapPhys_NextSym(scanner,token)){return qtrue;}
+	return token->tokenSym == TOKEN_EOF ? G_weapPhys_Error(ERROR_PREMATURE_EOF,scanner,NULL,NULL) : qfalse;
+}
 /*
 =====================
 G_weapPhys_LoadFile
@@ -541,13 +544,13 @@ qboolean G_weapPhys_LoadFile( g_weapPhysScanner_t *scanner, char *filename ) {
 
 	// File must exist, else report error
 	if ( !file ) {
-		G_weapPhys_ErrorHandle( ERROR_FILE_NOTFOUND, scanner, filename, NULL );
+		G_weapPhys_Error( ERROR_FILE_NOTFOUND, scanner, filename, NULL );
 		return qfalse;
 	}
 
 	// File must not be too big, else report error
 	if ( len >= ( sizeof(char) * MAX_SCRIPT_LENGTH - 1 ) ) {
-		G_weapPhys_ErrorHandle( ERROR_FILE_TOOBIG, scanner, NULL, NULL );
+		G_weapPhys_Error( ERROR_FILE_TOOBIG, scanner, NULL, NULL );
 		trap_FS_FCloseFile( file );
 		return qfalse;
 	}

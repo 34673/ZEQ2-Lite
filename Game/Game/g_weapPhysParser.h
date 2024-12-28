@@ -220,9 +220,10 @@ extern char *g_weapPhysCategories[];
 
 // -Lexical Scanner-
 qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *token );
+qboolean G_weapPhys_Scan(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* token);
 qboolean G_weapPhys_LoadFile( g_weapPhysScanner_t *scanner, char *filename );
 // -Token Parser-
-void G_weapPhys_ErrorHandle( g_weapPhysError_t errorNr, g_weapPhysScanner_t *scanner, char *string1, char *string2 );
+qboolean G_weapPhys_Error( g_weapPhysError_t errorNr, g_weapPhysScanner_t *scanner, char *string1, char *string2 );
 // -Attribute Evaluator-
 int G_weapPhys_FindImportRef( g_weapPhysParser_t *parser, char *refname );
 int G_weapPhys_FindDefinitionRef( g_weapPhysParser_t *parser, char *refname );

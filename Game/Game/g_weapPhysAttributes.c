@@ -56,12 +56,12 @@ qboolean G_weapPhys_AddImportRef( g_weapPhysParser_t *parser, char *refname, cha
 		if ( importList[i].active ) {
 			
 			if ( !Q_stricmp( refname, importList[i].refname ) ) {
-				G_weapPhys_ErrorHandle( ERROR_IMPORT_REDEFINED, scanner, refname, NULL );
+				G_weapPhys_Error( ERROR_IMPORT_REDEFINED, scanner, refname, NULL );
 				return qfalse;
 			}
 
 			if ( !Q_stricmp( filename, importList[i].filename ) && !Q_stricmp( defname, importList[i].defname ) ) {
-				G_weapPhys_ErrorHandle( ERROR_IMPORT_DOUBLED, scanner, refname, NULL );
+				G_weapPhys_Error( ERROR_IMPORT_DOUBLED, scanner, refname, NULL );
 				return qfalse;
 			}
 
@@ -74,7 +74,7 @@ qboolean G_weapPhys_AddImportRef( g_weapPhysParser_t *parser, char *refname, cha
 	}
 	
 	if ( i == MAX_IMPORTS ) {
-		G_weapPhys_ErrorHandle( ERROR_IMPORTS_EXCEEDED, scanner, NULL, NULL ); 
+		G_weapPhys_Error( ERROR_IMPORTS_EXCEEDED, scanner, NULL, NULL ); 
 		return qfalse;
 	}
 
@@ -122,7 +122,7 @@ int G_weapPhys_FindDefinitionRef( g_weapPhysParser_t *parser, char *refname ) {
 
 	retval = G_weapPhys_FindImportRef( parser, refname );
 	if ( !retval ) {
-		G_weapPhys_ErrorHandle( ERROR_DEFINITION_UNDEFINED, scanner, refname, NULL );
+		G_weapPhys_Error( ERROR_DEFINITION_UNDEFINED, scanner, refname, NULL );
 		return qfalse;
 	} else {
 		return retval + MAX_DEFINES; // So we can seperate a local ref from an import
@@ -147,7 +147,7 @@ qboolean G_weapPhys_AddDefinitionRef( g_weapPhysParser_t *parser, char* refname,
 	scanner = &parser->scanner;
 
 	if ( G_weapPhys_FindImportRef( parser, refname ) ) {
-		G_weapPhys_ErrorHandle( ERROR_REDEFINE_IMPORT_AS_DEFINITION, scanner, refname, NULL );
+		G_weapPhys_Error( ERROR_REDEFINE_IMPORT_AS_DEFINITION, scanner, refname, NULL );
 		return qfalse;
 	}
 
@@ -156,7 +156,7 @@ qboolean G_weapPhys_AddDefinitionRef( g_weapPhysParser_t *parser, char* refname,
 		if ( defList[i].active ) {
 
 			if ( !Q_stricmp( refname, defList[i].refname ) ) {
-				G_weapPhys_ErrorHandle( ERROR_DEFINITION_REDEFINED, scanner, refname, NULL );
+				G_weapPhys_Error( ERROR_DEFINITION_REDEFINED, scanner, refname, NULL );
 				return qfalse;
 			}
 			
@@ -169,7 +169,7 @@ qboolean G_weapPhys_AddDefinitionRef( g_weapPhysParser_t *parser, char* refname,
 	}
 	
 	if ( i == MAX_DEFINES ) {
-		G_weapPhys_ErrorHandle( ERROR_DEFINITIONS_EXCEEDED, scanner, NULL, NULL ); 
+		G_weapPhys_Error( ERROR_DEFINITIONS_EXCEEDED, scanner, NULL, NULL ); 
 		return qfalse;
 	}
 
@@ -208,12 +208,12 @@ qboolean G_weapPhys_AddLinkRef( g_weapPhysParser_t *parser, int index, char* pri
 	true_index = index - 1; // The script parses 1 as the first weapon, but arrays start at 0.
 
 	if ( ( true_index < 0 ) || ( true_index > MAX_LINKS ) ) {
-		G_weapPhys_ErrorHandle( ERROR_LINK_BOUNDS, scanner, NULL, NULL );
+		G_weapPhys_Error( ERROR_LINK_BOUNDS, scanner, NULL, NULL );
 		return qfalse;
 	}
 	
 	if ( linkList[true_index].active ) {
-		G_weapPhys_ErrorHandle( ERROR_LINK_REDEFINED, scanner, NULL, NULL );
+		G_weapPhys_Error( ERROR_LINK_REDEFINED, scanner, NULL, NULL );
 		return qfalse;
 	}
 

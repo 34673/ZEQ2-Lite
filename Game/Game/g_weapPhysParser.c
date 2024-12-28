@@ -58,14 +58,14 @@ qboolean G_weapPhys_ParseType(g_weapPhysParser_t *parser, g_weapPhysCategoryInde
 	char* Trajectory_strings[] = {"LineOfSight","ProxBomb","Guided","Homing","Arch","Drunken","Cylinder",""};
 	int i;
 	if(token->tokenSym != TOKEN_STRING){
-		G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	switch(category){
 	case CAT_PHYSICS:
 		for(i = 0; Q_stricmp(Physics_strings[i], token->stringval); i++){
 			if(!strcmp(Physics_strings[i], "")){
-				G_weapPhys_ErrorHandle(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
 				return qfalse;
 			}
 		}
@@ -74,7 +74,7 @@ qboolean G_weapPhys_ParseType(g_weapPhysParser_t *parser, g_weapPhysCategoryInde
 	case CAT_DETONATION:
 		for(i = 0; Q_stricmp(Detonation_strings[i], token->stringval); i++){
 			if(!strcmp(Detonation_strings[i], "")){
-				G_weapPhys_ErrorHandle(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
 				return qfalse;
 			}
 		}
@@ -82,23 +82,18 @@ qboolean G_weapPhys_ParseType(g_weapPhysParser_t *parser, g_weapPhysCategoryInde
 	case CAT_TRAJECTORY:
 		for(i = 0; Q_stricmp(Trajectory_strings[i], token->stringval); i++){
 			if(!strcmp(Trajectory_strings[i], "")){
-				G_weapPhys_ErrorHandle(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_UNKNOWN_ENUMTYPE, scanner, token->stringval, NULL);
 				return qfalse;
 			}
 		}
 		g_weapPhysBuffer.homing_type = i;
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 		break;
 	}
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -113,20 +108,15 @@ qboolean G_weapPhys_ParseSpeed(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if((token->tokenSym != TOKEN_INTEGER) && (token->tokenSym != TOKEN_FLOAT)){
-		G_weapPhys_ErrorHandle(ERROR_FLOAT_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_FLOAT_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_speed = token->floatval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -141,38 +131,30 @@ qboolean G_weapPhys_ParseAcceleration(g_weapPhysParser_t *parser, g_weapPhysCate
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if((token->tokenSym != TOKEN_INTEGER) && (token->tokenSym != TOKEN_FLOAT)){
-		G_weapPhys_ErrorHandle(ERROR_FLOAT_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_FLOAT_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_acceleration = token->floatval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseImpede(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_DETONATION){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.damage_impede = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -187,11 +169,11 @@ qboolean G_weapPhys_ParseRadius(g_weapPhysParser_t *parser, g_weapPhysCategoryIn
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if((category != CAT_PHYSICS) && (category != CAT_DETONATION)){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	switch(category){
@@ -205,21 +187,11 @@ qboolean G_weapPhys_ParseRadius(g_weapPhysParser_t *parser, g_weapPhysCategoryIn
 		// shouldn't be able to happen
 		break;
 	}
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	if(token->tokenSym == TOKEN_PLUS){
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		}
 		switch(category){
@@ -233,12 +205,7 @@ qboolean G_weapPhys_ParseRadius(g_weapPhysParser_t *parser, g_weapPhysCategoryIn
 			// shouldn't be able to happen
 			break;
 		}		
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	} else{
 		// No + multiplier means we reset any old multiplier, to keep it from remaining
 		// as a ghost.
@@ -271,7 +238,7 @@ qboolean G_weapPhys_ParseRange(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	int rng_start, rng_end;
 	if((category != CAT_PHYSICS) && (category != CAT_TRAJECTORY)){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}	switch(category){
 	case CAT_PHYSICS:
@@ -280,43 +247,28 @@ qboolean G_weapPhys_ParseRange(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 			rng_start = rng_end = token->intval;
 			break;
 		case TOKEN_OPENRANGE:
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym != TOKEN_INTEGER){
-				G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 				return qfalse;
 			} else{
 				rng_start = token->intval;
 			}
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym != TOKEN_INTEGER){
-				G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 				return qfalse;
 			} else{
 				rng_end = token->intval;
 			}
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym != TOKEN_CLOSERANGE){
-				G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
+				G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
 				return qfalse;
 			}
 			break;
 		default:
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 			break;
 		}
@@ -325,7 +277,7 @@ qboolean G_weapPhys_ParseRange(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 		break;
 	case CAT_TRAJECTORY:
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		}
 		g_weapPhysBuffer.homing_range = token->intval;
@@ -333,12 +285,8 @@ qboolean G_weapPhys_ParseRange(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 	default:
 		// shouldn't be able to happen
 		break;
-	}	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
 	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -353,20 +301,15 @@ qboolean G_weapPhys_ParseDuration(g_weapPhysParser_t *parser,g_weapPhysCategoryI
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_DETONATION){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.damage_radiusDuration = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -381,20 +324,15 @@ qboolean G_weapPhys_ParseLifetime(g_weapPhysParser_t *parser, g_weapPhysCategory
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_lifetime = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -409,20 +347,15 @@ qboolean G_weapPhys_ParseSwat(g_weapPhysParser_t *parser, g_weapPhysCategoryInde
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_swat = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*=========================
@@ -432,20 +365,15 @@ qboolean G_weapPhys_ParseMovement(g_weapPhysParser_t *parser,g_weapPhysCategoryI
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_RESTRICT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.restrict_movement = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF,scanner,NULL,NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -460,20 +388,15 @@ qboolean G_weapPhys_ParseDrain(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_drain = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -488,20 +411,15 @@ qboolean G_weapPhys_ParseBlind(g_weapPhysParser_t *parser, g_weapPhysCategoryInd
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_PHYSICS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.physics_blind = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*====================
@@ -511,234 +429,195 @@ qboolean G_weapPhys_ParseMinPowerLevel(g_weapPhysParser_t *parser,g_weapPhysCate
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_minPowerLevel = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaxPowerLevel(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_maxPowerLevel = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMinHealth(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_minHealth = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaxHealth(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_maxHealth = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMinFatigue(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_minFatigue = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaxFatigue(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_maxFatigue = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMinTier(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_minTier = token->intval+1;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaxTier(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_maxTier = token->intval+1;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMinTotalTier(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_minTotalTier = token->intval+1;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaxTotalTier(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_maxTotalTier = token->intval+1;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseGround(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_ground = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseFlight(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_flight = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseWater(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.require_water = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -753,75 +632,61 @@ qboolean G_weapPhys_ParsePowerLevel(g_weapPhysParser_t *parser, g_weapPhysCatego
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_powerLevel = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseFatigue(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_fatigue = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseHealth(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_health = token->intval;
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 qboolean G_weapPhys_ParseMaximum(g_weapPhysParser_t *parser,g_weapPhysCategoryIndex_t category,int field){
 	g_weapPhysToken_t *token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category!=CAT_COSTS && category!=CAT_REQUIREMENT){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY,scanner,g_weapPhysFields[field].fieldname,g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym!=TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		return qfalse;
 	}
 	if(category==CAT_COSTS){g_weapPhysBuffer.costs_maximum = token->intval;}
 	if(category==CAT_REQUIREMENT){g_weapPhysBuffer.require_maximum = token->intval;}
-	if(!G_weapPhys_NextSym(scanner,token)){
-		if(token->tokenSym == TOKEN_EOF){G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -836,20 +701,15 @@ qboolean G_weapPhys_ParseCooldownTime(g_weapPhysParser_t *parser, g_weapPhysCate
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_cooldownTime = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -864,20 +724,15 @@ qboolean G_weapPhys_ParseChargeTime(g_weapPhysParser_t *parser, g_weapPhysCatego
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_chargeTime = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -892,20 +747,15 @@ qboolean G_weapPhys_ParseChargeReadyPct(g_weapPhysParser_t *parser, g_weapPhysCa
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_COSTS){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.costs_chargeReady = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -920,38 +770,23 @@ qboolean G_weapPhys_ParseDamage(g_weapPhysParser_t *parser, g_weapPhysCategoryIn
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_DETONATION){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.damage_damage = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	if(token->tokenSym == TOKEN_PLUS){
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		}
 		g_weapPhysBuffer.damage_multiplier = token->intval;
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	} else{
 		// No + multiplier means we reset any old multiplier, to keep it from remaining
 		// as a ghost.
@@ -971,20 +806,15 @@ qboolean G_weapPhys_ParseKnockBack(g_weapPhysParser_t *parser, g_weapPhysCategor
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_DETONATION){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.damage_extraKnockback = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -999,20 +829,15 @@ qboolean G_weapPhys_ParseNrShots(g_weapPhysParser_t *parser, g_weapPhysCategoryI
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.firing_nrShots = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1028,7 +853,7 @@ qboolean G_weapPhys_ParseOffsetWidth(g_weapPhysParser_t *parser, g_weapPhysCateg
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	int rng_start, rng_end;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1036,53 +861,33 @@ qboolean G_weapPhys_ParseOffsetWidth(g_weapPhysParser_t *parser, g_weapPhysCateg
 		rng_start = rng_end = token->intval;
 		break;
 	case TOKEN_OPENRANGE:
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_start = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_end = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_CLOSERANGE){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
 			return qfalse;
 		}
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.firing_offsetW_min = rng_start;
 	g_weapPhysBuffer.firing_offsetW_max = rng_end;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1098,7 +903,7 @@ qboolean G_weapPhys_ParseOffsetHeight(g_weapPhysParser_t *parser, g_weapPhysCate
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	int rng_start, rng_end;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1106,53 +911,33 @@ qboolean G_weapPhys_ParseOffsetHeight(g_weapPhysParser_t *parser, g_weapPhysCate
 		rng_start = rng_end = token->intval;
 		break;
 	case TOKEN_OPENRANGE:
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_start = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_end = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_CLOSERANGE){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
 			return qfalse;
 		}
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.firing_offsetH_min = rng_start;
 	g_weapPhysBuffer.firing_offsetH_max = rng_end;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1168,7 +953,7 @@ qboolean G_weapPhys_ParseAngleWidth(g_weapPhysParser_t *parser, g_weapPhysCatego
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	int rng_start, rng_end;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1176,54 +961,34 @@ qboolean G_weapPhys_ParseAngleWidth(g_weapPhysParser_t *parser, g_weapPhysCatego
 		rng_start = rng_end = token->intval;
 		break;
 	case TOKEN_OPENRANGE:
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_start = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_end = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_CLOSERANGE){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
 			return qfalse;
 		}
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 		break;
 	}
 	g_weapPhysBuffer.firing_angleW_min = rng_start;
 	g_weapPhysBuffer.firing_angleW_max = rng_end;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1239,7 +1004,7 @@ qboolean G_weapPhys_ParseAngleHeight(g_weapPhysParser_t *parser, g_weapPhysCateg
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	int rng_start, rng_end;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1247,54 +1012,34 @@ qboolean G_weapPhys_ParseAngleHeight(g_weapPhysParser_t *parser, g_weapPhysCateg
 		rng_start = rng_end = token->intval;
 		break;
 		case TOKEN_OPENRANGE:
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_start = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			rng_end = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_CLOSERANGE){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "]");
 			return qfalse;
 		}
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 		break;
 	}
 	g_weapPhysBuffer.firing_angleH_min = rng_start;
 	g_weapPhysBuffer.firing_angleH_max = rng_end;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1309,7 +1054,7 @@ qboolean G_weapPhys_ParseFlipInWidth(g_weapPhysParser_t *parser, g_weapPhysCateg
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1320,15 +1065,10 @@ qboolean G_weapPhys_ParseFlipInWidth(g_weapPhysParser_t *parser, g_weapPhysCateg
 		g_weapPhysBuffer.firing_offsetWFlip = qfalse;
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_BOOLEAN_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_BOOLEAN_EXPECTED, scanner, token->stringval, NULL);
 		break;
 	}
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1343,7 +1083,7 @@ qboolean G_weapPhys_ParseFlipInHeight(g_weapPhysParser_t *parser, g_weapPhysCate
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	switch(token->tokenSym){
@@ -1354,15 +1094,10 @@ qboolean G_weapPhys_ParseFlipInHeight(g_weapPhysParser_t *parser, g_weapPhysCate
 		g_weapPhysBuffer.firing_offsetHFlip = qfalse;
 		break;
 	default:
-		G_weapPhys_ErrorHandle(ERROR_BOOLEAN_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_BOOLEAN_EXPECTED, scanner, token->stringval, NULL);
 		break;
 	}
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1377,20 +1112,15 @@ qboolean G_weapPhys_ParseFOV(g_weapPhysParser_t *parser, g_weapPhysCategoryIndex
 	g_weapPhysToken_t	*token = &parser->token;
 	g_weapPhysScanner_t	*scanner = &parser->scanner;
 	if(category != CAT_MUZZLE){
-		G_weapPhys_ErrorHandle(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
+		G_weapPhys_Error(ERROR_FIELD_NOT_IN_CATEGORY, scanner, g_weapPhysFields[field].fieldname, g_weapPhysCategories[category]);
 		return qfalse;
 	}
 	if(token->tokenSym != TOKEN_INTEGER){
-		G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	g_weapPhysBuffer.homing_FOV = token->intval;
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym == TOKEN_EOF){
-			G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-		}
-		return qfalse;
-	}
+	if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	return qtrue;
 }
 /*
@@ -1427,48 +1157,28 @@ static qboolean G_weapPhys_ParseImports(g_weapPhysParser_t *parser){
 	// Syntax:
 	//   'import' "<refname>" '=' "<filename>" "<defname>"
 	while(token->tokenSym == TOKEN_IMPORT){
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			Q_strncpyz(refname, token->stringval, sizeof(refname));
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_EQUALS){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
 			return qfalse;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			Q_strncpyz(filename, token->stringval, sizeof(filename));
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		}
 		if(!G_weapPhys_AddImportRef(parser, refname, filename, token->stringval)){
@@ -1500,22 +1210,12 @@ static qboolean G_weapPhys_ParseFields(g_weapPhysParser_t *parser, g_weapPhysCat
 	while(token->tokenSym == TOKEN_FIELD){
 		int field;
 		field = token->identifierIndex;
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_EQUALS){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
 			return qfalse;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(!g_weapPhysFields[field].parseFunc(parser, category, field)){
 			return qfalse;
 		}		
@@ -1538,39 +1238,24 @@ static qboolean G_weapPhys_ParseCategories(g_weapPhysParser_t *parser){
 	//   <categoryname> '{' <HANDLE FIELDS> '}'
 	while(token->tokenSym == TOKEN_CATEGORY){
 		currentCategory = token->identifierIndex;
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_OPENBLOCK){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 			return qfalse;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		// Handles fields
 		if(!G_weapPhys_ParseFields(parser, currentCategory)){
 			return qfalse;
 		}
 		if(token->tokenSym != TOKEN_CLOSEBLOCK){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
 			return qfalse;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	}
 	if(token->tokenSym != TOKEN_CLOSEBLOCK){
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
 		return qfalse;
 	}
 	if(g_verboseParse.integer){
@@ -1615,35 +1300,20 @@ static qboolean G_weapPhys_PreParseDefinitions(g_weapPhysParser_t *parser){
 			accessLvl = LVL_PRIVATE;
 		}
 		hasSuper = qfalse;
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			Q_strncpyz(refname, token->stringval, sizeof(refname));
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		// Are we deriving?
 		if(token->tokenSym == TOKEN_EQUALS){
 			hasSuper = qtrue;
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym != TOKEN_STRING){
-				G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 				return qfalse;
 			}
 			if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
@@ -1651,15 +1321,10 @@ static qboolean G_weapPhys_PreParseDefinitions(g_weapPhysParser_t *parser){
 			} else{
 				Q_strncpyz(supername, token->stringval, sizeof(supername));
 			}
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		}
 		if(token->tokenSym != TOKEN_OPENBLOCK){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "{");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "{");
 			return qfalse;
 		} else{
 			blockCount = 1;
@@ -1670,12 +1335,7 @@ static qboolean G_weapPhys_PreParseDefinitions(g_weapPhysParser_t *parser){
 			}
 		}
 		while(blockCount > 0){
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym == TOKEN_EOF){
-					G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-				}
-				return qfalse;
-			}
+			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym == TOKEN_OPENBLOCK){
 				blockCount++;
 			}
@@ -1712,40 +1372,25 @@ static qboolean G_weapPhys_ParseLinks(g_weapPhysParser_t *parser){
 	// Syntax:
 	//   'weapon' <int> '=' "<refname>" (e | '|' "<refname>")
 	while(token->tokenSym == TOKEN_WEAPON){
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_ErrorHandle(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			weaponNum = token->intval;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_EQUALS){
-			G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
+			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
 			return qfalse;
 		}
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner,  token->stringval, NULL);
+			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner,  token->stringval, NULL);
 			return qfalse;
 		}
 		if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
-			G_weapPhys_ErrorHandle(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
+			G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
 			return qfalse;
 		} else{
 			Q_strncpyz(pri_refname, token->stringval, sizeof(pri_refname));
@@ -1762,11 +1407,11 @@ static qboolean G_weapPhys_ParseLinks(g_weapPhysParser_t *parser){
 				return qfalse;
 			}
 			if(token->tokenSym != TOKEN_STRING){
-				G_weapPhys_ErrorHandle(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
 				return qfalse;
 			}
 			if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
-				G_weapPhys_ErrorHandle(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
+				G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
 				return qfalse;
 			} else{
 				Q_strncpyz(sec_refname, token->stringval, sizeof(sec_refname));
@@ -1859,7 +1504,7 @@ qboolean G_weapPhys_ParseRemoteDefinition(char* filename, char* refname){
 	// NOTE: We don't really need to do this, but it does
 	//       ensure file structure.
 	if(token->tokenSym != TOKEN_EOF){
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	// If we're dealing with a local definition in this file, then that definition
@@ -1868,7 +1513,7 @@ qboolean G_weapPhys_ParseRemoteDefinition(char* filename, char* refname){
 	if(i < MAX_DEFINES){
 		if(parser.definitionRef[i].accessLvl != LVL_PUBLIC){
 			scanner->line = parser.definitionRef[i].scannerLine; // <-- Make sure the error reports the correct line
-			G_weapPhys_ErrorHandle(ERROR_IMPORTING_NON_PUBLIC, scanner, parser.definitionRef[i].refname, NULL);
+			G_weapPhys_Error(ERROR_IMPORTING_NON_PUBLIC, scanner, parser.definitionRef[i].refname, NULL);
 			return qfalse;
 		}
 	}
@@ -1896,7 +1541,7 @@ qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g
 		if(parser->definitionRef[i].hasSuper){
 			
 			if(!G_weapPhys_IncreaseRecursionDepth()){
-				G_weapPhys_ErrorHandle(ERROR_MAX_RECURSION, scanner, NULL, NULL);
+				G_weapPhys_Error(ERROR_MAX_RECURSION, scanner, NULL, NULL);
 				return qfalse;
 			}
 			if(g_verboseParse.integer){
@@ -1910,7 +1555,7 @@ qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g
 		}
 		// Check if the super class was private, instead of public or protected
 		if(lastAccessLvl == LVL_PRIVATE){
-			G_weapPhys_ErrorHandle(ERROR_INHERITING_PRIVATE, scanner, parser->definitionRef[i].supername, NULL);
+			G_weapPhys_Error(ERROR_INHERITING_PRIVATE, scanner, parser->definitionRef[i].supername, NULL);
 			return qfalse;
 		}
 		// Reposition the lexical scanner
@@ -1920,18 +1565,13 @@ qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g
 		if(accessLvl){
 			*accessLvl = parser->definitionRef[i].accessLvl;
 			if(*accessLvl < lastAccessLvl){
-				G_weapPhys_ErrorHandle(ERROR_OVERRIDING_WITH_HIGHER_ACCESS, scanner, parser->definitionRef[i].refname, NULL);
+				G_weapPhys_Error(ERROR_OVERRIDING_WITH_HIGHER_ACCESS, scanner, parser->definitionRef[i].refname, NULL);
 				return qfalse;
 			}
 		}
 		// Skip the '{' opening brace of the definition block, and align to the first real
 		// symbol in the block.
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym == TOKEN_EOF){
-				G_weapPhys_ErrorHandle(ERROR_PREMATURE_EOF, scanner, NULL, NULL);
-			}
-			return qfalse;
-		}
+		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		// Parse the block's categories.
 		if(!G_weapPhys_ParseCategories(parser)){
 			return qfalse;
@@ -1942,7 +1582,7 @@ qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g
 		// an imported and a local definition.
 		i -= MAX_DEFINES;
 		if(!G_weapPhys_IncreaseRecursionDepth()){
-				G_weapPhys_ErrorHandle(ERROR_MAX_RECURSION, scanner, NULL, NULL);
+				G_weapPhys_Error(ERROR_MAX_RECURSION, scanner, NULL, NULL);
 				return qfalse;
 		}
 		if(g_verboseParse.integer){
@@ -2003,7 +1643,7 @@ qboolean G_weapPhys_Parse(char* filename, int clientNum){
 	// Respond with an error if something is trailing the
 	// link definitions.
 	if(token->tokenSym != TOKEN_EOF){
-		G_weapPhys_ErrorHandle(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
+		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
 		return qfalse;
 	}
 	// Work through the link table, parsing and assigning the definitions

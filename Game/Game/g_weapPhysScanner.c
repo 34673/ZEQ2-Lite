@@ -2,8 +2,8 @@
 //
 // g_weapPhysScanner.c -- lexical scanner for ZEQ2's weapon physics script language.
 #include "g_weapPhysParser.h" // <-- cg_local.h included in this
-char *g_weapPhysCategories[] = {
-	"Physics", "Costs", "Detonation", "Muzzle", "Trajectory", "Requirement", "Restrictions", ""
+char* g_weapPhysCategories[] = {
+	"Physics","Costs","Detonation","Muzzle","Trajectory","Requirement","Restrictions",""
 };
 g_weapPhysField_t g_weapPhysFields[] = {
 	{"type",				G_weapPhys_ParseType			},	// Physics, Detonation, Trajectory
@@ -59,112 +59,43 @@ G_weapPhys_ErrorHandle
 Sends feedback on script errors to the console.
 */
 qboolean G_weapPhys_Error( g_weapPhysError_t errorNr, g_weapPhysScanner_t *scanner, char *string1, char *string2){
-	char	*file;
-	int		line;
-	file = scanner->filename;
-	line = scanner->line + 1; // <-- Internally we start from 0, for the user we start from 1
-	switch ( errorNr){
-	case ERROR_FILE_NOTFOUND:
-		G_Printf( "%s: File not found.\n", file);
-		break;
-	case ERROR_FILE_TOOBIG:
-		G_Printf( "%s: File exceeds maximum script length.\n", file);
-		break;
-	case ERROR_PREMATURE_EOF:
-		G_Printf( "%s(%i): Premature end of file.\n", file, line);
-		break;
-	case ERROR_STRING_TOOBIG:
-		G_Printf( "%s(%i): String exceeds limit of %i characters.\n", file, line, MAX_TOKENSTRING_LENGTH);
-		break;
-	case ERROR_TOKEN_TOOBIG:
-		G_Printf( "%s(%i): Symbol exceeds limit of %i characters.\n", file, line, MAX_TOKENSTRING_LENGTH);
-		break;
-	case ERROR_UNKNOWN_SYMBOL:
-		G_Printf( "%s(%i): Unknown symbol '%s' encountered.\n", file, line, string1);
-		break;
-	case ERROR_UNEXPECTED_SYMBOL:
-		if(!string2){
-			G_Printf( "%s(%i): Unexpected symbol '%s' found.\n", file, line, string1);
-		} else{
-			G_Printf( "%s(%i): Unexpected symbol '%s' found, expected '%s'.\n", file, line, string1, string2);
-		}
-		break;
-	case ERROR_STRING_EXPECTED:
-		G_Printf( "%s(%i): String expected. '%s' is not a string or is missing quotes.\n", file, line, string1);
-		break;
-	case ERROR_INTEGER_EXPECTED:
-		G_Printf( "%s(%i): Integer expected, but '%s' found.\n", file, line, string1);
-		break;
-	case ERROR_FLOAT_EXPECTED:
-		G_Printf( "%s(%i): Float or integer expected, but '%s' found.\n", file, line, string1);
-		break;
-	case ERROR_BOOLEAN_EXPECTED:
-		G_Printf( "%s(%i): Boolean expected, but '%s' found.\n", file, line, string1);
-		break;
-	case ERROR_IMPORTS_EXCEEDED:
-		G_Printf( "%s(%i): Trying to exceed maximum number of %i imports.\n", file, line, MAX_IMPORTS);
-		break;
-	case ERROR_IMPORT_REDEFINED:
-		G_Printf( "%s(%i): Trying to redefine previously defined import definition '%s'.\n", file, line, string1);
-		break;
-	case ERROR_IMPORT_DOUBLED:
-		G_Printf( "%s(%i): Trying to duplicate a previously imported definition under the new name '%s'.\n", file, line, string1);
-		break;
-	case ERROR_IMPORT_UNDEFINED:
-		G_Printf( "%s(%i): Undefined import '%s' being referenced.\n", file, line, string1);
-		break;
-	case ERROR_DEFINITIONS_EXCEEDED:
-		G_Printf( "%s(%i): Trying to exceed maximum number of %i weapon definitions.\n", file, line, MAX_DEFINES);
-		break;
-	case ERROR_DEFINITION_REDEFINED:
-		G_Printf( "%s(%i): Trying to redefine previously defined weapon definition '%s'.\n", file, line, string1);
-		break;
-	case ERROR_DEFINITION_UNDEFINED:
-		G_Printf( "%s(%i): Undefined weapon definition '%s' being referenced.\n", file, line, string1);
-		break;
-	case ERROR_REDEFINE_IMPORT_AS_DEFINITION:
-		G_Printf( "%s(%i): Trying to redefine previously defined import definition '%s' as a local weapon definition.\n", file, line, string1);
-		break;
-	case ERROR_LINK_BOUNDS:
-		G_Printf( "%s(%i): Weapon link out of bounds. Must be in range [1..6].\n", file, line);
-		break;
-	case ERROR_LINK_REDEFINED:
-		G_Printf( "%s(%i): Trying to redefine a previously defined weapon link number.\n", file, line);
-		break;
-	case ERROR_FIELD_NOT_IN_CATEGORY:
-		G_Printf( "%s(%i): Field '%s' is not supported by category '%s'.\n", file, line, string1, string2);
-		break;
-	case ERROR_INVERTED_RANGE:
-		G_Printf( "%s(%i): This range doesn't allow end value '%s' to be larger than start value '%s'.\n", file, line, string1, string2);
-		break;
-	case ERROR_OVER_MAXBOUND:
-		G_Printf( "%s(%i): Value '%s' is larger than maximum bound of %s.\n", file, line, string1, string2);
-		break;
-	case ERROR_UNDER_MINBOUND:
-		G_Printf( "%s(%i): Value '%s' is smaller than minimum bound of %s.\n", file, line, string1, string2);
-		break;
-	case ERROR_OVER_MAXVECTORELEMS:
-		G_Printf( "%s(%i): Element '%s' exceeds maximum storage capacity of %s elements in vector.\n", file, line, string1, string2);
-		break;
-	case ERROR_UNKNOWN_ENUMTYPE:
-		G_Printf( "%s(%i): Identifier '%s' is not a valid option in this enumeration type.", file, line, string1);
-		break;
-	case ERROR_MAX_RECURSION:
-		G_Printf( "%s: Compiler is trying to read beyond maximum recursion depth %i for overriding.\n", file, MAX_RECURSION_DEPTH);
-		break;
-	case ERROR_INHERITING_PRIVATE:
-		G_Printf( "%s: Private definition '%s' can not be inherited.\n", file, string1);
-		break;
-	case ERROR_IMPORTING_NON_PUBLIC:
-		G_Printf( "%s: Non-public definition '%s' can not be imported for local use.\n", file, string1);
-		break;
-	case ERROR_OVERRIDING_WITH_HIGHER_ACCESS:
-		G_Printf( "%s: Definition '%s' may not be declared with higher access than its superclass.\n", file, string1);
-		break;
-	default:
-		G_Printf( "WEAPONSCRIPT ERROR: Unknown error occured.\n");
-		break;
+	char* file = scanner->filename;
+	int line = scanner->line + 1; // <-- Internally we start from 0, for the user we start from 1
+	if(errorNr == ERROR_FILE_NOTFOUND){G_Printf("^1%s: File not found.\n", file);}
+	else if(errorNr == ERROR_FILE_TOOBIG){G_Printf("^1%s: File exceeds maximum script length.\n", file);}
+	else if(errorNr == ERROR_PREMATURE_EOF){G_Printf("^1%s(%i): Premature end of file.\n", file, line);}
+	else if(errorNr == ERROR_STRING_TOOBIG){G_Printf("^1%s(%i): String exceeds limit of %i characters.\n", file, line, MAX_TOKENSTRING_LENGTH);}
+	else if(errorNr == ERROR_TOKEN_TOOBIG){G_Printf("^1%s(%i): Symbol exceeds limit of %i characters.\n", file, line, MAX_TOKENSTRING_LENGTH);}
+	else if(errorNr == ERROR_UNKNOWN_SYMBOL){G_Printf("^1%s(%i): Unknown symbol '%s' encountered.\n", file, line, string1);}
+	else if(errorNr == ERROR_UNEXPECTED_SYMBOL){
+		if(!string2){G_Printf("^1%s(%i): Unexpected symbol '%s' found.\n", file, line, string1);}
+		else{G_Printf("^1%s(%i): Unexpected symbol '%s' found, expected '%s'.\n", file, line, string1, string2);}
 	}
+	else if(errorNr == ERROR_STRING_EXPECTED){G_Printf("^1%s(%i): String expected. '%s' is not a string or is missing quotes.\n", file, line, string1);}
+	else if(errorNr == ERROR_INTEGER_EXPECTED){G_Printf("^1%s(%i): Integer expected, but '%s' found.\n", file, line, string1);}
+	else if(errorNr == ERROR_FLOAT_EXPECTED){G_Printf("^1%s(%i): Float or integer expected, but '%s' found.\n", file, line, string1);}
+	else if(errorNr == ERROR_BOOLEAN_EXPECTED){G_Printf("^1%s(%i): Boolean expected, but '%s' found.\n", file, line, string1);}
+	else if(errorNr == ERROR_IMPORTS_EXCEEDED){G_Printf("^1%s(%i): Trying to exceed maximum number of %i imports.\n", file, line, MAX_IMPORTS);}
+	else if(errorNr == ERROR_IMPORT_REDEFINED){G_Printf("^1%s(%i): Trying to redefine previously defined import definition '%s'.\n", file, line, string1);}
+	else if(errorNr == ERROR_IMPORT_DOUBLED){G_Printf("^1%s(%i): Trying to duplicate a previously imported definition under the new name '%s'.\n", file, line, string1);}
+	else if(errorNr == ERROR_IMPORT_UNDEFINED){G_Printf("^1%s(%i): Undefined import '%s' being referenced.\n", file, line, string1);}
+	else if(errorNr == ERROR_DEFINITIONS_EXCEEDED){G_Printf("^1%s(%i): Trying to exceed maximum number of %i weapon definitions.\n", file, line, MAX_DEFINES);}
+	else if(errorNr == ERROR_DEFINITION_REDEFINED){G_Printf("^1%s(%i): Trying to redefine previously defined weapon definition '%s'.\n", file, line, string1);}
+	else if(errorNr == ERROR_DEFINITION_UNDEFINED){G_Printf("^1%s(%i): Undefined weapon definition '%s' being referenced.\n", file, line, string1);}
+	else if(errorNr == ERROR_REDEFINE_IMPORT_AS_DEFINITION){G_Printf("^1%s(%i): Trying to redefine previously defined import definition '%s' as a local weapon definition.\n", file, line, string1);}
+	else if(errorNr == ERROR_LINK_BOUNDS){G_Printf("^1%s(%i): Weapon link out of bounds. Must be in range [1..6].\n", file, line);}
+	else if(errorNr == ERROR_LINK_REDEFINED){G_Printf("^1%s(%i): Trying to redefine a previously defined weapon link number.\n", file, line);}
+	else if(errorNr == ERROR_FIELD_NOT_IN_CATEGORY){G_Printf("^1%s(%i): Field '%s' is not supported by category '%s'.\n", file, line, string1, string2);}
+	else if(errorNr == ERROR_INVERTED_RANGE){G_Printf("^1%s(%i): This range doesn't allow end value '%s' to be larger than start value '%s'.\n", file, line, string1, string2);}
+	else if(errorNr == ERROR_OVER_MAXBOUND){G_Printf("^1%s(%i): Value '%s' is larger than maximum bound of %s.\n", file, line, string1, string2);}
+	else if(errorNr == ERROR_UNDER_MINBOUND){G_Printf("^1%s(%i): Value '%s' is smaller than minimum bound of %s.\n", file, line, string1, string2);}
+	else if(errorNr == ERROR_OVER_MAXVECTORELEMS){G_Printf("^1%s(%i): Element '%s' exceeds maximum storage capacity of %s elements in vector.\n", file, line, string1, string2);}
+	else if(errorNr == ERROR_UNKNOWN_ENUMTYPE){G_Printf("^1%s(%i): Identifier '%s' is not a valid option in this enumeration type.", file, line, string1);}
+	else if(errorNr == ERROR_MAX_RECURSION){G_Printf("^1%s: Compiler is trying to read beyond maximum recursion depth %i for overriding.\n", file, MAX_RECURSION_DEPTH);}
+	else if(errorNr == ERROR_INHERITING_PRIVATE){G_Printf("^1%s: Private definition '%s' can not be inherited.\n", file, string1);}
+	else if(errorNr == ERROR_IMPORTING_NON_PUBLIC){G_Printf("^1%s: Non-public definition '%s' can not be imported for local use.\n", file, string1);}
+	else if(errorNr == ERROR_OVERRIDING_WITH_HIGHER_ACCESS){G_Printf("^1%s: Definition '%s' may not be declared with higher access than its superclass.\n", file, string1);}
+	else{G_Printf("^1WEAPONSCRIPT ERROR: Unknown error occured.\n");}
 	return qfalse;
 }
 /*
@@ -175,7 +106,6 @@ Scans the next symbol in the scanner's
 loaded scriptfile.
 */
 qboolean G_weapPhys_NextSym( g_weapPhysScanner_t *scanner, g_weapPhysToken_t *token){
-	
 	// Skip non-relevant characters
 	while (1){
 		// Skip leading whitespace
@@ -460,7 +390,7 @@ qboolean G_weapPhys_LoadFile( g_weapPhysScanner_t *scanner, char *filename){
 	scanner->pos = scanner->script;
 	// Handle some verbose output
 	if(g_verboseParse.integer){
-		G_Printf( "Scriptfile '%s' has been read into memory.\n", filename);
+		G_Printf("Scriptfile '%s' has been read into memory.\n", filename);
 	}
 	return qtrue;
 }

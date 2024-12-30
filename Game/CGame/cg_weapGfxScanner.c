@@ -186,11 +186,11 @@ qboolean CG_weapGfx_NextSym(cg_weapGfxScanner_t* scanner,cg_weapGfxToken_t* toke
 		return token->tokenSym = TOKEN_STRING;
 	}
 	//Numbers
-	if(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+	if((scanner->pos[0] >= '0' && scanner->pos[0] <= '9') || scanner->pos[0] == '-'){
 		qboolean dot = qfalse;
 		start = scanner->pos;
 		length = 0;
-		while(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+		do{
 			if(length >= MAX_TOKENSTRING_LENGTH-1){
 				return CG_weapGfx_Error(ERROR_TOKEN_TOOBIG,scanner,NULL,NULL);
 			}
@@ -202,6 +202,7 @@ qboolean CG_weapGfx_NextSym(cg_weapGfxScanner_t* scanner,cg_weapGfxToken_t* toke
 			dot = qtrue;
 			length = ++scanner->pos - start;
 		}
+		while(scanner->pos[0] >= '0' && scanner->pos[0] <= '9');
 		Q_strncpyz(token->stringval,start,length + 1);
 		token->floatval = atof(token->stringval);
 		token->intval = ceil(token->floatval);

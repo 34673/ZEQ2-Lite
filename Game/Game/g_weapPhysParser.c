@@ -116,76 +116,56 @@ qboolean G_weapPhys_ParseType(g_weapPhysParser_t *parser,void* field,int listLim
 	*(int*)field = index;
 	return qtrue;
 }
-// ==================================================================================
-//
-//    F  I  X  E  D     F  U  N  C  T  I  O  N  S  - Do not change the below.
-//
-// ==================================================================================
-/*
-=========================
-G_weapPhys_ParseImports
-=========================
-Parses import definitions and stores them
-in a reference list.
-*/
-static qboolean G_weapPhys_ParseImports(g_weapPhysParser_t *parser){
-	g_weapPhysToken_t		*token;
-	g_weapPhysScanner_t		*scanner;
-	char					refname[MAX_TOKENSTRING_LENGTH];
-	char					filename[MAX_TOKENSTRING_LENGTH];
-	scanner = &parser->scanner;
-	token = &parser->token;
-	// Syntax:
-	//   'import' "<refname>" '=' "<filename>" "<defname>"
+//============================================
+// FIXED FUNCTIONS - Do not change the below.
+//============================================
+//Parses import definitions and stores them in a reference list.
+//Syntax: 'import' "<refname>" '=' "<filename>" "<defname>"
+static qboolean G_weapPhys_ParseImports(g_weapPhysParser_t* parser){
+	g_weapPhysToken_t* token = &parser->token;
+	g_weapPhysScanner_t* scanner = &parser->scanner;
+	char refname[MAX_TOKENSTRING_LENGTH];
+	char filename[MAX_TOKENSTRING_LENGTH];
 	while(token->tokenSym == TOKEN_IMPORT){
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
-			return qfalse;
-		} else{
-			Q_strncpyz(refname, token->stringval, sizeof(refname));
+			return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
+		}
+		else{
+			Q_strncpyz(refname,token->stringval,sizeof(refname));
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_EQUALS){
-			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
-			return qfalse;
+			return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,"=");
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
-			return qfalse;
-		} else{
-			Q_strncpyz(filename, token->stringval, sizeof(filename));
+			return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
+		}
+		else{
+			Q_strncpyz(filename,token->stringval,sizeof(filename));
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
-			return qfalse;
+			return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
 		}
-		if(!G_weapPhys_AddImportRef(parser, refname, filename, token->stringval)){
+		if(!G_weapPhys_AddImportRef(parser,refname,filename,token->stringval)){
 			return qfalse;
 		}
 		// NOTE: Do it like this to prevent errors if a file happens to only contain
 		//       import lines. While it is actually useless to have such a file, it
 		//       still is syntacticly correct.
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym != TOKEN_EOF){
-				return qfalse;
-			}
+		if(!G_weapPhys_NextSym(scanner, token) && token->tokenSym != TOKEN_EOF){
+			return qfalse;
 		}
 	}
 	return qtrue;
 }
-/*
-========================
-G_weapPhys_ParseFields
-========================
-Parses the fields of one category
-within a weapon definition.
-*/
-static qboolean G_weapPhys_ParseFields(g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category){
+//Parses the fields of one category within a weapon definition.
+static qboolean G_weapPhys_ParseFields(g_weapPhysParser_t *parser){
 	g_weapPhysScanner_t* scanner = &parser->scanner;
 	g_weapPhysToken_t* token = &parser->token;
+	g_userWeaponParseBuffer_t* buffer = &g_weapPhysBuffer;
 	while(token->tokenSym == TOKEN_FIELD){
 		int fieldIndex = token->identifierIndex;
 		g_weapPhysCategory_t* category = &g_weapPhysCategories[scanner->category];
@@ -199,345 +179,224 @@ static qboolean G_weapPhys_ParseFields(g_weapPhysParser_t *parser, g_weapPhysCat
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(!field->Parse(parser,field->field,field->listIterations,field->types)){return qfalse;}
+		if(field->field == &buffer->require_minTier){buffer->require_minTier += 1;}
+		if(field->field == &buffer->require_maxTier){buffer->require_maxTier += 1;}
+		if(field->field == &buffer->require_minTotalTier){buffer->require_minTotalTier += 1;}
+		if(field->field == &buffer->require_maxTotalTier){buffer->require_maxTotalTier += 1;}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}	
 	}
 	return qtrue;
 }
-/*
-============================
-G_weapPhys_ParseCategories
-============================
-Parses the categories of a weapon
-definition.
-*/
-static qboolean G_weapPhys_ParseCategories(g_weapPhysParser_t *parser){
-	g_weapPhysToken_t		*token;
-	g_weapPhysScanner_t		*scanner;	int		currentCategory;
-	scanner = &parser->scanner;
-	token = &parser->token;
-	// Syntax:
-	//   <categoryname> '{' <HANDLE FIELDS> '}'
+//Parses the categories of a weapon definition.
+// Syntax: <categoryname> '{' <HANDLE FIELDS> '}'
+static qboolean G_weapPhys_ParseCategories(g_weapPhysParser_t* parser){
+	g_weapPhysScanner_t* scanner = &parser->scanner;
+	g_weapPhysToken_t* token = &parser->token;
 	while(token->tokenSym == TOKEN_CATEGORY){
-		currentCategory = token->identifierIndex;
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_OPENBLOCK){
-			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
-			return qfalse;
+			return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,NULL);
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
-		// Handles fields
-		if(!G_weapPhys_ParseFields(parser, currentCategory)){
-			return qfalse;
-		}
+		if(!G_weapPhys_ParseFields(parser)){return qfalse;}
 		if(token->tokenSym != TOKEN_CLOSEBLOCK){
-			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
-			return qfalse;
+			return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,"}");
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 	}
 	if(token->tokenSym != TOKEN_CLOSEBLOCK){
-		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "}");
-		return qfalse;
+		return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,"}");
 	}
 	if(g_verboseParse.integer){
 		G_Printf("Processed categories succesfully.\n");
 	}
 	return qtrue;
 }
-/*
-================================
-G_weapPhys_PreParseDefinitions
-================================
-Pre-parses the definitions of the weapons in the
-scriptfile. The contents of a definition block
-are checked for validity by the lexical scanner
-and parser to make sure syntax is correct.
-The parsed values however, are not yet stored,
-because we don't have a link to an actual
-weapon yet. Entry points into the definitions
-are cached into a table for a quick jump once
-we find out the links in G_weapPhys_ParseLinks.
-*/
-static qboolean G_weapPhys_PreParseDefinitions(g_weapPhysParser_t *parser){
-	g_weapPhysToken_t		*token;
-	g_weapPhysScanner_t		*scanner;
-	int						defline;
-	char					*defpos;
-	g_weapPhysAccessLvls_t	accessLvl;
-	qboolean				hasSuper;
-	char					supername[MAX_TOKENSTRING_LENGTH];
-	char					refname[MAX_TOKENSTRING_LENGTH];
-	int						blockCount;
-	scanner = &parser->scanner;
-	token = &parser->token;
-	// Syntax:
-	//   ('public' | 'protected' | 'private') "<refname>" (e | '=' ("<importref>" | "<definitionref>")) '{' <HANDLE CATEGORIES> '}'
-	while((token->tokenSym == TOKEN_PRIVATE) || (token->tokenSym == TOKEN_PUBLIC) || (token->tokenSym == TOKEN_PROTECTED)){
-		if(token->tokenSym == TOKEN_PUBLIC){
-			accessLvl = LVL_PUBLIC;
-		} else if(token->tokenSym == TOKEN_PROTECTED){
-			accessLvl = LVL_PROTECTED;
-		} else{
-			accessLvl = LVL_PRIVATE;
-		}
+//The contents of a definition block are checked for validity by the lexical scanner
+//and parser to make sure syntax is correct.
+//The parsed values however, are not yet stored, because we don't have a link to an actual weapon yet.
+//Entry points into the definitions are cached into a table for a quick jump once
+//we find out the links in G_weapPhys_ParseLinks.
+// Syntax: ('public' | 'protected' | 'private') "<refname>" (e | '=' ("<importref>" | "<definitionref>")) '{' <HANDLE CATEGORIES> '}'
+static qboolean G_weapPhys_PreParseDefinitions(g_weapPhysParser_t* parser){
+	g_weapPhysScanner_t* scanner = &parser->scanner;
+	g_weapPhysToken_t* token = &parser->token;
+	int defline;
+	char* defpos;
+	qboolean hasSuper;
+	char supername[MAX_TOKENSTRING_LENGTH];
+	char refname[MAX_TOKENSTRING_LENGTH];
+	int blockCount;
+	while(token->tokenSym == TOKEN_PRIVATE || token->tokenSym == TOKEN_PUBLIC || token->tokenSym == TOKEN_PROTECTED){
+		g_weapPhysAccessLvls_t accessLvl = LVL_PRIVATE;
+		if(token->tokenSym == TOKEN_PUBLIC){accessLvl = LVL_PUBLIC;}
+		if(token->tokenSym == TOKEN_PROTECTED){accessLvl = LVL_PROTECTED;}
 		hasSuper = qfalse;
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
-			return qfalse;
-		} else{
-			Q_strncpyz(refname, token->stringval, sizeof(refname));
+			return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
 		}
+		Q_strncpyz(refname,token->stringval,sizeof(refname));
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		// Are we deriving?
 		if(token->tokenSym == TOKEN_EQUALS){
 			hasSuper = qtrue;
 			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 			if(token->tokenSym != TOKEN_STRING){
-				G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
+				return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
+			}
+			if(!G_weapPhys_FindDefinitionRef(parser,token->stringval)){
 				return qfalse;
 			}
-			if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
-				return qfalse;
-			} else{
-				Q_strncpyz(supername, token->stringval, sizeof(supername));
-			}
+			Q_strncpyz(supername,token->stringval,sizeof(supername));
 			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		}
 		if(token->tokenSym != TOKEN_OPENBLOCK){
-			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "{");
+			return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,"{");
+		}
+		blockCount = 1;
+		defpos = scanner->pos;
+		defline = scanner->line;
+		if(!G_weapPhys_AddDefinitionRef(parser,refname,defpos,defline,accessLvl,hasSuper,supername)){
 			return qfalse;
-		} else{
-			blockCount = 1;
-			defline = scanner->line;
-			defpos = scanner->pos;
-			if(!G_weapPhys_AddDefinitionRef(parser, refname, defpos, defline, accessLvl, hasSuper, supername)){
-				return qfalse;
-			}
 		}
 		while(blockCount > 0){
 			if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
-			if(token->tokenSym == TOKEN_OPENBLOCK){
-				blockCount++;
-			}
+			if(token->tokenSym == TOKEN_OPENBLOCK){blockCount += 1;}
 			if(token->tokenSym == TOKEN_CLOSEBLOCK){
-				blockCount--;
+				scanner->category = -1;
+				blockCount -= 1;
 			}
 		}
 		// NOTE: This makes sure we don't get an error if a file contains no weapon link
 		//       lines, but instead terminates after the definitions. This is what one
 		//       would expect of 'library' files.
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym != TOKEN_EOF){
-				return qfalse;
-			}
+		if(!G_weapPhys_NextSym(scanner,token) && token->tokenSym != TOKEN_EOF){
+			return qfalse;
 		}
 	}
 	return qtrue;
 }
-/*
-=======================
-G_weapPhys_ParseLinks
-=======================
-Parses weapon links to definitions and continues to
-parse the actual weapon definitions.
-*/
-static qboolean G_weapPhys_ParseLinks(g_weapPhysParser_t *parser){
-	g_weapPhysToken_t		*token;
-	g_weapPhysScanner_t		*scanner;
-	int						weaponNum;
-	char					pri_refname[MAX_TOKENSTRING_LENGTH];
-	char					sec_refname[MAX_TOKENSTRING_LENGTH];
-	scanner = &parser->scanner;
-	token = &parser->token;
-	// Syntax:
-	//   'weapon' <int> '=' "<refname>" (e | '|' "<refname>")
+//Parses weapon links to definitions and continues to parse the actual weapon definitions.
+// Syntax: 'weapon' <int> '=' "<refname>" (e | '|' "<refname>")
+static qboolean G_weapPhys_ParseLinks(g_weapPhysParser_t* parser){
+	g_weapPhysScanner_t* scanner = &parser->scanner;
+	g_weapPhysToken_t* token = &parser->token;
+	int weaponNum;
+	char pri_refname[MAX_TOKENSTRING_LENGTH];
+	char sec_refname[MAX_TOKENSTRING_LENGTH];
 	while(token->tokenSym == TOKEN_WEAPON){
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_INTEGER){
-			G_weapPhys_Error(ERROR_INTEGER_EXPECTED, scanner, token->stringval, NULL);
-			return qfalse;
-		} else{
-			weaponNum = token->intval;
+			return G_weapPhys_Error(ERROR_INTEGER_EXPECTED,scanner,token->stringval,NULL);
 		}
+		weaponNum = token->intval;
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_EQUALS){
-			G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, "=");
-			return qfalse;
+			return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,"=");
 		}
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
 		if(token->tokenSym != TOKEN_STRING){
-			G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner,  token->stringval, NULL);
-			return qfalse;
+			return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
 		}
 		if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
-			G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
-			return qfalse;
-		} else{
-			Q_strncpyz(pri_refname, token->stringval, sizeof(pri_refname));
+			return G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED,scanner,token->stringval,NULL);
 		}
+		Q_strncpyz(pri_refname,token->stringval,sizeof(pri_refname));
 		// NOTE: This makes sure we don't get an error if the last link in the file contains
 		//       no secondary definition, but instead terminates after the primary one.
-		if(!G_weapPhys_NextSym(scanner, token)){
-			if(token->tokenSym != TOKEN_EOF){
-				return qfalse;
-			}
+		if(!G_weapPhys_NextSym(scanner,token) && token->tokenSym != TOKEN_EOF){
+			return qfalse;
 		}
 		if(token->tokenSym == TOKEN_COLON){
-			if(!G_weapPhys_NextSym(scanner, token)){
+			if(!G_weapPhys_NextSym(scanner,token)){
 				return qfalse;
 			}
 			if(token->tokenSym != TOKEN_STRING){
-				G_weapPhys_Error(ERROR_STRING_EXPECTED, scanner, token->stringval, NULL);
-				return qfalse;
+				return G_weapPhys_Error(ERROR_STRING_EXPECTED,scanner,token->stringval,NULL);
 			}
-			if(!G_weapPhys_FindDefinitionRef(parser, token->stringval)){
-				G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED, scanner, token->stringval, NULL);
-				return qfalse;
-			} else{
-				Q_strncpyz(sec_refname, token->stringval, sizeof(sec_refname));
+			if(!G_weapPhys_FindDefinitionRef(parser,token->stringval)){
+				return G_weapPhys_Error(ERROR_DEFINITION_UNDEFINED,scanner,token->stringval,NULL);
 			}
+			Q_strncpyz(sec_refname,token->stringval,sizeof(sec_refname));
 			// NOTE: This makes sure we don't get an error if this is the last link in the file.
-			if(!G_weapPhys_NextSym(scanner, token)){
-				if(token->tokenSym != TOKEN_EOF){
-					return qfalse;
-				}
+			if(!G_weapPhys_NextSym(scanner,token) && token->tokenSym != TOKEN_EOF){
+				return qfalse;
 			}
-		} else{
-			Q_strncpyz(sec_refname, "", sizeof(sec_refname));
 		}
-		if(!G_weapPhys_AddLinkRef(parser, weaponNum, pri_refname, sec_refname)){
+		else{
+			Q_strncpyz(sec_refname,"",sizeof(sec_refname));
+		}
+		if(!G_weapPhys_AddLinkRef(parser,weaponNum,pri_refname,sec_refname)){
 			return qfalse;
 		}
 	}
 	return qtrue;
 }
-/*
-===================================
-G_weapPhys_IncreaseRecursionDepth
-===================================
-Increases inheritance recursion depth.
-Checks if the maximum level is exceeded and returns
-an error if so.
-*/
 static qboolean G_weapPhys_IncreaseRecursionDepth(void){
 	if(g_weapPhysRecursionDepth == MAX_RECURSION_DEPTH){
 		return qfalse;
 	}
-	g_weapPhysRecursionDepth++;
+	g_weapPhysRecursionDepth += 1;
 	return qtrue;
 }
-/*
-===================================
-G_weapPhys_DecreaseRecursionDepth
-===================================
-Decreases inheritance recursion depth.
-*/
-static void G_weapPhys_DecreaseRecursionDepth(void){
-	g_weapPhysRecursionDepth--;
-}
-// Need this prototyped
-qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g_weapPhysAccessLvls_t *accessLvl);
-/*
-==================================
-G_weapPhys_ParseRemoteDefinition
-==================================
-Instantiates a new parser and scanner
-to parse a remote definition
-*/
-qboolean G_weapPhys_ParseRemoteDefinition(char* filename, char* refname){
-	g_weapPhysParser_t		parser;
-	g_weapPhysScanner_t		*scanner;
-	g_weapPhysToken_t		*token;
-	int						i;
-	// Initialize the parser
-	memset(&parser, 0, sizeof(parser));
+static void G_weapPhys_DecreaseRecursionDepth(void){g_weapPhysRecursionDepth--;}
+qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t* parser,char* refname,g_weapPhysAccessLvls_t* accessLvl);
+//Instantiates a new parser and scanner to parse a remote definition
+qboolean G_weapPhys_ParseRemoteDefinition(char* filename,char* refname){
+	g_weapPhysParser_t parser;
+	g_weapPhysScanner_t* scanner;
+	g_weapPhysToken_t* token;
+	int i;
+	memset(&parser,0,sizeof(parser));
 	scanner = &parser.scanner;
 	token = &parser.token;	
-	// Initialize the scanner by loading the file
-	G_weapPhys_LoadFile(scanner, filename);
-	// Get the very first token initialized. If
-	// it is an end of file token, we will not parse
-	// the empty file but will instead exit with true.
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym != TOKEN_EOF){
-			return qfalse;
-		} else{
-			return qtrue;
-		}
-	}
-	// Parse the imports
-	if(!G_weapPhys_ParseImports(&parser)){
-		return qfalse;
-	}
-	// Pre-Parse the definitions
-	if(!G_weapPhys_PreParseDefinitions(&parser)){
-		return qfalse;
-	}
-	// Parse the link to the weapons
-	// NOTE: We don't really need to do this, but it does
-	//       ensure file structure.
-	if(!G_weapPhys_ParseLinks(&parser)){
-		return qfalse;
-	}
-	// Respond with an error if something is trailing the
-	// link definitions.
-	// NOTE: We don't really need to do this, but it does
-	//       ensure file structure.
+	G_weapPhys_LoadFile(scanner,filename);
+	//Get the very first token initialized. If it is an end of file token,
+	//we will not parse the empty file but will instead exit with true.
+	if(!G_weapPhys_NextSym(scanner,token)){return token->tokenSym == TOKEN_EOF;}
+	if(!G_weapPhys_ParseImports(&parser)){return qfalse;}
+	if(!G_weapPhys_PreParseDefinitions(&parser)){return qfalse;}
+	// NOTE: We don't really need to do this, but it does ensure file structure.
+	if(!G_weapPhys_ParseLinks(&parser)){return qfalse;}
+	// Respond with an error if something is trailing the link definitions.
+	// NOTE: We don't really need to do this, but it does ensure file structure.
 	if(token->tokenSym != TOKEN_EOF){
-		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
-		return qfalse;
+		return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,NULL);
 	}
 	// If we're dealing with a local definition in this file, then that definition
 	// MUST be public, since we're importing it to another file.
-	i = G_weapPhys_FindDefinitionRef(&parser, refname) - 1;
-	if(i < MAX_DEFINES){
-		if(parser.definitionRef[i].accessLvl != LVL_PUBLIC){
-			scanner->line = parser.definitionRef[i].scannerLine; // <-- Make sure the error reports the correct line
-			G_weapPhys_Error(ERROR_IMPORTING_NON_PUBLIC, scanner, parser.definitionRef[i].refname, NULL);
-			return qfalse;
-		}
+	i = G_weapPhys_FindDefinitionRef(&parser,refname) - 1;
+	if(i < MAX_DEFINES && parser.definitionRef[i].accessLvl != LVL_PUBLIC){
+		scanner->line = parser.definitionRef[i].scannerLine;
+		return G_weapPhys_Error(ERROR_IMPORTING_NON_PUBLIC,scanner,parser.definitionRef[i].refname,NULL);
 	}
-	if(!G_weapPhys_ParseDefinition(&parser, refname, NULL)){
-		return qfalse;
-	}	return qtrue;
+	return G_weapPhys_ParseDefinition(&parser,refname,NULL);
 }
-/*
-============================
-G_weapPhys_ParseDefinition
-============================
-Parses a definition, taking inheritance into account.
-*/
-qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g_weapPhysAccessLvls_t *accessLvl){
-	int i;
-	g_weapPhysScanner_t	*scanner;
-	g_weapPhysToken_t	*token;
-	g_weapPhysAccessLvls_t lastAccessLvl;
-	lastAccessLvl = LVL_PUBLIC; // <-- Incase there IS no last access level from a super class
-	scanner = &parser->scanner;
-	token = &parser->token;
-	i = G_weapPhys_FindDefinitionRef(parser, refname) - 1; // <-- Must subtract one to get proper index!
+//Takes inheritance into account.
+qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t* parser,char* refname,g_weapPhysAccessLvls_t* accessLvl){
+	//Must subtract one to get proper index!
+	int i = G_weapPhys_FindDefinitionRef(parser,refname) - 1;
+	g_weapPhysScanner_t* scanner = &parser->scanner;
+	g_weapPhysToken_t* token = &parser->token;
+	//Incase there IS no last access level from a super class
+	g_weapPhysAccessLvls_t lastAccessLvl = LVL_PUBLIC;
 	if(i < MAX_DEFINES){
 		// local declaration
 		if(parser->definitionRef[i].hasSuper){
-			
 			if(!G_weapPhys_IncreaseRecursionDepth()){
-				G_weapPhys_Error(ERROR_MAX_RECURSION, scanner, NULL, NULL);
-				return qfalse;
+				return G_weapPhys_Error(ERROR_MAX_RECURSION,scanner,NULL,NULL);
 			}
 			if(g_verboseParse.integer){
-				G_Printf("Inheriting superclass '%s'\n", parser->definitionRef[i].supername);
+				G_Printf("Inheriting superclass '%s'\n",parser->definitionRef[i].supername);
 			}
-			if(!G_weapPhys_ParseDefinition(parser, parser->definitionRef[i].supername, &lastAccessLvl)){
+			if(!G_weapPhys_ParseDefinition(parser,parser->definitionRef[i].supername,&lastAccessLvl)){
 				return qfalse;
 			}
-			
 			G_weapPhys_DecreaseRecursionDepth();
 		}
-		// Check if the super class was private, instead of public or protected
 		if(lastAccessLvl == LVL_PRIVATE){
-			G_weapPhys_Error(ERROR_INHERITING_PRIVATE, scanner, parser->definitionRef[i].supername, NULL);
-			return qfalse;
+			return G_weapPhys_Error(ERROR_INHERITING_PRIVATE,scanner,parser->definitionRef[i].supername,NULL);
 		}
 		// Reposition the lexical scanner
 		scanner->pos = parser->definitionRef[i].scannerPos;
@@ -546,120 +405,88 @@ qboolean G_weapPhys_ParseDefinition(g_weapPhysParser_t *parser, char* refname, g
 		if(accessLvl){
 			*accessLvl = parser->definitionRef[i].accessLvl;
 			if(*accessLvl < lastAccessLvl){
-				G_weapPhys_Error(ERROR_OVERRIDING_WITH_HIGHER_ACCESS, scanner, parser->definitionRef[i].refname, NULL);
-				return qfalse;
+				return G_weapPhys_Error(ERROR_OVERRIDING_WITH_HIGHER_ACCESS,scanner,parser->definitionRef[i].refname,NULL);
 			}
 		}
 		// Skip the '{' opening brace of the definition block, and align to the first real
 		// symbol in the block.
 		if(!G_weapPhys_Scan(scanner,token)){return qfalse;}
-		// Parse the block's categories.
-		if(!G_weapPhys_ParseCategories(parser)){
-			return qfalse;
-		}
-	} else{
+		if(!G_weapPhys_ParseCategories(parser)){return qfalse;}
+	}
+	else{
 		// imported declaration
 		// First subtract the offset we added to detect difference between
 		// an imported and a local definition.
 		i -= MAX_DEFINES;
 		if(!G_weapPhys_IncreaseRecursionDepth()){
-				G_weapPhys_Error(ERROR_MAX_RECURSION, scanner, NULL, NULL);
-				return qfalse;
+			return G_weapPhys_Error(ERROR_MAX_RECURSION,scanner,NULL,NULL);
 		}
 		if(g_verboseParse.integer){
 			G_Printf("Importing '%s'\n", refname);
 		}		
-		if(!G_weapPhys_ParseRemoteDefinition(parser->importRef[i].filename, parser->importRef[i].defname)){
+		if(!G_weapPhys_ParseRemoteDefinition(parser->importRef[i].filename,parser->importRef[i].defname)){
 			return qfalse;
 		}
 		G_weapPhys_DecreaseRecursionDepth();
 	}
 	return qtrue;
 }
-/*
-==================
-G_weapPhys_Parse
-==================
-Main parsing function for a scriptfile.
-This is the parser's 'entrypoint',
-*/
-qboolean G_weapPhys_Parse(char* filename, int clientNum){
-	g_weapPhysParser_t		parser;
-	g_weapPhysScanner_t		*scanner;
-	g_weapPhysToken_t		*token;
-	int						i;
-	int						*weaponMask;
-	// Initialize the parser
-	memset(&parser, 0, sizeof(parser));
+//System's entry point.
+qboolean G_weapPhys_Parse(char* filename,int clientNum){
+	g_weapPhysParser_t parser;
+	g_weapPhysScanner_t* scanner;
+	g_weapPhysToken_t* token;
+	int i;
+	int* weaponMask;
+	memset(&parser,0,sizeof(parser));
 	scanner = &parser.scanner;
 	token = &parser.token;
 	g_weapPhysRecursionDepth = 0;
+	scanner->category = -1;
 	// Clear the weapons here, so we are never stuck with 'ghost' weapons
 	// if an error occurs in the parse.
 	weaponMask = G_FindUserWeaponMask(clientNum);
-	*weaponMask = 0;	// Initialize the scanner by loading the file
-	G_weapPhys_LoadFile(scanner, filename);
+	*weaponMask = 0;
+	G_weapPhys_LoadFile(scanner,filename);
 	// Get the very first token initialized. If
 	// it is an end of file token, we will not parse
 	// the empty file but will instead exit with true.
-	if(!G_weapPhys_NextSym(scanner, token)){
-		if(token->tokenSym != TOKEN_EOF){
-			return qfalse;
-		} else{
-			return qtrue;
-		}
-	}
-	// Parse the imports
-	if(!G_weapPhys_ParseImports(&parser)){
-		return qfalse;
-	}
-	// Pre-Parse the definitions
-	if(!G_weapPhys_PreParseDefinitions(&parser)){
-		return qfalse;
-	}
-	// Parse the link to the weapons
-	if(!G_weapPhys_ParseLinks(&parser)){
-		return qfalse;
-	}
+	if(!G_weapPhys_NextSym(scanner,token)){return token->tokenSym == TOKEN_EOF;}
+	if(!G_weapPhys_ParseImports(&parser)){return qfalse;}
+	if(!G_weapPhys_PreParseDefinitions(&parser)){return qfalse;}
+	if(!G_weapPhys_ParseLinks(&parser)){return qfalse;}
 	// Respond with an error if something is trailing the
 	// link definitions.
 	if(token->tokenSym != TOKEN_EOF){
-		G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL, scanner, token->stringval, NULL);
-		return qfalse;
+		return G_weapPhys_Error(ERROR_UNEXPECTED_SYMBOL,scanner,token->stringval,NULL);
 	}
-	// Work through the link table, parsing and assigning the definitions
-	// as we go.
-	for(i = 0; i < MAX_LINKS; i++){
-		if(!parser.linkRef[i].active){
-			continue;
-		}
-		// Empty the buffer.
-		memset(&g_weapPhysBuffer, 0, sizeof(g_weapPhysBuffer));
+	for(i = 0;i < MAX_LINKS;i++){
+		if(!parser.linkRef[i].active){continue;}
+		memset(&g_weapPhysBuffer,0,sizeof(g_weapPhysBuffer));
 		if(g_verboseParse.integer){
-			G_Printf("Processing weapon nr %i, primary '%s'.\n", i+1, parser.linkRef[i].pri_refname);
+			G_Printf("Processing weapon nr %i, primary '%s'.\n",i+1,parser.linkRef[i].pri_refname);
 		}
-		if(!G_weapPhys_ParseDefinition(&parser, parser.linkRef[i].pri_refname, NULL)){
+		if(!G_weapPhys_ParseDefinition(&parser,parser.linkRef[i].pri_refname,NULL)){
 			return qfalse;
 		}
-		G_weapPhys_StoreBuffer(clientNum, i);
-		// Empty the buffer.
-		memset(&g_weapPhysBuffer, 0, sizeof(g_weapPhysBuffer));
+		G_weapPhys_StoreBuffer(clientNum,i);
+		memset(&g_weapPhysBuffer,0,sizeof(g_weapPhysBuffer));
 		if(strcmp(parser.linkRef[i].sec_refname, "")){
 			if(g_verboseParse.integer){
-				G_Printf("Processing weapon nr %i, secondary '%s'.\n", i+1, parser.linkRef[i].sec_refname);
+				G_Printf("Processing weapon nr %i, secondary '%s'.\n",i+1,parser.linkRef[i].sec_refname);
 			}
-			if(!G_weapPhys_ParseDefinition(&parser, parser.linkRef[i].sec_refname, NULL)){
+			if(!G_weapPhys_ParseDefinition(&parser,parser.linkRef[i].sec_refname,NULL)){
 				return qfalse;
 			}
 			// Piggyback the alternate fire present flag in the buffer of the alternate fire
 			// to let G_weapPhys_StoreBuffer enable this flag on the primary fire.
 			g_weapPhysBuffer.general_bitflags |= WPF_ALTWEAPONPRESENT;
 		}
-		G_weapPhys_StoreBuffer(clientNum, i + ALTWEAPON_OFFSET);
+		G_weapPhys_StoreBuffer(clientNum,i + ALTWEAPON_OFFSET);
 		// If everything went okay, we add the weapon to the availability mask
-		*weaponMask |= (1 << (i+1));
+		*weaponMask |= 1 << (i + 1);
 		if(g_verboseParse.integer){
-			G_Printf("Added weapon nr %i to availabilty mask. New mask reads: %i\n", i+1, *weaponMask);
+			G_Printf("Added weapon nr %i to availabilty mask. New mask reads: %i\n",i + 1,*weaponMask);
 		}
 	}
 	if(g_verboseParse.integer){

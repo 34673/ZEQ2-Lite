@@ -2,55 +2,88 @@
 //
 // g_weapPhysScanner.c -- lexical scanner for ZEQ2's weapon physics script language.
 #include "g_weapPhysParser.h" // <-- cg_local.h included in this
-char* g_weapPhysCategories[] = {
-	"Physics","Costs","Detonation","Muzzle","Trajectory","Requirement","Restrictions",""
+g_weapPhysField_t g_weapPhysPhysicsFields[] = {
+	{"type",&g_weapPhysBuffer.general_type,G_weapPhys_ParseType,0,{"Missile","Beam","Hitscan","Trigger","None"}},
+	{"speed",&g_weapPhysBuffer.physics_speed,G_weapPhys_ParseFloat},
+	{"acceleration",&g_weapPhysBuffer.physics_acceleration,G_weapPhys_ParseFloat},
+	{"radius",&g_weapPhysBuffer.physics_radius,G_weapPhys_ParseInt},
+	{"radiusMultiplier",&g_weapPhysBuffer.physics_radiusMultiplier,G_weapPhys_ParseInt},
+	{"range",g_weapPhysBuffer.physics_range,G_weapPhys_ParseRange},
+	{"lifetime",&g_weapPhysBuffer.physics_lifetime,G_weapPhys_ParseInt},
+	{"swat",&g_weapPhysBuffer.physics_swat,G_weapPhys_ParseInt},
+	{"drain",&g_weapPhysBuffer.physics_drain,G_weapPhys_ParseInt},
+	{"blind",&g_weapPhysBuffer.physics_blind,G_weapPhys_ParseInt},
+	{"",NULL}
 };
-g_weapPhysField_t g_weapPhysFields[] = {
-	{"type",				G_weapPhys_ParseType			},	// Physics, Detonation, Trajectory
-	{"speed",				G_weapPhys_ParseSpeed			},	// Physics
-	{"acceleration",		G_weapPhys_ParseAcceleration	},	// Physics
-	{"radius",				G_weapPhys_ParseRadius			},	// Physics, Detonation
-	{"impede",				G_weapPhys_ParseImpede			},	// Detonation
-	{"range",				G_weapPhys_ParseRange			},	// Physics, Trajectory
-	{"duration",			G_weapPhys_ParseDuration		},	// Physics, Detonation
-	{"lifetime",			G_weapPhys_ParseLifetime		},	// Physics
-	{"swat",				G_weapPhys_ParseSwat			},	// Physics
-	{"deflect",				G_weapPhys_ParseSwat			},	// Physics
-	{"drain",				G_weapPhys_ParseDrain			},	// Physics
-	{"blind",				G_weapPhys_ParseBlind			},	// Physics
-	{"movement",			G_weapPhys_ParseMovement		},	// Restriction
-	{"minPowerLevel",		G_weapPhys_ParseMinPowerLevel	},	// Requirement
-	{"maxPowerLevel",		G_weapPhys_ParseMinPowerLevel	},	// Requirement
-	{"minFatigue",			G_weapPhys_ParseMinFatigue		},	// Requirement
-	{"maxFatigue",			G_weapPhys_ParseMaxFatigue		},	// Requirement
-	{"minHealth",			G_weapPhys_ParseMinHealth		},	// Requirement
-	{"maxHealth",			G_weapPhys_ParseMaxHealth		},	// Requirement
-	{"minTier",				G_weapPhys_ParseMinTier			},	// Requirement
-	{"maxTier",				G_weapPhys_ParseMaxTier			},	// Requirement
-	{"minTotalTier",		G_weapPhys_ParseMinTotalTier	},	// Requirement
-	{"maxTotalTier",		G_weapPhys_ParseMaxTotalTier	},	// Requirement
-	{"ground",				G_weapPhys_ParseGround			},	// Requirement
-	{"flight",				G_weapPhys_ParseFlight			},	// Requirement
-	{"water",				G_weapPhys_ParseWater			},	// Requirement
-	{"powerLevel",			G_weapPhys_ParsePowerLevel		},	// Costs
-	{"maximum",				G_weapPhys_ParseMaximum			},	// Costs
-	{"health",				G_weapPhys_ParseHealth			},	// Costs
-	{"fatigue",				G_weapPhys_ParseFatigue			},	// Costs
-	{"cooldownTime",		G_weapPhys_ParseCooldownTime	},	// Costs
-	{"chargeTime",			G_weapPhys_ParseChargeTime		},	// Costs
-	{"chargeReadyPct",		G_weapPhys_ParseChargeReadyPct	},	// Costs
-	{"damage",				G_weapPhys_ParseDamage			},	// Detonation
-	{"knockback",			G_weapPhys_ParseKnockBack		},	// Detonation
-	{"nrShots",				G_weapPhys_ParseNrShots			},	// Muzzle
-	{"offsetWidth",			G_weapPhys_ParseOffsetWidth		},	// Muzzle
-	{"offsetHeight",		G_weapPhys_ParseOffsetHeight	},	// Muzzle
-	{"angleWidth",			G_weapPhys_ParseAngleWidth		},	// Muzzle
-	{"angleHeight",			G_weapPhys_ParseAngleHeight		},	// Muzzle
-	{"flipInWidth",			G_weapPhys_ParseFlipInWidth		},	// Muzzle
-	{"flipInHeight",		G_weapPhys_ParseFlipInHeight	},	// Muzzle
-	{"fieldOfView",			G_weapPhys_ParseFOV				},	// Trajectory  --NOTE: Use for homing angles!
-	{"FOV",					G_weapPhys_ParseFOV				},	// Trajectory  --NOTE: Use for homing angles!
-	{"",					G_weapPhys_ParseDummy			}	// Terminator dummy function
+g_weapPhysField_t g_weapPhysCostsFields[] = {
+	{"powerLevel",&g_weapPhysBuffer.costs_powerLevel,G_weapPhys_ParseInt},
+	{"fatigue",&g_weapPhysBuffer.costs_fatigue,G_weapPhys_ParseInt},
+	{"health",&g_weapPhysBuffer.costs_health,G_weapPhys_ParseInt},
+	{"maximum",&g_weapPhysBuffer.costs_maximum,G_weapPhys_ParseInt},
+	{"cooldownTime",&g_weapPhysBuffer.costs_cooldownTime,G_weapPhys_ParseInt},
+	{"chargeTime",&g_weapPhysBuffer.costs_chargeTime,G_weapPhys_ParseInt},
+	{"chargeReadyPct",&g_weapPhysBuffer.costs_chargeReady,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+g_weapPhysField_t g_weapPhysDetonationFields[] = {
+	{"type",&g_weapPhysBuffer.general_type,G_weapPhys_ParseType,0,{"Ki"}}, //Keyword parsed, but no field exists for it?
+	{"impede",&g_weapPhysBuffer.damage_impede,G_weapPhys_ParseInt},
+	{"radius",&g_weapPhysBuffer.damage_radius,G_weapPhys_ParseInt},
+	{"radiusMultiplier",&g_weapPhysBuffer.damage_radiusMultiplier,G_weapPhys_ParseInt},
+	{"duration",&g_weapPhysBuffer.damage_radiusDuration,G_weapPhys_ParseInt},
+	{"damage",&g_weapPhysBuffer.damage_damage,G_weapPhys_ParseInt},
+	{"damageMultiplier",&g_weapPhysBuffer.damage_multiplier,G_weapPhys_ParseInt},
+	{"knockback",&g_weapPhysBuffer.damage_extraKnockback,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+g_weapPhysField_t g_weapPhysMuzzleFields[] = {
+	{"nrShots",&g_weapPhysBuffer.firing_nrShots,G_weapPhys_ParseInt},
+	{"offsetWidth",&g_weapPhysBuffer.firing_offsetW,G_weapPhys_ParseRange},
+	{"offsetHeight",&g_weapPhysBuffer.firing_offsetH,G_weapPhys_ParseRange},
+	{"angleWidth",&g_weapPhysBuffer.firing_angleW,G_weapPhys_ParseRange},
+	{"angleHeight",&g_weapPhysBuffer.firing_angleH,G_weapPhys_ParseRange},
+	{"flipInWidth",&g_weapPhysBuffer.firing_offsetWFlip,G_weapPhys_ParseBool},
+	{"flipInHeight",&g_weapPhysBuffer.firing_offsetHFlip,G_weapPhys_ParseBool},
+	{"fieldOfView",&g_weapPhysBuffer.homing_FOV,G_weapPhys_ParseInt},
+	{"FOV",&g_weapPhysBuffer.homing_FOV,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+g_weapPhysField_t g_weapPhysTrajectoryFields[] = {
+	{"type",&g_weapPhysBuffer.homing_type,G_weapPhys_ParseType,0,{"LineOfSight","ProxBomb","Guided","Homing","Arch","Drunken","Cylinder"}},
+	{"range",&g_weapPhysBuffer.homing_range,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+g_weapPhysField_t g_weapPhysRequirementFields[] = {
+	{"minPowerLevel",&g_weapPhysBuffer.require_minPowerLevel,G_weapPhys_ParseInt},
+	{"maxPowerLevel",&g_weapPhysBuffer.require_maxPowerLevel,G_weapPhys_ParseInt},
+	{"minHealth",&g_weapPhysBuffer.require_minHealth,G_weapPhys_ParseInt},
+	{"maxHealth",&g_weapPhysBuffer.require_maxHealth,G_weapPhys_ParseInt},
+	{"minFatigue",&g_weapPhysBuffer.require_minFatigue,G_weapPhys_ParseInt},
+	{"maxFatigue",&g_weapPhysBuffer.require_maxFatigue,G_weapPhys_ParseInt},
+	{"minTier",&g_weapPhysBuffer.require_minTier,G_weapPhys_ParseInt},
+	{"maxTier",&g_weapPhysBuffer.require_maxTier,G_weapPhys_ParseInt},
+	{"minTotalTier",&g_weapPhysBuffer.require_minTotalTier,G_weapPhys_ParseInt},
+	{"maxTotalTier",&g_weapPhysBuffer.require_maxTotalTier,G_weapPhys_ParseInt},
+	{"ground",&g_weapPhysBuffer.require_ground,G_weapPhys_ParseInt},
+	{"flight",&g_weapPhysBuffer.require_flight,G_weapPhys_ParseInt},
+	{"water",&g_weapPhysBuffer.require_water,G_weapPhys_ParseInt},
+	{"maximum",&g_weapPhysBuffer.require_maximum,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+g_weapPhysField_t g_weapPhysRestrictionsFields[] = {
+	{"movement",&g_weapPhysBuffer.restrict_movement,G_weapPhys_ParseInt},
+	{"",NULL}
+};
+
+g_weapPhysCategory_t g_weapPhysCategories[] = {
+	{"Physics",g_weapPhysPhysicsFields},
+	{"Costs",g_weapPhysCostsFields},
+	{"Detonation",g_weapPhysDetonationFields},
+	{"Muzzle",g_weapPhysMuzzleFields},
+	{"Trajectory",g_weapPhysTrajectoryFields},
+	{"Requirement",g_weapPhysRequirementFields},
+	{"Restrictions",g_weapPhysRestrictionsFields},
+	{"",NULL}
 };
 g_weapPhysSyntax_t g_weapPhysSyntax[] = {
 	{"=",TOKEN_EQUALS},
@@ -131,6 +164,7 @@ loaded scriptfile.
 qboolean G_weapPhys_NextSym(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* token){
 	int index = 0;
 	int length = 0;
+	int categoryIndex = 0;
 	char* start = NULL;
 	//Skippables
 	while(1){
@@ -164,11 +198,11 @@ qboolean G_weapPhys_NextSym(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* toke
 		return token->tokenSym = TOKEN_STRING;
 	}
 	//Numbers
-	if(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+	if((scanner->pos[0] >= '0' && scanner->pos[0] <= '9') || scanner->pos[0] == '-'){
 		qboolean dot = qfalse;
 		start = scanner->pos;
 		length = 0;
-		while(scanner->pos[0] >= '0' && scanner->pos[0] <= '9'){
+		do{
 			if(length >= MAX_TOKENSTRING_LENGTH-1){
 				return G_weapPhys_Error(ERROR_TOKEN_TOOBIG,scanner,NULL,NULL);
 			}
@@ -180,6 +214,7 @@ qboolean G_weapPhys_NextSym(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* toke
 			dot = qtrue;
 			length = ++scanner->pos - start;
 		}
+		while(scanner->pos[0] >= '0' && scanner->pos[0] <= '9');
 		Q_strncpyz(token->stringval,start,length + 1);
 		token->floatval = atof(token->stringval);
 		token->intval = ceil(token->floatval);
@@ -208,23 +243,20 @@ qboolean G_weapPhys_NextSym(g_weapPhysScanner_t* scanner,g_weapPhysToken_t* toke
 		if(Q_stricmp(token->stringval,syntax->symbol)){continue;}
 		return token->tokenSym = syntax->tokenType;
 	}
-	// Check if the keyword is a category.
-	for ( index = 0; strcmp( g_weapPhysCategories[index], ""); index++){
-		if(!Q_stricmp( g_weapPhysCategories[index], token->stringval)){
-			token->identifierIndex = index;
-			token->tokenSym = TOKEN_CATEGORY;
-			return qtrue;
-		}
+	for(;strcmp(g_weapPhysCategories[categoryIndex].name,"");++categoryIndex){
+		g_weapPhysCategory_t* category = &g_weapPhysCategories[categoryIndex];
+		if(Q_stricmp(token->stringval,category->name)){continue;}
+		scanner->category = token->identifierIndex = categoryIndex;
+		return token->tokenSym = TOKEN_CATEGORY;
 	}
-	// Check if the keyword is a field.
-	for ( index = 0; strcmp( g_weapPhysFields[index].fieldname, ""); index++){
-		// NOTE:
-		// Need to do this comparison case independantly. Q_stricmp is case
-		// independant, so use this instead of standard library function strcmp.
-		if(!Q_stricmp( g_weapPhysFields[index].fieldname, token->stringval)){
-			token->identifierIndex = index;
-			token->tokenSym = TOKEN_FIELD;
-			return qtrue;
+	if(scanner->category >= CAT_PHYSICS && scanner->category <= CAT_RESTRICT){
+		g_weapPhysCategory_t* category = &g_weapPhysCategories[scanner->category];
+		int fieldIndex = 0;
+		for(;strcmp(category->fields[fieldIndex].name,"");++fieldIndex){
+			g_weapPhysField_t* field = &category->fields[fieldIndex];
+			if(Q_stricmp(token->stringval,field->name)){continue;}
+			token->identifierIndex = fieldIndex;
+			return token->tokenSym = TOKEN_FIELD;
 		}
 	}
 	if(scanner->pos[0] == '\0'){

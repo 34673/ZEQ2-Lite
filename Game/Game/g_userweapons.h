@@ -74,8 +74,7 @@ typedef struct{
 	float				physics_gravity;			// Percentage of the map's gravity the attack is affected by.
 	int					physics_radius;				// Spherical collision radius of the attack
 	int					physics_radiusMultiplier;	// Actual radius = physics_radius * multiplier * charge level / 100.
-	int					physics_range_min;			// Minimum range a hitscan attack has.
-	int					physics_range_max;			// Maximum range a hitscan attack has.
+	vec2_t				physics_range;				// Range a hitscan attach has.
 	int					physics_lifetime;			// Maximum time the attack can exist before 'blowing up'.
 	float				physics_bounceFrac;			// How much of the energy to pass on in a bounce. 0 == no bounce
 	int					physics_maxBounces;			// How many times at max the missile can bounce.
@@ -84,14 +83,10 @@ typedef struct{
 	qboolean			physics_blind;				// Are you vulnerable to your own attack's blinding ability?
 	
 	// Firing
-	int					firing_angleW_min;			// Minimum width angle ( + and - ) a projectile can deviate from its firing path.
-	int					firing_angleW_max;			// Maximum width angle ( + and - ) a projectile can deviate from its firing path.
-	int					firing_angleH_min;			// Minimum height angle ( + and - ) a projectile can deviate from its firing path.
-	int					firing_angleH_max;			// Maximum height angle ( + and - ) a projectile can deviate from its firing path.
-	int					firing_offsetW_max;			// Maximum width offset a shot will deviate from the player's regular muzzle point.
-	int					firing_offsetW_min;			// Minimum width offset a shot will deviate from the player's regular muzzle point.
-	int					firing_offsetH_max;			// Maximum height offset a shot will deviate from the player's regular muzzle point.
-	int					firing_offsetH_min;			// Minimum height offset a shot will deviate from the player's regular muzzle point.
+	vec2_t				firing_angleW;				// Width angle range (+ and -) a projectile can deviate from its firing path.
+	vec2_t				firing_angleH;				// Height angle range (+ and -) a projectile can deviate from its firing path.
+	vec2_t				firing_offsetW;				// Width offset range a shot will deviate from the player's regular muzzle point.
+	vec2_t				firing_offsetH;				// Height offset range a shot will deviate from the player's regular muzzle point.
 	qboolean			firing_offsetWFlip;			// Flip the width offset every alternating shot. ( NOTE: For left-right-left-... weapons. )
 	qboolean			firing_offsetHFlip;			// Flip the height offset every alternating shot. ( NOTE: For up-down-up-... weapons. )
 	int					firing_nrShots;				// Nr of projectiles fired in one shot.

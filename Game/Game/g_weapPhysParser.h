@@ -16,6 +16,9 @@
 #define MAX_TOKENSTRING_LENGTH	MAX_QPATH	// Equal to MAX_QPATH, to prevent problems
 											// with reading filenames.
 
+
+#define MAX_TYPES 8							// NOTE: The sequences of the strings in these stringtables are dependant on the
+											//       sequences of enumeration types in g_userweapons.h !!!
 // --< Tokens >--
 
 #define TOKEN_EOF				   0	// End of File
@@ -159,56 +162,22 @@ typedef struct {
 } g_weapPhysParser_t;
 
 // Prototype these, so definition of G_weapPhysFields doesn'tAlr complain
-qboolean G_weapPhys_ParseMovement( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseType( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseRequire( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseImpede( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseReaction( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseSpeed( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseAcceleration( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseRadius( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseDuration( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseRange( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseLifetime( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseSwat( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseDrain( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseBlind( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMinPowerLevel( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaxPowerLevel( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMinHealth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaxHealth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMinFatigue( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaxFatigue( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMinTier( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaxTier( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMinTotalTier( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaxTotalTier( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseGround( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseFlight( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseWater( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParsePowerLevel( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseMaximum( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseHealth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseFatigue( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseCooldownTime( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseChargeTime( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseChargeReadyPct( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseDamage( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseKnockBack( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseNrShots( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseOffsetWidth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseOffsetHeight( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseAngleWidth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseAngleHeight( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseFlipInWidth( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseFlipInHeight( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseFOV( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-qboolean G_weapPhys_ParseDummy( g_weapPhysParser_t *parser, g_weapPhysCategoryIndex_t category, int field );
-
-typedef struct {
-	char		*fieldname;
-	qboolean	(*parseFunc)( g_weapPhysParser_t*, g_weapPhysCategoryIndex_t, int );
-} g_weapPhysField_t;
+qboolean G_weapPhys_ParseDummy(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+qboolean G_weapPhys_ParseInt(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+qboolean G_weapPhys_ParseFloat(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+qboolean G_weapPhys_ParseBool(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+qboolean G_weapPhys_ParseRange(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+qboolean G_weapPhys_ParseType(g_weapPhysParser_t* parser,void* field,int listLimit,char* types[]);
+typedef struct{
+	char* name;
+	void* field;
+	qboolean (*Parse)(g_weapPhysParser_t*,void*,int,char*[]);
+	//qboolean	(*parseFunc)( g_weapPhysParser_t*, g_weapPhysCategoryIndex_t, int );
+	int listIterations;
+	// NOTE: The sequences of the strings in these stringtables are dependant on the
+	//       sequences of enumeration types in g_userweapons.h !!!
+	char* types[MAX_TYPES];
+}g_weapPhysField_t;
 typedef struct{
 	char* name;
 	g_weapPhysField_t* fields;
@@ -218,8 +187,8 @@ typedef struct{
 	int tokenType;
 }g_weapPhysSyntax_t;
 // --< Shared variables (located in G_weapPhysScanner.c) >--
-extern g_weapPhysField_t g_weapPhysFields[];
-extern char* g_weapPhysCategories[];
+extern g_userWeaponParseBuffer_t g_weapPhysBuffer;
+extern g_weapPhysCategory_t g_weapPhysCategories[];
 
 
 // --< Accesible functions >--

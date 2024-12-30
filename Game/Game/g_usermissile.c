@@ -578,11 +578,11 @@ void UserHitscan_Fire (gentity_t *self, g_userWeapon_t *weaponInfo, int weaponNu
 	float		rnd;
 	float		physics_range;
 	// Get the end point
-	if ( weaponInfo->physics_range_min != weaponInfo->physics_range_max ) {
+	if ( weaponInfo->physics_range[0] != weaponInfo->physics_range[0] ) {
 		rnd = crandom();
-		physics_range = ( 1.0f - rnd ) * weaponInfo->physics_range_min + rnd * weaponInfo->physics_range_max;
+		physics_range = ( 1.0f - rnd ) * weaponInfo->physics_range[0] + rnd * weaponInfo->physics_range[1];
 	} else {
-		physics_range = weaponInfo->physics_range_max;
+		physics_range = weaponInfo->physics_range[1];
 	}	
 	VectorMA (muzzle, physics_range, forward, end);
 
@@ -693,13 +693,13 @@ void Fire_UserWeapon( gentity_t *self, vec3_t start, vec3_t dir, qboolean altfir
 	// Determine the corrected firing angle and firing origin
 
 	VectorCopy( dir, firingDir);
-	if ( weaponInfo->firing_angleW_min || weaponInfo->firing_angleW_max ) {
+	if ( weaponInfo->firing_angleW[0] || weaponInfo->firing_angleW[1] ) {
 		vec3_t	temp;
 		float	rnd;
 		float	firing_angleW;
 
 		rnd = crandom(); // <-- between 0.0f and 1.0f
-		firing_angleW = ( 1.0f - rnd ) * weaponInfo->firing_angleW_min + rnd * weaponInfo->firing_angleW_max;
+		firing_angleW = ( 1.0f - rnd ) * weaponInfo->firing_angleW[0] + rnd * weaponInfo->firing_angleW[1];
 
 		if ( ( self->client->ps.bitFlags & hasFlipOffset ) && weaponInfo->firing_offsetWFlip ) {
 			RotatePointAroundVector( temp, up, firingDir, firing_angleW );
@@ -708,13 +708,13 @@ void Fire_UserWeapon( gentity_t *self, vec3_t start, vec3_t dir, qboolean altfir
 		}
 		VectorCopy( temp, firingDir );
 	}
-	if ( weaponInfo->firing_angleH_min || weaponInfo->firing_angleH_max ) {
+	if ( weaponInfo->firing_angleH[0] || weaponInfo->firing_angleH[1] ) {
 		vec3_t temp;
 		float	rnd;
 		float	firing_angleH;
 
 		rnd = crandom(); // <-- between 0.0f and 1.0f
-		firing_angleH = ( 1.0f - rnd ) * weaponInfo->firing_angleH_min + rnd * weaponInfo->firing_angleH_max;
+		firing_angleH = ( 1.0f - rnd ) * weaponInfo->firing_angleH[0] + rnd * weaponInfo->firing_angleH[1];
 
 		if ( ( self->client->ps.bitFlags & hasFlipOffset ) && weaponInfo->firing_offsetHFlip ) {
 			RotatePointAroundVector( temp, right, firingDir, firing_angleH );
@@ -726,12 +726,12 @@ void Fire_UserWeapon( gentity_t *self, vec3_t start, vec3_t dir, qboolean altfir
 	VectorNormalize( firingDir );
 
 	VectorCopy( start, firingStart );
-	if ( weaponInfo->firing_offsetW_min || weaponInfo->firing_offsetW_max ) {
+	if ( weaponInfo->firing_offsetW[0] || weaponInfo->firing_offsetW[1] ) {
 		float rnd;
 		float firing_offsetW;
 
 		rnd = crandom(); // <-- between 0.0f and 1.0f
-		firing_offsetW = ( 1.0f - rnd ) * weaponInfo->firing_offsetW_min + rnd * weaponInfo->firing_offsetW_max;
+		firing_offsetW = ( 1.0f - rnd ) * weaponInfo->firing_offsetW[0] + rnd * weaponInfo->firing_offsetW[1];
 
 		if ( ( self->client->ps.bitFlags & hasFlipOffset ) && weaponInfo->firing_offsetWFlip ) {
 			VectorMA( firingStart, -firing_offsetW, right, firingStart );
@@ -739,12 +739,12 @@ void Fire_UserWeapon( gentity_t *self, vec3_t start, vec3_t dir, qboolean altfir
 			VectorMA( firingStart, firing_offsetW, right, firingStart );
 		}
 	}
-	if ( weaponInfo->firing_offsetH_min || weaponInfo->firing_offsetH_max ) {
+	if ( weaponInfo->firing_offsetH[0] || weaponInfo->firing_offsetH[1] ) {
 		float rnd;
 		float firing_offsetH;
 
 		rnd = crandom(); // <-- between 0.0f and 1.0f
-		firing_offsetH = ( 1.0f - rnd ) * weaponInfo->firing_offsetH_min + rnd * weaponInfo->firing_offsetH_max;
+		firing_offsetH = ( 1.0f - rnd ) * weaponInfo->firing_offsetH[0] + rnd * weaponInfo->firing_offsetH[1];
 
 		if ( ( self->client->ps.bitFlags & hasFlipOffset ) && weaponInfo->firing_offsetHFlip ) {
 			VectorMA( firingStart, -firing_offsetH, up, firingStart );
@@ -1064,7 +1064,7 @@ void Fire_UserWeapon( gentity_t *self, vec3_t start, vec3_t dir, qboolean altfir
 				BG_EvaluateTrajectory( &trigTarget->s, &trigTarget->s.pos, level.time, newBase );
 
 				// Don't process any missiles beyond the maximum range of control
-				if ( Distance(newBase, start) > weaponInfo->physics_range_max ) {
+				if ( Distance(newBase, start) > weaponInfo->physics_range[1] ) {
 					continue;
 				}
 

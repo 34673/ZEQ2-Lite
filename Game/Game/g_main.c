@@ -150,7 +150,6 @@ void G_FindTeams(void){
 	}
 	G_Printf ("%i teams with %i entities\n", c, c2);
 }
-void G_RemapTeamShaders(){}
 /*
 =================
 G_RegisterCvars
@@ -159,18 +158,11 @@ G_RegisterCvars
 void G_RegisterCvars(void){
 	int			i;
 	cvarTable_t	*cv;
-	qboolean remapped = qfalse;
 	for(i = 0, cv = gameCvarTable;i < gameCvarTableSize;i++, cv++){
 		trap_Cvar_Register(cv->vmCvar, cv->cvarName,
 			cv->defaultString, cv->cvarFlags);
 		if(cv->vmCvar)
 			cv->modificationCount = cv->vmCvar->modificationCount;
-		if(cv->teamShader){
-			remapped = qtrue;
-		}
-	}
-	if(remapped){
-		G_RemapTeamShaders();
 	}
 	// check some things
 	if(g_gametype.integer < 0 || g_gametype.integer >= GT_MAX_GAME_TYPE){
@@ -187,7 +179,6 @@ G_UpdateCvars
 void G_UpdateCvars(void){
 	int			i;
 	cvarTable_t	*cv;
-	qboolean remapped = qfalse;
 	for(i = 0, cv = gameCvarTable;i < gameCvarTableSize;i++, cv++){
 		if(cv->vmCvar){
 			trap_Cvar_Update(cv->vmCvar);
@@ -196,14 +187,8 @@ void G_UpdateCvars(void){
 				if(cv->trackChange){
 					//trap_SendServerCommand(-1, va("print \"Server: %s changed to %s\n\"",cv->cvarName, cv->vmCvar->string));
 				}
-				if(cv->teamShader){
-					remapped = qtrue;
-				}
 			}
 		}
-	}
-	if(remapped){
-		G_RemapTeamShaders();
 	}
 }
 /*
@@ -277,7 +262,6 @@ void G_InitGame(int levelTime, int randomSeed, int restart){
 	if(g_gametype.integer == GT_SINGLE_PLAYER || trap_Cvar_VariableIntegerValue("com_buildScript")){
 		G_ModelIndex(SP_PODIUM_MODEL);
 	}
-	G_RemapTeamShaders();
 }
 /*
 =================
@@ -494,10 +478,10 @@ and team change.
 */
 void CalculateRanks(void){
 	int		i;
-	int		rank;
-	int		score;
-	int		newScore;
-	gclient_t	*cl;
+	//int		rank;
+	//int		score;
+	//int		newScore;
+	//gclient_t	*cl;
 	level.follow1 = -1;
 	level.follow2 = -1;
 	level.numConnectedClients = 0;

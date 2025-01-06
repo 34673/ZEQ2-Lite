@@ -371,15 +371,17 @@ static void SV_Kick_f( void ) {
 
 	cl = SV_GetPlayerByHandle();
 	if ( !cl ) {
-		for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
-			if ( !cl->state ) {
-				continue;
+		if ( !Q_stricmp(Cmd_Argv(1), "all") ) {
+			for ( i=0, cl=svs.clients ; i < sv_maxclients->integer ; i++,cl++ ) {
+				if ( !cl->state ) {
+					continue;
+				}
+				if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
+					continue;
+				}
+				SV_DropClient( cl, "was kicked" );
+				cl->lastPacketTime = svs.time;	// in case there is a funny zombie
 			}
-			if( cl->netchan.remoteAddress.type == NA_LOOPBACK ) {
-				continue;
-			}
-			SV_DropClient( cl, "was kicked" );
-			cl->lastPacketTime = svs.time;	// in case there is a funny zombie
 		}
 		return;
 	}
@@ -1409,6 +1411,7 @@ void SV_RemoveOperatorCommands( void ) {
 	Cmd_RemoveCommand ("kicknum");
 	Cmd_RemoveCommand ("clientkick");
 	Cmd_RemoveCommand ("kickall");
+	Cmd_RemoveCommand ("kickbots");
 	Cmd_RemoveCommand ("banUser");
 	Cmd_RemoveCommand ("banClient");
 	Cmd_RemoveCommand ("status");

@@ -20,6 +20,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
+// Use EnumProcesses() with Windows XP compatibility
+#define PSAPI_VERSION 1
+
 #include "../../Shared/q_shared.h"
 #include "../../Shared/qcommon.h"
 #include "sys_local.h"
@@ -361,6 +364,10 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 		return;
 	}
 
+	if ( basedir[0] == '\0' ) {
+		return;
+	}
+
 	if (strlen(subdirs)) {
 		Com_sprintf( search, sizeof(search), "%s\\%s\\*", basedir, subdirs );
 	}
@@ -460,6 +467,11 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 		listCopy[i] = NULL;
 
 		return listCopy;
+	}
+
+	if ( directory[0] == '\0' ) {
+		*numfiles = 0;
+		return NULL;
 	}
 
 	if ( !extension) {
@@ -593,6 +605,8 @@ Display an error message
 */
 void Sys_ErrorDialog( const char *error )
 {
+	Sys_Print( va( "%s\n", error ) );
+
 	if( Sys_Dialog( DT_YES_NO, va( "%s. Copy console log to clipboard?", error ),
 			"Error" ) == DR_YES )
 	{

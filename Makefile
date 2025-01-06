@@ -55,6 +55,11 @@ ifeq ($(COMPILE_PLATFORM),cygwin)
   PLATFORM=mingw32
 endif
 
+# detect "emmake make"
+ifeq ($(findstring /emcc,$(CC)),/emcc)
+  PLATFORM=emscripten
+endif
+
 ifndef PLATFORM
 PLATFORM=$(COMPILE_PLATFORM)
 endif
@@ -233,7 +238,9 @@ ifndef DEBUG_CFLAGS
 DEBUG_CFLAGS=-ggdb -O0
 endif
 
+ifndef LANGUAGE_STANDARD
 LANGUAGE_STANDARD =-std=gnu17
+endif
 
 #############################################################################
 
@@ -241,8 +248,9 @@ BD=$(BUILD_DIR)/Debug-$(PLATFORM)-$(ARCH)
 BR=$(BUILD_DIR)/Release-$(PLATFORM)-$(ARCH)
 CDIR=Engine/client
 SDIR=Engine/server
-RCOMMONDIR=Engine/renderercommon
-RDIR=Engine/renderer
+RCOMMONDIR=Engine/renderer
+RGL1DIR=Engine/renderer/opengl1
+RGL2DIR=Engine/renderer/opengl2
 CMDIR=Shared
 SDLDIR=Engine/sdl
 ASMDIR=Engine/asm
@@ -436,9 +444,30 @@ ifeq ($(PLATFORM),darwin)
 
   # Default minimum Mac OS X version
   ifeq ($(MACOSX_VERSION_MIN),)
-    MACOSX_VERSION_MIN=10.7
+    MACOSX_VERSION_MIN=10.9
     ifneq ($(findstring $(ARCH),ppc ppc64),)
       MACOSX_VERSION_MIN=10.5
+    endif
+    ifeq ($(ARCH),x86)
+      MACOSX_VERSION_MIN=10.6
+    endif
+    ifeq ($(ARCH),x86_64)
+      # trying to find default SDK version is hard
+      # macOS 10.15 requires -sdk macosx but 10.11 doesn't support it
+      # macOS 10.6 doesn't have -show-sdk-version
+      DEFAULT_SDK=$(shell xcrun -sdk macosx -show-sdk-version 2> /dev/null)
+      ifeq ($(DEFAULT_SDK),)
+        DEFAULT_SDK=$(shell xcrun -show-sdk-version 2> /dev/null)
+      endif
+      ifeq ($(DEFAULT_SDK),)
+        $(error Error: Unable to determine macOS SDK version.  On macOS 10.6 to 10.8 run: make MACOSX_VERSION_MIN=10.6  On macOS 10.9 or later run: make MACOSX_VERSION_MIN=10.9 );
+      endif
+
+      ifneq ($(findstring $(DEFAULT_SDK),10.6 10.7 10.8),)
+        MACOSX_VERSION_MIN=10.6
+      else
+        MACOSX_VERSION_MIN=10.9
+      endif
     endif
     ifeq ($(ARCH),arm64)
       MACOSX_VERSION_MIN=11.0
@@ -553,20 +582,39 @@ ifeq ($(PLATFORM),darwin)
   RENDERER_LIBS += -framework OpenGL
 
   ifeq ($(USE_LOCAL_HEADERS),1)
-    # libSDL2-2.0.0.dylib for PPC is SDL 2.0.1 + changes to compile
-    ifneq ($(findstring $(ARCH),ppc ppc64),)
-      BASE_CFLAGS += -I$(SDLHDIR)/include-macppc
-    else
+    ifeq ($(shell test $(MAC_OS_X_VERSION_MIN_REQUIRED) -ge 1090; echo $$?),0)
+      # Universal Binary 2 - for running on macOS 10.9 or later
+      # x86_64 (10.9 or later), arm64 (11.0 or later)
+      MACLIBSDIR=$(LIBSDIR)/macosx-ub2
       BASE_CFLAGS += -I$(SDLHDIR)/include
+    else
+      # Universal Binary - for running on Mac OS X 10.5 or later
+      # ppc (10.5/10.6), x86 (10.6 or later), x86_64 (10.6 or later)
+      #
+      # x86/x86_64 on 10.5 will run the ppc build.
+      #
+      # SDL 2.0.1,  last with Mac OS X PowerPC
+      # SDL 2.0.4,  last with Mac OS X 10.5 (x86/x86_64)
+      # SDL 2.0.22, last with Mac OS X 10.6 (x86/x86_64)
+      #
+      # code/libs/macosx-ub/libSDL2-2.0.0.dylib contents
+      # - ppc build is SDL 2.0.1 with a header change so it compiles
+      # - x86/x86_64 build are SDL 2.0.22
+      MACLIBSDIR=$(LIBSDIR)/macosx-ub
+      ifneq ($(findstring $(ARCH),ppc ppc64),)
+        BASE_CFLAGS += -I$(SDLHDIR)/include-macppc
+      else
+        BASE_CFLAGS += -I$(SDLHDIR)/include-2.0.22
+      endif
     endif
 
     # We copy sdlmain before ranlib'ing it so that subversion doesn't think
     #  the file has been modified by each build.
     LIBSDLMAIN=$(B)/libSDL2main.a
-    LIBSDLMAINSRC=$(LIBSDIR)/macosx/libSDL2main.a
-    CLIENT_LIBS += $(LIBSDIR)/macosx/libSDL2-2.0.0.dylib
-    RENDERER_LIBS += $(LIBSDIR)/macosx/libSDL2-2.0.0.dylib
-    CLIENT_EXTRA_FILES += $(LIBSDIR)/macosx/libSDL2-2.0.0.dylib
+    LIBSDLMAINSRC=$(MACLIBSDIR)/libSDL2main.a
+    CLIENT_LIBS += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
+    RENDERER_LIBS += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
+    CLIENT_EXTRA_FILES += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
   else
     BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
     CLIENT_LIBS += -framework SDL2
@@ -760,6 +808,8 @@ else # ifdef MINGW
 #############################################################################
 
 ifeq ($(PLATFORM),freebsd)
+  # Use the default C compiler
+  TOOLS_CC=cc
 
   # flags
   BASE_CFLAGS = \
@@ -996,6 +1046,67 @@ ifeq ($(PLATFORM),sunos)
 else # ifeq sunos
 
 #############################################################################
+# SETUP AND BUILD -- emscripten
+#############################################################################
+
+ifeq ($(PLATFORM),emscripten)
+
+  ifneq ($(findstring /emcc,$(CC)),/emcc)
+    CC=emcc
+  endif
+  ARCH=wasm32
+  BINEXT=.js
+
+  # dlopen(), opengl1, and networking are not functional
+  USE_RENDERER_DLOPEN=0
+  USE_OPENAL_DLOPEN=0
+  BUILD_GAME_SO=0
+  BUILD_RENDERER_OPENGL1=0
+  BUILD_SERVER=0
+
+  CLIENT_CFLAGS+=-s USE_SDL=2
+
+  CLIENT_LDFLAGS+=-s TOTAL_MEMORY=256MB
+  CLIENT_LDFLAGS+=-s STACK_SIZE=5MB
+  CLIENT_LDFLAGS+=-s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2
+
+  # The HTML file can use these functions to load extra files before the game starts.
+  CLIENT_LDFLAGS+=-s EXPORTED_RUNTIME_METHODS=FS,addRunDependency,removeRunDependency
+  CLIENT_LDFLAGS+=-s EXIT_RUNTIME=1
+  CLIENT_LDFLAGS+=-s EXPORT_ES6
+  CLIENT_LDFLAGS+=-s EXPORT_NAME=ioquake3
+
+  # Game data files can be packaged by emcc into a .data file that lives next to the wasm bundle
+  # and added to the virtual filesystem before the game starts. This requires the game data to be
+  # present at build time and it can't be changed afterward.
+  # For more flexibility, game data files can be loaded from a web server at runtime by listing
+  # them in client-config.json. This way they don't have to be present at build time and can be
+  # changed later.
+  ifeq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+    ifeq ($(wildcard $(BASEGAME)/*),)
+      $(error "No files in '$(BASEGAME)' directory for emscripten to preload.")
+    endif
+    CLIENT_LDFLAGS+=--preload-file $(BASEGAME)
+  endif
+
+  OPTIMIZEVM = -O3
+  OPTIMIZE = $(OPTIMIZEVM) -ffast-math
+
+  # These allow a warning-free build.
+  # Some of these warnings may actually be legit problems and should be fixed at some point.
+  BASE_CFLAGS+=-Wno-deprecated-non-prototype -Wno-dangling-else -Wno-implicit-const-int-float-conversion -Wno-misleading-indentation -Wno-format-overflow -Wno-logical-not-parentheses -Wno-absolute-value
+
+  DEBUG_CFLAGS=-g3 -O0 # -fsanitize=address -fsanitize=undefined
+  # Emscripten needs debug compiler flags to be passed to the linker as well
+  DEBUG_LDFLAGS=$(DEBUG_CFLAGS)
+
+  SHLIBEXT=wasm
+  SHLIBCFLAGS=-fPIC
+  SHLIBLDFLAGS=-s SIDE_MODULE
+
+else # ifeq emscripten
+
+#############################################################################
 # SETUP AND BUILD -- GENERIC
 #############################################################################
   BASE_CFLAGS=
@@ -1013,6 +1124,7 @@ endif #OpenBSD
 endif #NetBSD
 endif #IRIX
 endif #SunOS
+endif #emscripten
 
 ifndef CC
   CC=gcc
@@ -1024,7 +1136,6 @@ endif
 
 ifneq ($(HAVE_VM_COMPILED),true)
   BASE_CFLAGS += -DNO_VM_COMPILED
-  BUILD_GAME_QVM=0
 endif
 
 TARGETS =
@@ -1043,9 +1154,21 @@ endif
 
 ifneq ($(BUILD_CLIENT),0)
   ifneq ($(USE_RENDERER_DLOPEN),0)
-    TARGETS += $(B)/$(CLIENTBIN)$(FULLBINEXT) $(B)/renderer_opengl1_$(SHLIBNAME)
-  else
     TARGETS += $(B)/$(CLIENTBIN)$(FULLBINEXT)
+
+    ifneq ($(BUILD_RENDERER_OPENGL1),0)
+      TARGETS += $(B)/renderer_opengl1_$(SHLIBNAME)
+    endif
+    ifneq ($(BUILD_RENDERER_OPENGL2),0)
+      TARGETS += $(B)/renderer_opengl2_$(SHLIBNAME)
+    endif
+  else
+    ifneq ($(BUILD_RENDERER_OPENGL1),0)
+      TARGETS += $(B)/$(CLIENTBIN)$(FULLBINEXT)
+    endif
+    ifneq ($(BUILD_RENDERER_OPENGL2),0)
+      TARGETS += $(B)/$(CLIENTBIN)_opengl2$(FULLBINEXT)
+    endif
   endif
 endif
 
@@ -1073,6 +1196,42 @@ ifneq ($(BUILD_AUTOUPDATER),0)
   #  So don't call this thing "autoupdater" here!
   AUTOUPDATER_BIN := autosyncerator$(FULLBINEXT)
   TARGETS += $(B)/$(AUTOUPDATER_BIN)
+endif
+
+ifeq ($(PLATFORM),emscripten)
+  ifneq ($(BUILD_SERVER),0)
+    GENERATEDTARGETS += $(B)/$(SERVERBIN).$(ARCH).wasm
+    ifeq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+      GENERATEDTARGETS += $(B)/$(SERVERBIN).$(ARCH).data
+    endif
+  endif
+
+  ifneq ($(BUILD_CLIENT),0)
+    TARGETS += $(B)/$(CLIENTBIN).html
+    ifneq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+      TARGETS += $(B)/$(CLIENTBIN)-config.json
+    endif
+
+    ifneq ($(USE_RENDERER_DLOPEN),0)
+      GENERATEDTARGETS += $(B)/$(CLIENTBIN).$(ARCH).wasm
+      ifeq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+        GENERATEDTARGETS += $(B)/$(CLIENTBIN).$(ARCH).data
+      endif
+    else
+      ifneq ($(BUILD_RENDERER_OPENGL1),0)
+        GENERATEDTARGETS += $(B)/$(CLIENTBIN).$(ARCH).wasm
+        ifeq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+          GENERATEDTARGETS += $(B)/$(CLIENTBIN).$(ARCH).data
+        endif
+      endif
+      ifneq ($(BUILD_RENDERER_OPENGL2),0)
+        GENERATEDTARGETS += $(B)/$(CLIENTBIN)_opengl2.$(ARCH).wasm
+        ifeq ($(EMSCRIPTEN_PRELOAD_FILE),1)
+          GENERATEDTARGETS += $(B)/$(CLIENTBIN)_opengl2.$(ARCH).data
+        endif
+      endif
+    endif
+  endif
 endif
 
 ifeq ($(USE_OPENAL),1)
@@ -1307,7 +1466,8 @@ all: debug release
 debug:
 	@$(MAKE) targets B=$(BD) CFLAGS="$(CFLAGS) $(BASE_CFLAGS) $(DEPEND_CFLAGS)" \
 	  OPTIMIZE="$(DEBUG_CFLAGS)" OPTIMIZEVM="$(DEBUG_CFLAGS)" \
-	  CLIENT_CFLAGS="$(CLIENT_CFLAGS)" SERVER_CFLAGS="$(SERVER_CFLAGS)" V=$(V)
+	  CLIENT_CFLAGS="$(CLIENT_CFLAGS)" SERVER_CFLAGS="$(SERVER_CFLAGS)" V=$(V) \
+	  LDFLAGS="$(LDFLAGS) $(DEBUG_LDFLAGS)"
 
 release:
 	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(BASE_CFLAGS) $(DEPEND_CFLAGS)" \
@@ -1344,6 +1504,7 @@ ifneq ($(BUILD_CLIENT),0)
 endif
 
 NAKED_TARGETS=$(shell echo $(TARGETS) | sed -e "s!$(B)/!!g")
+NAKED_GENERATEDTARGETS=$(shell echo $(GENERATEDTARGETS) | sed -e "s!$(B)/!!g")
 
 print_list=-@for i in $(1); \
      do \
@@ -1399,6 +1560,7 @@ endif
 	@echo ""
 	@echo "  Output:"
 	$(call print_list, $(NAKED_TARGETS))
+	$(call print_list, $(NAKED_GENERATEDTARGETS))
 	@echo ""
 ifneq ($(TARGETS),)
   ifndef DEBUG_MAKEFILE
@@ -1415,7 +1577,7 @@ endif
 ifneq ($(PLATFORM),darwin)
   ifdef ARCHIVE
 	@rm -f $@
-	@(cd $(B) && zip -r9 ../../$@ $(NAKED_TARGETS))
+	@(cd $(B) && zip -r9 ../../$@ $(NAKED_TARGETS) $(NAKED_GENERATEDTARGETS))
   endif
 endif
 
@@ -1423,7 +1585,9 @@ makedirs:
 	@$(MKDIR) $(B)/autoupdater
 	@$(MKDIR) $(B)/client/opus
 	@$(MKDIR) $(B)/client/vorbis
-	@$(MKDIR) $(B)/renderer
+	@$(MKDIR) $(B)/renderergl1
+	@$(MKDIR) $(B)/renderergl2
+	@$(MKDIR) $(B)/renderergl2/glsl
 	@$(MKDIR) $(B)/ded
 	@$(MKDIR) $(B)/$(BASEGAME)/CGame
 	@$(MKDIR) $(B)/$(BASEGAME)/Game
@@ -1715,102 +1879,186 @@ ifdef MINGW
   Q3OBJ += \
     $(B)/client/con_passive.o
 else
+ifeq ($(PLATFORM),emscripten)
+  Q3OBJ += \
+    $(B)/client/con_passive.o
+else
   Q3OBJ += \
     $(B)/client/con_tty.o
 endif
+endif
+
+Q3R2OBJ = \
+  $(B)/renderergl2/tr_animation.o \
+  $(B)/renderergl2/tr_backend.o \
+  $(B)/renderergl2/tr_bsp.o \
+  $(B)/renderergl2/tr_cmds.o \
+  $(B)/renderergl2/tr_curve.o \
+  $(B)/renderergl2/tr_dsa.o \
+  $(B)/renderergl2/tr_extramath.o \
+  $(B)/renderergl2/tr_extensions.o \
+  $(B)/renderergl2/tr_fbo.o \
+  $(B)/renderergl2/tr_flares.o \
+  $(B)/renderergl2/tr_font.o \
+  $(B)/renderergl2/tr_glsl.o \
+  $(B)/renderergl2/tr_image.o \
+  $(B)/renderergl2/tr_image_bmp.o \
+  $(B)/renderergl2/tr_image_jpg.o \
+  $(B)/renderergl2/tr_image_pcx.o \
+  $(B)/renderergl2/tr_image_png.o \
+  $(B)/renderergl2/tr_image_tga.o \
+  $(B)/renderergl2/tr_image_dds.o \
+  $(B)/renderergl2/tr_init.o \
+  $(B)/renderergl2/tr_light.o \
+  $(B)/renderergl2/tr_main.o \
+  $(B)/renderergl2/tr_marks.o \
+  $(B)/renderergl2/tr_mesh.o \
+  $(B)/renderergl2/tr_model.o \
+  $(B)/renderergl2/tr_model_iqm.o \
+  $(B)/renderergl2/tr_noise.o \
+  $(B)/renderergl2/tr_postprocess.o \
+  $(B)/renderergl2/tr_scene.o \
+  $(B)/renderergl2/tr_shade.o \
+  $(B)/renderergl2/tr_shade_calc.o \
+  $(B)/renderergl2/tr_shader.o \
+  $(B)/renderergl2/tr_shadows.o \
+  $(B)/renderergl2/tr_sky.o \
+  $(B)/renderergl2/tr_surface.o \
+  $(B)/renderergl2/tr_vbo.o \
+  $(B)/renderergl2/tr_world.o \
+  \
+  $(B)/renderergl1/sdl_gamma.o \
+  $(B)/renderergl1/sdl_glimp.o
+
+Q3R2STRINGOBJ = \
+  $(B)/renderergl2/glsl/bokeh_fp.o \
+  $(B)/renderergl2/glsl/bokeh_vp.o \
+  $(B)/renderergl2/glsl/calclevels4x_fp.o \
+  $(B)/renderergl2/glsl/calclevels4x_vp.o \
+  $(B)/renderergl2/glsl/depthblur_fp.o \
+  $(B)/renderergl2/glsl/depthblur_vp.o \
+  $(B)/renderergl2/glsl/dlight_fp.o \
+  $(B)/renderergl2/glsl/dlight_vp.o \
+  $(B)/renderergl2/glsl/down4x_fp.o \
+  $(B)/renderergl2/glsl/down4x_vp.o \
+  $(B)/renderergl2/glsl/fogpass_fp.o \
+  $(B)/renderergl2/glsl/fogpass_vp.o \
+  $(B)/renderergl2/glsl/generic_fp.o \
+  $(B)/renderergl2/glsl/generic_vp.o \
+  $(B)/renderergl2/glsl/lightall_fp.o \
+  $(B)/renderergl2/glsl/lightall_vp.o \
+  $(B)/renderergl2/glsl/pshadow_fp.o \
+  $(B)/renderergl2/glsl/pshadow_vp.o \
+  $(B)/renderergl2/glsl/shadowfill_fp.o \
+  $(B)/renderergl2/glsl/shadowfill_vp.o \
+  $(B)/renderergl2/glsl/shadowmask_fp.o \
+  $(B)/renderergl2/glsl/shadowmask_vp.o \
+  $(B)/renderergl2/glsl/ssao_fp.o \
+  $(B)/renderergl2/glsl/ssao_vp.o \
+  $(B)/renderergl2/glsl/texturecolor_fp.o \
+  $(B)/renderergl2/glsl/texturecolor_vp.o \
+  $(B)/renderergl2/glsl/tonemap_fp.o \
+  $(B)/renderergl2/glsl/tonemap_vp.o
 
 Q3ROBJ = \
-  $(B)/renderer/tr_altivec.o \
-  $(B)/renderer/tr_animation.o \
-  $(B)/renderer/tr_backend.o \
-  $(B)/renderer/tr_bloom.o \
-  $(B)/renderer/tr_bsp.o \
-  $(B)/renderer/tr_cmds.o \
-  $(B)/renderer/tr_curve.o \
-  $(B)/renderer/tr_flares.o \
-  $(B)/renderer/tr_font.o \
-  $(B)/renderer/tr_image.o \
-  $(B)/renderer/tr_image_png.o \
-  $(B)/renderer/tr_image_jpg.o \
-  $(B)/renderer/tr_image_bmp.o \
-  $(B)/renderer/tr_image_tga.o \
-  $(B)/renderer/tr_image_pcx.o \
-  $(B)/renderer/tr_init.o \
-  $(B)/renderer/tr_light.o \
-  $(B)/renderer/tr_main.o \
-  $(B)/renderer/tr_marks.o \
-  $(B)/renderer/tr_mesh.o \
-  $(B)/renderer/tr_model.o \
-  $(B)/renderer/tr_model_iqm.o \
-  $(B)/renderer/tr_motionblur.o \
-  $(B)/renderer/tr_noise.o \
-  $(B)/renderer/tr_scene.o \
-  $(B)/renderer/tr_shade.o \
-  $(B)/renderer/tr_shade_calc.o \
-  $(B)/renderer/tr_shader.o \
-  $(B)/renderer/tr_shadows.o \
-  $(B)/renderer/tr_sky.o \
-  $(B)/renderer/tr_surface.o \
-  $(B)/renderer/tr_world.o \
+  $(B)/renderergl1/tr_altivec.o \
+  $(B)/renderergl1/tr_animation.o \
+  $(B)/renderergl1/tr_backend.o \
+  $(B)/renderergl1/tr_bsp.o \
+  $(B)/renderergl1/tr_bloom.o \
+  $(B)/renderergl1/tr_cmds.o \
+  $(B)/renderergl1/tr_curve.o \
+  $(B)/renderergl1/tr_flares.o \
+  $(B)/renderergl1/tr_font.o \
+  $(B)/renderergl1/tr_image.o \
+  $(B)/renderergl1/tr_image_bmp.o \
+  $(B)/renderergl1/tr_image_jpg.o \
+  $(B)/renderergl1/tr_image_pcx.o \
+  $(B)/renderergl1/tr_image_png.o \
+  $(B)/renderergl1/tr_image_tga.o \
+  $(B)/renderergl1/tr_init.o \
+  $(B)/renderergl1/tr_light.o \
+  $(B)/renderergl1/tr_main.o \
+  $(B)/renderergl1/tr_marks.o \
+  $(B)/renderergl1/tr_mesh.o \
+  $(B)/renderergl1/tr_model.o \
+  $(B)/renderergl1/tr_model_iqm.o \
+  $(B)/renderergl1/tr_motionblur.o \
+  $(B)/renderergl1/tr_noise.o \
+  $(B)/renderergl1/tr_scene.o \
+  $(B)/renderergl1/tr_shade.o \
+  $(B)/renderergl1/tr_shade_calc.o \
+  $(B)/renderergl1/tr_shader.o \
+  $(B)/renderergl1/tr_shadows.o \
+  $(B)/renderergl1/tr_sky.o \
+  $(B)/renderergl1/tr_surface.o \
+  $(B)/renderergl1/tr_world.o \
   \
-  $(B)/renderer/sdl_gamma.o \
-  $(B)/renderer/sdl_glimp.o
+  $(B)/renderergl1/sdl_gamma.o \
+  $(B)/renderergl1/sdl_glimp.o
+
 ifneq ($(USE_RENDERER_DLOPEN), 0)
   Q3ROBJ += \
-    $(B)/renderer/q_shared.o \
-    $(B)/renderer/puff.o \
-    $(B)/renderer/q_math.o \
-    $(B)/renderer/tr_subs.o
+    $(B)/renderergl1/q_shared.o \
+    $(B)/renderergl1/puff.o \
+    $(B)/renderergl1/q_math.o \
+    $(B)/renderergl1/tr_subs.o
+
+  Q3R2OBJ += \
+    $(B)/renderergl1/q_shared.o \
+    $(B)/renderergl1/puff.o \
+    $(B)/renderergl1/q_math.o \
+    $(B)/renderergl1/tr_subs.o
 endif
 
 ifneq ($(USE_INTERNAL_JPEG),0)
   JPGOBJ = \
-    $(B)/renderer/jaricom.o \
-    $(B)/renderer/jcapimin.o \
-    $(B)/renderer/jcapistd.o \
-    $(B)/renderer/jcarith.o \
-    $(B)/renderer/jccoefct.o  \
-    $(B)/renderer/jccolor.o \
-    $(B)/renderer/jcdctmgr.o \
-    $(B)/renderer/jchuff.o   \
-    $(B)/renderer/jcinit.o \
-    $(B)/renderer/jcmainct.o \
-    $(B)/renderer/jcmarker.o \
-    $(B)/renderer/jcmaster.o \
-    $(B)/renderer/jcomapi.o \
-    $(B)/renderer/jcparam.o \
-    $(B)/renderer/jcprepct.o \
-    $(B)/renderer/jcsample.o \
-    $(B)/renderer/jctrans.o \
-    $(B)/renderer/jdapimin.o \
-    $(B)/renderer/jdapistd.o \
-    $(B)/renderer/jdarith.o \
-    $(B)/renderer/jdatadst.o \
-    $(B)/renderer/jdatasrc.o \
-    $(B)/renderer/jdcoefct.o \
-    $(B)/renderer/jdcolor.o \
-    $(B)/renderer/jddctmgr.o \
-    $(B)/renderer/jdhuff.o \
-    $(B)/renderer/jdinput.o \
-    $(B)/renderer/jdmainct.o \
-    $(B)/renderer/jdmarker.o \
-    $(B)/renderer/jdmaster.o \
-    $(B)/renderer/jdmerge.o \
-    $(B)/renderer/jdpostct.o \
-    $(B)/renderer/jdsample.o \
-    $(B)/renderer/jdtrans.o \
-    $(B)/renderer/jerror.o \
-    $(B)/renderer/jfdctflt.o \
-    $(B)/renderer/jfdctfst.o \
-    $(B)/renderer/jfdctint.o \
-    $(B)/renderer/jidctflt.o \
-    $(B)/renderer/jidctfst.o \
-    $(B)/renderer/jidctint.o \
-    $(B)/renderer/jmemmgr.o \
-    $(B)/renderer/jmemnobs.o \
-    $(B)/renderer/jquant1.o \
-    $(B)/renderer/jquant2.o \
-    $(B)/renderer/jutils.o
+    $(B)/renderergl1/jaricom.o \
+    $(B)/renderergl1/jcapimin.o \
+    $(B)/renderergl1/jcapistd.o \
+    $(B)/renderergl1/jcarith.o \
+    $(B)/renderergl1/jccoefct.o  \
+    $(B)/renderergl1/jccolor.o \
+    $(B)/renderergl1/jcdctmgr.o \
+    $(B)/renderergl1/jchuff.o   \
+    $(B)/renderergl1/jcinit.o \
+    $(B)/renderergl1/jcmainct.o \
+    $(B)/renderergl1/jcmarker.o \
+    $(B)/renderergl1/jcmaster.o \
+    $(B)/renderergl1/jcomapi.o \
+    $(B)/renderergl1/jcparam.o \
+    $(B)/renderergl1/jcprepct.o \
+    $(B)/renderergl1/jcsample.o \
+    $(B)/renderergl1/jctrans.o \
+    $(B)/renderergl1/jdapimin.o \
+    $(B)/renderergl1/jdapistd.o \
+    $(B)/renderergl1/jdarith.o \
+    $(B)/renderergl1/jdatadst.o \
+    $(B)/renderergl1/jdatasrc.o \
+    $(B)/renderergl1/jdcoefct.o \
+    $(B)/renderergl1/jdcolor.o \
+    $(B)/renderergl1/jddctmgr.o \
+    $(B)/renderergl1/jdhuff.o \
+    $(B)/renderergl1/jdinput.o \
+    $(B)/renderergl1/jdmainct.o \
+    $(B)/renderergl1/jdmarker.o \
+    $(B)/renderergl1/jdmaster.o \
+    $(B)/renderergl1/jdmerge.o \
+    $(B)/renderergl1/jdpostct.o \
+    $(B)/renderergl1/jdsample.o \
+    $(B)/renderergl1/jdtrans.o \
+    $(B)/renderergl1/jerror.o \
+    $(B)/renderergl1/jfdctflt.o \
+    $(B)/renderergl1/jfdctfst.o \
+    $(B)/renderergl1/jfdctint.o \
+    $(B)/renderergl1/jidctflt.o \
+    $(B)/renderergl1/jidctfst.o \
+    $(B)/renderergl1/jidctint.o \
+    $(B)/renderergl1/jmemmgr.o \
+    $(B)/renderergl1/jmemnobs.o \
+    $(B)/renderergl1/jquant1.o \
+    $(B)/renderergl1/jquant2.o \
+    $(B)/renderergl1/jutils.o
 endif
 
 ifeq ($(ARCH),x86)
@@ -2066,11 +2314,22 @@ $(B)/renderer_opengl1_$(SHLIBNAME): $(Q3ROBJ) $(JPGOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3ROBJ) $(JPGOBJ) \
 		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
+
+$(B)/renderer_opengl2_$(SHLIBNAME): $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
+		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
 else
 $(B)/$(CLIENTBIN)$(FULLBINEXT): $(Q3OBJ) $(Q3ROBJ) $(JPGOBJ) $(LIBSDLMAIN)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
 		-o $@ $(Q3OBJ) $(Q3ROBJ) $(JPGOBJ) \
+		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
+
+$(B)/$(CLIENTBIN)_opengl2$(FULLBINEXT): $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) $(LIBSDLMAIN)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
+		-o $@ $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
 		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
 endif
 
@@ -2404,23 +2663,36 @@ $(B)/client/win_resource.o: $(SYSDIR)/win_resource.rc $(SYSDIR)/win_manifest.xml
 	$(DO_WINDRES)
 
 
-$(B)/renderer/%.o: $(CMDIR)/%.c
+$(B)/renderergl1/%.o: $(CMDIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/%.o: $(SDLDIR)/%.c
+$(B)/renderergl1/%.o: $(SDLDIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/%.o: $(JPDIR)/%.c
+$(B)/renderergl1/%.o: $(JPDIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/%.o: $(RCOMMONDIR)/%.c
+$(B)/renderergl1/%.o: $(RCOMMONDIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/%.o: $(RDIR)/%.c
+$(B)/renderergl1/%.o: $(RGL1DIR)/%.c
 	$(DO_REF_CC)
 
-$(B)/renderer/tr_altivec.o: $(RDIR)/tr_altivec.c
+$(B)/renderergl1/tr_altivec.o: $(RGL1DIR)/tr_altivec.c
 	$(DO_REF_CC_ALTIVEC)
+
+$(B)/renderergl2/glsl/%.c: $(RGL2DIR)/glsl/%.glsl $(STRINGIFY)
+	$(DO_REF_STR)
+
+$(B)/renderergl2/glsl/%.o: $(B)/renderergl2/glsl/%.c
+	$(DO_REF_CC)
+
+$(B)/renderergl2/%.o: $(RCOMMONDIR)/%.c
+	$(DO_REF_CC)
+
+$(B)/renderergl2/%.o: $(RGL2DIR)/%.c
+	$(DO_REF_CC)
+
 
 $(B)/ded/%.o: $(ASMDIR)/%.s
 	$(DO_AS)
@@ -2518,7 +2790,12 @@ internalinstall:
 ifneq ($(BUILD_CLIENT),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BUILDPATH)/$(CLIENTBIN)$(FULLBINEXT) $(INSTALLDIR)/$(CLIENTBIN)$(BINEXT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
-	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BUILDPATH)/renderer_opengl1_$(SHLIBNAME) $(INSTALLDIR)/renderer_opengl1_$(SHLIBNAME)
+    ifneq ($(BUILD_RENDERER_OPENGL1),0)
+	    $(INSTALL) $(STRIP_FLAG) -m 0755 $(BUILDPATH)/renderer_opengl1_$(SHLIBNAME) $(INSTALLDIR)/renderer_opengl1_$(SHLIBNAME)
+    endif
+    ifneq ($(BUILD_RENDERER_OPENGL2),0)
+	    $(INSTALL) $(STRIP_FLAG) -m 0755 $(BUILDPATH)/renderer_opengl2_$(SHLIBNAME) $(INSTALLDIR)/renderer_opengl2_$(SHLIBNAME)
+    endif
   endif
 endif
 
@@ -2551,9 +2828,21 @@ copyfiles: release
 	-$(MKDIR) -p -m 0755 $(COPYDIR)/ZEQ2
 
 ifneq ($(BUILD_CLIENT),0)
-	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)$(BINEXT)
   ifneq ($(USE_RENDERER_DLOPEN),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)$(FULLBINEXT)
+    ifneq ($(BUILD_RENDERER_OPENGL1),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/renderer_opengl1_$(SHLIBNAME) $(COPYBINDIR)/renderer_opengl1_$(SHLIBNAME)
+    endif
+    ifneq ($(BUILD_RENDERER_OPENGL2),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/renderer_opengl2_$(SHLIBNAME) $(COPYBINDIR)/renderer_opengl2_$(SHLIBNAME)
+    endif
+  else
+    ifneq ($(BUILD_RENDERER_OPENGL1),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)$(FULLBINEXT)
+    endif
+    ifneq ($(BUILD_RENDERER_OPENGL2),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)_opengl2$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)_opengl2$(FULLBINEXT)
+    endif
   endif
 endif
 
@@ -2589,7 +2878,9 @@ clean2:
 	@echo "CLEAN $(B)"
 	@rm -f $(OBJ)
 	@rm -f $(OBJ_D_FILES)
+	@rm -f $(STRINGOBJ)
 	@rm -f $(TARGETS)
+	@rm -f $(GENERATEDTARGETS)
 
 toolsclean: toolsclean-debug toolsclean-release
 
@@ -2603,7 +2894,7 @@ toolsclean2:
 	@echo "TOOLS_CLEAN $(B)"
 	@rm -f $(TOOLSOBJ)
 	@rm -f $(TOOLSOBJ_D_FILES)
-	@rm -f $(LBURG) $(DAGCHECK_C) $(Q3RCC) $(Q3CPP) $(Q3LCC) $(Q3ASM)
+	@rm -f $(LBURG) $(DAGCHECK_C) $(Q3RCC) $(Q3CPP) $(Q3LCC) $(Q3ASM) $(STRINGIFY)
 
 distclean: clean toolsclean
 	@rm -rf $(BUILD_DIR)
@@ -2632,6 +2923,11 @@ dist:
 # DEPENDENCIES
 #############################################################################
 
+# Rebuild every target if Makefile or Makefile.local changes
+ifneq ($(DEPEND_MAKEFILE),0)
+.EXTRA_PREREQS:= $(MAKEFILE_LIST)
+endif
+
 ifneq ($(B),)
   OBJ_D_FILES=$(filter %.d,$(OBJ:%.o=%.d))
   TOOLSOBJ_D_FILES=$(filter %.d,$(TOOLSOBJ:%.o=%.d))
@@ -2643,3 +2939,8 @@ endif
 	release targets \
 	toolsclean toolsclean2 toolsclean-debug toolsclean-release \
 	$(OBJ_D_FILES) $(TOOLSOBJ_D_FILES)
+
+# If the target name contains "clean", don't do a parallel build
+ifneq ($(findstring clean, $(MAKECMDGOALS)),)
+.NOTPARALLEL:
+endif

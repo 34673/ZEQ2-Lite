@@ -322,7 +322,36 @@ void R_SetColorMode(GLboolean *rgba, stereoFrame_t stereoFrame, int colormode)
 	}
 }
 
+/*
+====================
+RE_GLDebugCallback
 
+Receives, filters, and beautifies messages passed from OpenGL
+====================
+*/
+void APIENTRY RE_GLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam){
+	printParm_t channel = PRINT_ALL;
+	char prefix[1024] = "[OpenGL, ";
+	//if(severity == GL_DEBUG_SEVERITY_NOTIFICATION){return;}
+	if(severity == GL_DEBUG_SEVERITY_HIGH){channel = PRINT_ERROR;}
+	else if(severity == GL_DEBUG_SEVERITY_MEDIUM){channel = PRINT_WARNING;}
+	else if(severity == GL_DEBUG_SEVERITY_LOW){channel = PRINT_WARNING;}
+	if(source == GL_DEBUG_SOURCE_API){Q_strcat(prefix,sizeof(prefix),"API] ");}
+	else if(source == GL_DEBUG_SOURCE_WINDOW_SYSTEM){Q_strcat(prefix,sizeof(prefix),"Window System] ");}
+	else if(source == GL_DEBUG_SOURCE_SHADER_COMPILER){Q_strcat(prefix,sizeof(prefix),"Shader Compiler] ");}
+	else if(source == GL_DEBUG_SOURCE_THIRD_PARTY){Q_strcat(prefix,sizeof(prefix),"Third Party] ");}
+	else if(source == GL_DEBUG_SOURCE_APPLICATION){Q_strcat(prefix,sizeof(prefix),"Application] ");}
+	else if(source == GL_DEBUG_SOURCE_OTHER){Q_strcat(prefix,sizeof(prefix),"Unknown Source] ");}
+	if(type == GL_DEBUG_TYPE_ERROR){Q_strcat(prefix,sizeof(prefix),"Error: ");}
+	else if(type == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR){Q_strcat(prefix,sizeof(prefix),"Deprecated Behavior: ");}
+	else if(type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR){Q_strcat(prefix,sizeof(prefix),"Undefined Behavior: ");}
+	else if(type == GL_DEBUG_TYPE_PORTABILITY){Q_strcat(prefix,sizeof(prefix),"Portability: ");}
+	else if(type == GL_DEBUG_TYPE_PERFORMANCE){Q_strcat(prefix,sizeof(prefix),"Performance: ");}
+	else if(type == GL_DEBUG_TYPE_MARKER){Q_strcat(prefix,sizeof(prefix),"Marker: ");}
+	else if(type == GL_DEBUG_TYPE_PUSH_GROUP){Q_strcat(prefix,sizeof(prefix),"Push Group: ");}
+	else if(type == GL_DEBUG_TYPE_POP_GROUP){Q_strcat(prefix,sizeof(prefix),"Pop Group: ");}
+	ri.Printf(channel,"%s%s\n",prefix,message);
+}
 /*
 ====================
 RE_BeginFrame
@@ -405,17 +434,21 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		R_IssuePendingRenderCommands();
 		R_SetColorMappings();
 	}
-
-	// check for errors
-	if ( !r_ignoreGLErrors->integer )
 	{
-		int	err;
-
-		R_IssuePendingRenderCommands();
-		if ((err = qglGetError()) != GL_NO_ERROR)
-			ri.Error(ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!", err);
+		GLboolean enabled;
+		qglGetBooleanv(GL_DEBUG_OUTPUT,&enabled);
+		if(r_glDebugging->integer){
+			if(!enabled){
+				qglEnable(GL_DEBUG_OUTPUT);
+				qglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+				qglDebugMessageCallback(RE_GLDebugCallback,NULL);
+			}
+		}
+		else if(enabled){
+			qglDisable(GL_DEBUG_OUTPUT);
+			qglDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		}
 	}
-
 	if (glConfig.stereoEnabled) {
 		if( !(cmd = R_GetCommandBuffer(sizeof(*cmd))) )
 			return;

@@ -260,8 +260,6 @@ void FBO_Init(void)
 
 	tr.numFBOs = 0;
 
-	GL_CheckErrors();
-
 	R_IssuePendingRenderCommands();
 
 	hdrFormat = GL_RGBA8;
@@ -413,8 +411,6 @@ void FBO_Init(void)
 		FBO_CreateBuffer(tr.renderCubeFbo, GL_DEPTH_COMPONENT24_ARB, 0, 0);
 		R_CheckFBO(tr.renderCubeFbo);
 	}
-
-	GL_CheckErrors();
 
 	GL_BindFramebuffer(GL_FRAMEBUFFER, 0);
 	glState.currentFBO = NULL;

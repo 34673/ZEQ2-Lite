@@ -156,6 +156,11 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 	GLE(void, GetQueryObjectiv, GLuint id, GLenum pname, GLint *params) \
 	GLE(void, GetQueryObjectuiv, GLuint id, GLenum pname, GLuint *params) \
 
+// OpenGL 1.4
+#define QGL_1_4_PROCS \
+	GLE(void, MultiDrawArrays, GLenum mode, const GLint* first, const GLsizei* count, GLsizei drawcount) \
+	GLE(void, MultiDrawElements, GLenum mode, const GLsizei* count, GLenum type, const void** indices, GLsizei drawcount) \
+
 // OpenGL 1.5, was GL_ARB_vertex_buffer_object
 #define QGL_1_5_PROCS \
 	GLE(void, BindBuffer, GLenum target, GLuint buffer) \
@@ -248,6 +253,83 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 #define QGL_3_0_PROCS \
 	GLE(const GLubyte *, GetStringi, GLenum name, GLuint index) \
 
+// OpenGL 3.1 specific
+#define QGL_3_1_PROCS \
+	GLE(void, DrawArraysInstanced, GLenum mode, GLint first, GLsizei count, GLsizei instancecount) \
+	GLE(void, DrawElementsInstanced, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei instancecount) \
+	GLE(void, GetUniformBlockIndex, GLuint program, GLchar* uniformBlockName) \
+	GLE(void, UniformBlockBinding, GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding) \
+
+// OpenGL 3.2 specific
+#define QGL_3_2_PROCS \
+	GLE(void, MultiDrawElementsBaseVertex, GLenum mode, const GLsizei* count, GLenum type, const void** indices, GLsizei drawcount, const GLint* basevertex) \
+	GLE(void, DrawElementsInstancedBaseVertex, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei instancecount, GLint basevertex) \
+
+// OpenGL 4.0 specific
+#define QGL_4_0_PROCS \
+	GLE(void, DrawArraysIndirect, GLenum mode, const void* indirect) \
+	GLE(void, DrawElementsIndirect, GLenum mode, GLenum type, const void* indirect) \
+
+// OpenGL 4.1 specific
+#define QGL_4_1_PROCS \
+	GLE(void, ShaderBinary, GLsizei count, const GLuint* shaders, GLenum binaryFormat, const void* binary, GLsizei length) \
+	
+// OpenGL 4.2 specific
+#define QGL_4_2_PROCS \
+	GLE(void, DrawElementsInstancedBaseVertexBaseInstance, GLenum mode, GLsizei count, GLenum type, void* indices, GLsizei instancecount, GLint basevertex, GLuint baseinstance) \
+
+// OpenGL 4.3 specific
+#define QGL_4_3_PROCS \
+	GLE(void, DebugMessageCallback, GLDEBUGPROC callback, const void* userParam) \
+	GLE(void, DebugMessageInsert, GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message) \
+	GLE(void, GetDebugMessageLog, GLuint count, GLsizei bufSize, GLenum* sources, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog) \
+	GLE(void, ObjectLabel, GLenum identifier, GLuint name, GLsizei length, const char* label) \
+	GLE(void, GetObjectLabel, GLenum identifier, GLuint name, GLsizei bufSize, GLsizei* length, char* label) \
+	GLE(void, MultiDrawArraysIndirect, GLenum mode, const void* indirect, GLsizei drawcount, GLsizei stride) \
+	GLE(void, MultiDrawElementsIndirect, GLenum mode, GLenum type, const void* indirect, GLsizei drawcount, GLsizei stride) \
+	GLE(void, DispatchCompute, GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) \
+	GLE(void, DispatchComputeIndirect, GLintptr indirect) \
+
+// OpenGL 4.5 specific
+#define QGL_4_5_PROCS \
+	GLE(void, CreateBuffers, GLsizei n, GLuint* buffers) \
+	GLE(void, NamedBufferData, GLuint buffer, GLsizeiptr size, const void* data, GLenum usage) \
+	GLE(void, NamedBufferSubData, GLuint buffer, GLintptr offset, GLsizeiptr size, const void* data) \
+	GLE(void, NamedBufferStorage, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags) \
+	GLE(void, CreateVertexArrays, GLsizei n, GLuint* arrays) \
+	GLE(void, VertexArrayVertexBuffer, GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) \
+	GLE(void, VertexArrayElementBuffer, GLuint vaobj, GLuint buffer) \
+	GLE(void, EnableVertexArrayAttrib, GLuint vaobj, GLuint index) \
+	GLE(void, VertexArrayAttribFormat, GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset) \
+	GLE(void, VertexArrayAttribIFormat, GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset) \
+	GLE(void, VertexArrayAttribLFormat, GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset) \
+	GLE(void, VertexArrayAttribBinding, GLuint vaobj, GLuint attribindex, GLuint bindingindex) \
+	GLE(void, CreateTextures, GLenum target, GLsizei n, GLuint* textures) \
+	GLE(void, TextureParameterf, GLuint texture, GLenum pname, GLfloat param) \
+	GLE(void, TextureParameteri, GLuint texture, GLenum pname, GLint param) \
+	GLE(void, TextureParameterfv, GLuint texture, GLenum pname, const GLfloat* params) \
+	GLE(void, TextureParameteriv, GLuint texture, GLenum pname, const GLint* params) \
+	GLE(void, TextureParameterIiv, GLuint texture, GLenum pname, const GLint* params) \
+	GLE(void, TextureParameterIuiv, GLuint texture, GLenum pname, const GLuint* params) \
+	GLE(void, TextureStorage2D, GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) \
+	GLE(void, TextureStorage3D, GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) \
+	GLE(void, TextureSubImage2D, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels) \
+	GLE(void, TextureSubImage3D, GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels) \
+	GLE(void, BindTextureUnit, GLuint unit, GLuint texture) \
+	GLE(void, GenerateTextureMipmap, GLuint texture) \
+	GLE(void, CreateFramebuffers, GLsizei n, GLuint* framebuffers) \
+	GLE(void, BlitNamedFramebuffer, GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) \
+	GLE(void, ClearNamedFramebufferiv, GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint* value) \
+	GLE(void, ClearNamedFramebufferuiv, GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLuint* value) \
+	GLE(void, ClearNamedFramebufferfv, GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat* value) \
+	GLE(void, ClearNamedFramebufferfi, GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil) \
+
+// OpenGL 4.6 specific
+#define QGL_4_6_PROCS \
+	GLE(void, MultiDrawArraysIndirectCount, GLenum mode, GLenum type, const void* indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride) \
+	GLE(void, MultiDrawElementsIndirectCount, GLenum mode, GLenum type, const void* indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride) \
+	GLE(void, SpecializeShader, GLuint shader​, const GLchar* pEntryPoint​, GLuint numSpecializationConstants​, const GLuint* pConstantIndex​, const GLuint* pConstantValue​) \
+
 // GL_ARB_framebuffer_object, built-in to OpenGL 3.0
 #define QGL_ARB_framebuffer_object_PROCS \
 	GLE(void, BindRenderbuffer, GLenum target, GLuint renderbuffer) \
@@ -320,21 +402,33 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 	GLE(GLvoid, NamedFramebufferTexture2DEXT, GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
 	GLE(GLvoid, NamedFramebufferRenderbufferEXT, GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) \
 
-#define GLE(ret, name, ...) typedef ret APIENTRY name##proc(__VA_ARGS__);
-QGL_1_1_PROCS;
-QGL_1_1_FIXED_FUNCTION_PROCS;
-QGL_DESKTOP_1_1_PROCS;
-QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS;
-QGL_ES_1_1_PROCS;
-QGL_ES_1_1_FIXED_FUNCTION_PROCS;
-QGL_1_3_PROCS;
-QGL_1_5_PROCS;
-QGL_2_0_PROCS;
-QGL_3_0_PROCS;
-QGL_ARB_occlusion_query_PROCS;
-QGL_ARB_framebuffer_object_PROCS;
-QGL_ARB_vertex_array_object_PROCS;
+#define QGL_ALL_PROCS \
+QGL_1_1_PROCS; \
+QGL_1_1_FIXED_FUNCTION_PROCS; \
+QGL_DESKTOP_1_1_PROCS; \
+QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS; \
+QGL_ES_1_1_PROCS; \
+QGL_ES_1_1_FIXED_FUNCTION_PROCS; \
+QGL_1_3_PROCS; \
+QGL_1_4_PROCS; \
+QGL_1_5_PROCS; \
+QGL_2_0_PROCS; \
+QGL_3_0_PROCS; \
+QGL_3_1_PROCS; \
+QGL_3_2_PROCS; \
+QGL_4_0_PROCS; \
+QGL_4_1_PROCS; \
+QGL_4_2_PROCS; \
+QGL_4_3_PROCS; \
+QGL_4_5_PROCS; \
+QGL_4_6_PROCS; \
+QGL_ARB_occlusion_query_PROCS; \
+QGL_ARB_framebuffer_object_PROCS; \
+QGL_ARB_vertex_array_object_PROCS; \
 QGL_EXT_direct_state_access_PROCS;
+
+#define GLE(ret, name, ...) typedef ret APIENTRY name##proc(__VA_ARGS__);
+QGL_ALL_PROCS
 #undef GLE
 
 extern int qglMajorVersion, qglMinorVersion;

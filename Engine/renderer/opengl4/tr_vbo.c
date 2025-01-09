@@ -163,7 +163,6 @@ vao_t *R_CreateVao(const char *name, byte *vertexes, int vertexesSize, byte *ind
 
 	glState.currentVao = vao;
 
-	GL_CheckErrors();
 
 	return vao;
 }
@@ -320,7 +319,6 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 
 	glState.currentVao = vao;
 
-	GL_CheckErrors();
 
 	ri.Hunk_FreeTempMemory(data);
 
@@ -406,7 +404,6 @@ void R_BindNullVao(void)
 		glState.currentVao = NULL;
 	}
 
-	GL_CheckErrors();
 }
 
 
@@ -501,7 +498,6 @@ void R_InitVaos(void)
 
 	VaoCache_Init();
 
-	GL_CheckErrors();
 }
 
 /*

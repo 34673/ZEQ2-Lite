@@ -2195,7 +2195,6 @@ static void Upload32(byte *data, int x, int y, int width, int height, GLenum pic
 		RawImage_UploadTexture(image->texnum, data, x, y, width, height, GL_TEXTURE_2D, picFormat, dataFormat, dataType, numMips, internalFormat, type, flags, qfalse);
 	}
 
-	GL_CheckErrors();
 }
 
 
@@ -2383,7 +2382,6 @@ image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLe
 			break;
 	}
 
-	GL_CheckErrors();
 
 	hash = generateHashValue(name);
 	image->next = hashTable[hash];

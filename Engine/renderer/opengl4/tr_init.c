@@ -165,7 +165,7 @@ cvar_t  *r_shadowCascadeZFar;
 cvar_t  *r_shadowCascadeZBias;
 cvar_t  *r_ignoreDstAlpha;
 
-cvar_t	*r_ignoreGLErrors;
+cvar_t	*r_glDebugging;
 cvar_t	*r_logFile;
 
 cvar_t	*r_stencilbits;
@@ -304,50 +304,6 @@ static void InitOpenGL( void )
 	// set default state
 	GL_SetDefaultState();
 }
-
-/*
-==================
-GL_CheckErrors
-==================
-*/
-void GL_CheckErrs( char *file, int line ) {
-	int		err;
-	char	s[64];
-
-	err = qglGetError();
-	if ( err == GL_NO_ERROR ) {
-		return;
-	}
-	if ( r_ignoreGLErrors->integer ) {
-		return;
-	}
-	switch( err ) {
-		case GL_INVALID_ENUM:
-			strcpy( s, "GL_INVALID_ENUM" );
-			break;
-		case GL_INVALID_VALUE:
-			strcpy( s, "GL_INVALID_VALUE" );
-			break;
-		case GL_INVALID_OPERATION:
-			strcpy( s, "GL_INVALID_OPERATION" );
-			break;
-		case GL_STACK_OVERFLOW:
-			strcpy( s, "GL_STACK_OVERFLOW" );
-			break;
-		case GL_STACK_UNDERFLOW:
-			strcpy( s, "GL_STACK_UNDERFLOW" );
-			break;
-		case GL_OUT_OF_MEMORY:
-			strcpy( s, "GL_OUT_OF_MEMORY" );
-			break;
-		default:
-			Com_sprintf( s, sizeof(s), "%i", err);
-			break;
-	}
-
-	ri.Error( ERR_FATAL, "GL_CheckErrors: %s in %s at line %d", s , file, line);
-}
-
 
 /*
 ** R_GetModeInfo
@@ -1357,7 +1313,7 @@ void R_Register( void )
 	ri.Cvar_CheckRange( r_znear, 0.001f, 200, qfalse );
 	r_zproj = ri.Cvar_Get( "r_zproj", "64", CVAR_ARCHIVE );
 	r_stereoSeparation = ri.Cvar_Get( "r_stereoSeparation", "64", CVAR_ARCHIVE );
-	r_ignoreGLErrors = ri.Cvar_Get( "r_ignoreGLErrors", "1", CVAR_ARCHIVE );
+	r_glDebugging = ri.Cvar_Get( "r_glDebugging", "1", CVAR_ARCHIVE );
 	r_fastsky = ri.Cvar_Get( "r_fastsky", "0", CVAR_ARCHIVE );
 	r_inGameVideo = ri.Cvar_Get( "r_inGameVideo", "1", CVAR_ARCHIVE );
 	r_drawSun = ri.Cvar_Get( "r_drawSun", "0", CVAR_ARCHIVE );

@@ -723,7 +723,6 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 void GLSL_FinishGPUShader(shaderProgram_t *program)
 {
 	GLSL_ShowProgramUniforms(program->program);
-	GL_CheckErrors();
 }
 
 void GLSL_SetUniformInt(shaderProgram_t *program, int uniformNum, GLint value)

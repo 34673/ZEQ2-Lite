@@ -37,16 +37,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../qgl.h"
 
 #define GLE(ret, name, ...) extern name##proc * qgl##name;
-QGL_1_1_PROCS;
-QGL_DESKTOP_1_1_PROCS;
-QGL_1_3_PROCS;
-QGL_1_5_PROCS;
-QGL_2_0_PROCS;
-QGL_3_0_PROCS;
-QGL_ARB_occlusion_query_PROCS;
-QGL_ARB_framebuffer_object_PROCS;
-QGL_ARB_vertex_array_object_PROCS;
-QGL_EXT_direct_state_access_PROCS;
+QGL_ALL_PROCS
 #undef GLE
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_SHORT
@@ -1833,7 +1824,7 @@ extern  cvar_t  *r_ignoreDstAlpha;
 
 extern	cvar_t	*r_greyscale;
 
-extern	cvar_t	*r_ignoreGLErrors;
+extern	cvar_t	*r_glDebugging;
 
 extern	cvar_t	*r_overBrightBits;
 extern	cvar_t	*r_mapOverBrightBits;
@@ -1923,8 +1914,6 @@ void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, 
 void	GL_BindToTMU( image_t *image, int tmu );
 void	GL_SetDefaultState (void);
 void	GL_TextureMode( const char *string );
-void	GL_CheckErrs( char *file, int line );
-#define GL_CheckErrors(...) GL_CheckErrs(__FILE__, __LINE__)
 void	GL_State( unsigned long stateVector );
 void    GL_SetProjectionMatrix(mat4_t matrix);
 void    GL_SetModelviewMatrix(mat4_t matrix);

@@ -64,20 +64,7 @@ void (APIENTRYP qglLockArraysEXT) (GLint first, GLsizei count);
 void (APIENTRYP qglUnlockArraysEXT) (void);
 
 #define GLE(ret, name, ...) name##proc * qgl##name = NULL;
-QGL_1_1_PROCS;
-QGL_1_1_FIXED_FUNCTION_PROCS;
-QGL_DESKTOP_1_1_PROCS;
-QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS;
-QGL_ES_1_1_PROCS;
-QGL_ES_1_1_FIXED_FUNCTION_PROCS;
-QGL_1_3_PROCS;
-QGL_1_5_PROCS;
-QGL_2_0_PROCS;
-QGL_3_0_PROCS;
-QGL_ARB_occlusion_query_PROCS;
-QGL_ARB_framebuffer_object_PROCS;
-QGL_ARB_vertex_array_object_PROCS;
-QGL_EXT_direct_state_access_PROCS;
+QGL_ALL_PROCS
 #undef GLE
 
 /*
@@ -298,12 +285,14 @@ static qboolean GLimp_GetProcAddresses( qboolean fixedFunction ) {
 			QGL_1_1_PROCS;
 			QGL_DESKTOP_1_1_PROCS;
 			QGL_1_3_PROCS;
+			QGL_1_4_PROCS;
 			QGL_1_5_PROCS;
 			QGL_2_0_PROCS;
 		} else if ( QGLES_VERSION_ATLEAST( 2, 0 ) ) {
 			QGL_1_1_PROCS;
 			QGL_ES_1_1_PROCS;
 			QGL_1_3_PROCS;
+			QGL_1_4_PROCS;
 			QGL_1_5_PROCS;
 			QGL_2_0_PROCS;
 			// error so this doesn't segfault due to NULL desktop GL functions being used
@@ -315,6 +304,16 @@ static qboolean GLimp_GetProcAddresses( qboolean fixedFunction ) {
 
 	if ( QGL_VERSION_ATLEAST( 3, 0 ) || QGLES_VERSION_ATLEAST( 3, 0 ) ) {
 		QGL_3_0_PROCS;
+	}
+	if(QGL_VERSION_ATLEAST(4,6)){
+		QGL_3_1_PROCS;
+		QGL_3_2_PROCS;
+		QGL_4_0_PROCS;
+		QGL_4_1_PROCS;
+		QGL_4_2_PROCS;
+		QGL_4_3_PROCS;
+		QGL_4_5_PROCS;
+		QGL_4_6_PROCS;
 	}
 
 #undef GLE
@@ -337,20 +336,7 @@ static void GLimp_ClearProcAddresses( void ) {
 	qglesMajorVersion = 0;
 	qglesMinorVersion = 0;
 
-	QGL_1_1_PROCS;
-	QGL_1_1_FIXED_FUNCTION_PROCS;
-	QGL_DESKTOP_1_1_PROCS;
-	QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS;
-	QGL_ES_1_1_PROCS;
-	QGL_ES_1_1_FIXED_FUNCTION_PROCS;
-	QGL_1_3_PROCS;
-	QGL_1_5_PROCS;
-	QGL_2_0_PROCS;
-	QGL_3_0_PROCS;
-	QGL_ARB_occlusion_query_PROCS;
-	QGL_ARB_framebuffer_object_PROCS;
-	QGL_ARB_vertex_array_object_PROCS;
-	QGL_EXT_direct_state_access_PROCS;
+	QGL_ALL_PROCS
 
 	qglActiveTextureARB = NULL;
 	qglClientActiveTextureARB = NULL;
@@ -638,10 +624,10 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
 			SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minorVersion);
 
-			ri.Printf(PRINT_ALL, "Trying to get an OpenGL 3.2 core context\n");
+			ri.Printf(PRINT_ALL, "Trying to get an OpenGL 4.6 core context\n");
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 			if ((SDL_glContext = SDL_GL_CreateContext(SDL_window)) == NULL)
 			{
 				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());

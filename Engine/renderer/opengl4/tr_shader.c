@@ -789,6 +789,54 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 						totalImages, MAX_IMAGE_ANIMATIONS, shader.name );
 			}
 		}
+		//
+		// clampAnimMap <frequency> <image1> .... <imageN>
+		//
+		else if ( !Q_stricmp( token, "clampAnimMap" ) )
+		{
+			int	totalImages = 0;
+
+			token = COM_ParseExt( text, qfalse );
+			if ( !token[0] )
+			{
+				ri.Printf( PRINT_WARNING, "WARNING: missing parameter for 'clampAnimMap' keyword in shader '%s'\n", shader.name );
+				return qfalse;
+			}
+			stage->bundle[0].imageAnimationSpeed = atof( token );
+
+			// parse up to MAX_IMAGE_ANIMATIONS animations
+			while ( 1 ) {
+				int		num;
+
+				token = COM_ParseExt( text, qfalse );
+				if ( !token[0] ) {
+					break;
+				}
+				num = stage->bundle[0].numImageAnimations;
+				if ( num < MAX_IMAGE_ANIMATIONS ) {
+					imgFlags_t flags = IMGFLAG_CLAMPTOEDGE;
+					if (!shader.noMipMaps)
+						flags |= IMGFLAG_MIPMAP;
+
+					if (!shader.noPicMip)
+						flags |= IMGFLAG_PICMIP;
+
+					stage->bundle[0].image[num] = R_FindImageFile( token, IMGTYPE_COLORALPHA, flags );
+					if ( !stage->bundle[0].image[num] )
+					{
+						ri.Printf( PRINT_WARNING, "WARNING: R_FindImageFile could not find '%s' in shader '%s'\n", token, shader.name );
+						return qfalse;
+					}
+					stage->bundle[0].numImageAnimations++;
+				}
+				totalImages++;
+			}
+
+			if ( totalImages > MAX_IMAGE_ANIMATIONS ) {
+				ri.Printf( PRINT_WARNING, "WARNING: ignoring excess images for 'clampAnimMap' (found %d, max is %d) in shader '%s'\n",
+						totalImages, MAX_IMAGE_ANIMATIONS, shader.name );
+			}
+		}
 		else if ( !Q_stricmp( token, "videoMap" ) )
 		{
 			token = COM_ParseExt( text, qfalse );
@@ -1210,6 +1258,14 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 			{
 				stage->rgbGen = CGEN_LIGHTING_DIFFUSE;
 			}
+			else if ( !Q_stricmp( token, "lightingUniform" ) )
+			{
+				stage->rgbGen = CGEN_LIGHTING_UNIFORM;
+			}
+			else if ( !Q_stricmp( token, "lightingDynamic" ) )
+			{
+				stage->rgbGen = CGEN_LIGHTING_DYNAMIC;
+			}
 			else if ( !Q_stricmp( token, "oneMinusVertex" ) )
 			{
 				stage->rgbGen = CGEN_ONE_MINUS_VERTEX;
@@ -1303,6 +1359,10 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 			{
 				stage->bundle[0].tcGen = TCGEN_ENVIRONMENT_MAPPED;
 			}
+			else if ( !Q_stricmp( token, "cel" ) )
+			{
+				stage->bundle[0].tcGen = TCGEN_ENVIRONMENT_CELSHADE_MAPPED;
+			}
 			else if ( !Q_stricmp( token, "lightmap" ) )
 			{
 				stage->bundle[0].tcGen = TCGEN_LIGHTMAP;
@@ -1387,7 +1447,9 @@ static qboolean ParseStage( shaderStage_t *stage, char **text )
 	// decide which agens we can skip
 	if ( stage->alphaGen == AGEN_IDENTITY ) {
 		if ( stage->rgbGen == CGEN_IDENTITY
-			|| stage->rgbGen == CGEN_LIGHTING_DIFFUSE ) {
+			|| stage->rgbGen == CGEN_LIGHTING_DIFFUSE 
+			|| stage->rgbGen == CGEN_LIGHTING_UNIFORM 
+			|| stage->rgbGen == CGEN_LIGHTING_DYNAMIC) {
 			stage->alphaGen = AGEN_SKIP;
 		}
 	}
@@ -1924,6 +1986,14 @@ static qboolean ParseShader( char **text )
 			shader.entityMergable = qtrue;
 			continue;
 		}
+
+		// <-- RiO_Outlines: should shader have outlines?
+		else if ( !Q_stricmp( token, "outlines" ) ) {
+			shader.hasOutlines = qtrue;
+			continue;
+		}
+		// -->
+
 		// fogParms
 		else if ( !Q_stricmp( token, "fogParms" ) ) 
 		{
@@ -2171,6 +2241,9 @@ static void ComputeVertexAttribs(void)
 				case TCGEN_ENVIRONMENT_MAPPED:
 					shader.vertexAttribs |= ATTR_NORMAL;
 					break;
+				case TCGEN_ENVIRONMENT_CELSHADE_MAPPED:
+					shader.vertexAttribs |= ATTR_NORMAL;
+					break;
 
 				default:
 					break;
@@ -2188,6 +2261,8 @@ static void ComputeVertexAttribs(void)
 				break;
 
 			case CGEN_LIGHTING_DIFFUSE:
+			case CGEN_LIGHTING_UNIFORM:
+			case CGEN_LIGHTING_DYNAMIC:
 				shader.vertexAttribs |= ATTR_NORMAL;
 				break;
 
@@ -2380,7 +2455,7 @@ static int CollapseStagesToGLSL(void)
 		for (i = 0; i < MAX_SHADER_STAGES; i++)
 		{
 			shaderStage_t *pStage = &stages[i];
-
+			
 			if (!pStage->active)
 				continue;
 
@@ -2407,6 +2482,7 @@ static int CollapseStagesToGLSL(void)
 				case TCGEN_TEXTURE:
 				case TCGEN_LIGHTMAP:
 				case TCGEN_ENVIRONMENT_MAPPED:
+				case TCGEN_ENVIRONMENT_CELSHADE_MAPPED:
 				case TCGEN_VECTOR:
 					break;
 				default:
@@ -2508,6 +2584,7 @@ static int CollapseStagesToGLSL(void)
 
 			tcgen = qfalse;
 			if (diffuse->bundle[0].tcGen == TCGEN_ENVIRONMENT_MAPPED
+				|| diffuse->bundle[0].tcGen == TCGEN_ENVIRONMENT_CELSHADE_MAPPED
 			    || diffuse->bundle[0].tcGen == TCGEN_LIGHTMAP
 			    || diffuse->bundle[0].tcGen == TCGEN_VECTOR)
 			{
@@ -2631,7 +2708,7 @@ static int CollapseStagesToGLSL(void)
 
 			if (!pStage->active)
 				continue;
-
+				
 			if (pStage->adjustColorsForFog)
 				continue;
 
@@ -2642,6 +2719,12 @@ static int CollapseStagesToGLSL(void)
 
 				if (pStage->bundle[0].tcGen != TCGEN_TEXTURE || pStage->bundle[0].numTexMods != 0)
 					pStage->glslShaderIndex |= LIGHTDEF_USE_TCGEN_AND_TCMOD;
+			}
+			else if(pStage->rgbGen == CGEN_LIGHTING_UNIFORM || pStage->rgbGen == CGEN_LIGHTING_DYNAMIC){
+				pStage->glslShaderGroup = tr.genericShader;
+				pStage->glslShaderIndex = GENERICDEF_USE_RGBAGEN;
+				if (pStage->bundle[0].tcGen != TCGEN_TEXTURE || pStage->bundle[0].numTexMods != 0)
+					pStage->glslShaderIndex |= GENERICDEF_USE_TCGEN_AND_TCMOD;
 			}
 		}
 	}
@@ -2730,7 +2813,7 @@ static void FixRenderCommandList( int newShader ) {
 SortNewShader
 
 Positions the most recently created shader in the tr.sortedShaders[]
-array so that the shader->sort key is sorted reletive to the other
+array so that the shader->sort key is sorted relative to the other
 shaders.
 
 Sets shader->sortedIndex

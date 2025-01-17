@@ -162,6 +162,7 @@ static void R_SetupEntityLightingGrid( trRefEntity_t *ent, world_t *world ) {
 
 	VectorClear( ent->ambientLight );
 	VectorClear( ent->directedLight );
+	VectorClear( ent->dynamicLight );
 	VectorClear( direction );
 
 	assert( world->lightGridData ); // NULL with -nolight maps
@@ -285,7 +286,7 @@ LogLight
 ===============
 */
 static void LogLight( trRefEntity_t *ent ) {
-	int	max1, max2;
+	int	max1, max2, max3;
 
 	if ( !(ent->e.renderfx & RF_FIRST_PERSON ) ) {
 		return;
@@ -305,7 +306,14 @@ static void LogLight( trRefEntity_t *ent ) {
 		max2 = ent->directedLight[2];
 	}
 
-	ri.Printf( PRINT_ALL, "amb:%i  dir:%i\n", max1, max2 );
+	max3 = ent->dynamicLight[0];
+	if ( ent->dynamicLight[1] > max3 ) {
+		max3 = ent->dynamicLight[1];
+	} else if ( ent->dynamicLight[2] > max3 ) {
+		max3 = ent->dynamicLight[2];
+	}
+
+	ri.Printf( PRINT_ALL, "amb:%i  dir:%i  dyn:%i\n", max1, max2, max3 );
 }
 
 /*
@@ -355,6 +363,9 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 		VectorCopy( tr.sunDirection, ent->lightDir );
 	}
 
+	// dynamic lights should have be set to 0.1 when there are no dynamic lights.
+	VectorSet(ent->dynamicLight,0.1,0.1,0.1);
+
 	// bonus items and view weapons have a fixed minimum add
 	if ( 1 /* ent->e.renderfx & RF_MINLIGHT */ ) {
 		// give everything a minimum light add
@@ -381,6 +392,8 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 		d = power / ( d * d );
 
 		VectorMA( ent->directedLight, d, dl->color, ent->directedLight );
+		VectorMA( ent->dynamicLight, d, dl->color, ent->dynamicLight );
+		ent->lightDistance = d;
 		VectorMA( lightDir, d, dir, lightDir );
 	}
 
@@ -416,6 +429,20 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 			ent->directedLight[0] *= max;
 			ent->directedLight[1] *= max;
 			ent->directedLight[2] *= max;
+		}
+
+		r = ent->dynamicLight[0];
+		g = ent->dynamicLight[1];
+		b = ent->dynamicLight[2];
+
+		max = MAX(MAX(r, g), b);
+
+		if (max > 255.0f)
+		{
+			max = 255.0f / max;
+			ent->dynamicLight[0] *= max;
+			ent->dynamicLight[1] *= max;
+			ent->dynamicLight[2] *= max;
 		}
 	}
 

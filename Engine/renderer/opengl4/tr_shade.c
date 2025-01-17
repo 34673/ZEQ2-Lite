@@ -534,6 +534,8 @@ static void ComputeShaderColors( shaderStage_t *pStage, vec4_t baseColor, vec4_t
 			break;
 		case CGEN_IDENTITY:
 		case CGEN_LIGHTING_DIFFUSE:
+		case CGEN_LIGHTING_UNIFORM:
+		case CGEN_LIGHTING_DYNAMIC:
 			baseColor[0] =
 			baseColor[1] =
 			baseColor[2] = overbright;
@@ -774,6 +776,7 @@ static void ForwardDlight( void ) {
 
 		VectorSet(vector, 0, 0, 0);
 		GLSL_SetUniformVec3(sp, UNIFORM_AMBIENTLIGHT, vector);
+		GLSL_SetUniformVec3(sp, UNIFORM_DYNAMICLIGHT, vector);
 
 		VectorCopy(dl->origin, vector);
 		vector[3] = 1.0f;
@@ -1000,6 +1003,69 @@ static void RB_FogPass( void ) {
 	R_DrawElements(tess.numIndexes, tess.firstIndex);
 }
 
+/*
+===================
+RB_OutlinesPass
+
+Draws outlines on surfaces with shader.hasOutlines set
+===================
+*/
+static void RB_OutlinesPass( void ) {
+	shaderProgram_t *sp = NULL;
+	vec4_t color;
+	float	outlinesAlpha	= r_outlinesAlpha->value;
+	int shaderAttribs = 0;
+	//int		outlineType;
+	//qboolean outlineAlias;
+	if (!tess.shader->hasOutlines){return;}
+	GL_BindToTMU( tr.whiteImage, TB_COLORMAP );
+	GL_State(GLS_POLYMODE_LINE|GLS_DEPTHMASK_TRUE|GLS_SRCBLEND_SRC_ALPHA|GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA);
+	if(r_outlinesSmooth->value){qglEnable(GL_LINE_SMOOTH);}
+	if(r_outlinesType->value == 1){
+		qglLineStipple(r_outlinesPatternFactor->value,r_outlinesPattern->value);
+		qglEnable(GL_LINE_STIPPLE);
+	}
+	if(r_outlinesType->value == 2){
+		qglEnable(GL_DEPTH_TEST);
+		qglEnable(GL_POLYGON_OFFSET_FILL);
+		qglBlendFunc (GL_ZERO, GL_ONE);
+		qglEnable(GL_CULL_FACE);
+		qglPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+	}
+	else{
+		qglPolygonMode(GL_BACK,GL_LINE);
+		qglLineWidth(r_outlines->value + 1);
+	}
+	qglCullFace(GL_BACK);
+	if(glState.vertexAnimation){shaderAttribs |= GENERICDEF_USE_VERTEX_ANIMATION;}
+	else if(glState.boneAnimation){shaderAttribs |= GENERICDEF_USE_BONE_ANIMATION;}
+	sp = &tr.genericShader[shaderAttribs];
+	GLSL_BindProgram(sp);
+	if(glState.vertexAnimation){
+		GLSL_SetUniformFloat(sp, UNIFORM_VERTEXLERP, glState.vertexAttribsInterpolation);
+	}
+	else if(glState.boneAnimation){
+		GLSL_SetUniformMat4BoneMatrix(sp, UNIFORM_BONEMATRIX, glState.boneMatrix, glState.boneAnimation);
+	}
+	GLSL_SetUniformMat4(sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection);
+	VectorSet4(color, 0, 0, 0, outlinesAlpha);
+	GLSL_SetUniformVec4(sp, UNIFORM_VERTCOLOR, color);
+	GLSL_SetUniformVec4(sp, UNIFORM_BASECOLOR, color);
+	GLSL_SetUniformInt(sp, UNIFORM_ALPHATEST, 0);
+	R_DrawElements( tess.numIndexes, tess.firstIndex );
+	// FIX: Must reset these manually or renderer will b0rk!
+	qglCullFace(GL_FRONT);
+	qglLineWidth(1);
+	if(r_outlinesSmooth->value){qglDisable(GL_LINE_SMOOTH);}
+	if(r_outlinesType->value == 1){
+		qglDisable(GL_LINE_STIPPLE);
+	}
+	if(r_outlinesType->value == 2){
+		qglDisable(GL_CULL_FACE);
+		qglDisable(GL_DEPTH_TEST);
+		qglDisable(GL_POLYGON_OFFSET_FILL);
+	}
+}
 
 static unsigned int RB_CalcShaderVertexAttribs( shaderCommands_t *input )
 {
@@ -1188,6 +1254,10 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			GLSL_SetUniformVec4(sp, UNIFORM_VERTCOLOR, vertColor);
 		}
 
+		if (pStage->bundle[0].tcGen == TCGEN_ENVIRONMENT_CELSHADE_MAPPED){
+			GLSL_SetUniformVec3(sp, UNIFORM_MODELLIGHTDIR, backEnd.currentEntity->modelLightDir);
+		}
+		
 		if (pStage->rgbGen == CGEN_LIGHTING_DIFFUSE)
 		{
 			vec4_t vec;
@@ -1205,7 +1275,18 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 			GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, 0.0f);
 		}
-
+		else if (pStage->rgbGen == CGEN_LIGHTING_UNIFORM)
+		{
+			vec4_t vec;
+			VectorScale(backEnd.currentEntity->ambientLight, 1.0f / 255.0f * 2, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_AMBIENTLIGHT, vec);
+		}
+		else if (pStage->rgbGen == CGEN_LIGHTING_DYNAMIC)
+		{
+			vec4_t vec;
+			VectorScale(backEnd.currentEntity->dynamicLight, 1.0f / 255.0f, vec);
+			GLSL_SetUniformVec3(sp, UNIFORM_DYNAMICLIGHT, vec);
+		}
 		if (pStage->alphaGen == AGEN_PORTAL)
 		{
 			GLSL_SetUniformFloat(sp, UNIFORM_PORTALRANGE, tess.shader->portalRange);
@@ -1649,6 +1730,10 @@ void RB_StageIteratorGeneric( void )
 			ProjectDlightTexture();
 		}
 	}
+
+	// <-- RiO_Outlines: now do outlines
+	RB_OutlinesPass();
+	// -->
 
 	//
 	// now do fog

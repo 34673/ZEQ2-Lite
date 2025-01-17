@@ -93,6 +93,8 @@ typedef struct {
 	vec3_t		ambientLight;	// color normalized to 0-255
 	int			ambientLightInt;	// 32 bit rgba packed
 	vec3_t		directedLight;
+	vec3_t		dynamicLight;
+	float		lightDistance;
 } trRefEntity_t;
 
 
@@ -250,6 +252,8 @@ typedef enum {
 	CGEN_ONE_MINUS_VERTEX,
 	CGEN_WAVEFORM,			// programmatically generated
 	CGEN_LIGHTING_DIFFUSE,
+	CGEN_LIGHTING_UNIFORM,
+	CGEN_LIGHTING_DYNAMIC,
 	CGEN_FOG,				// standard fog
 	CGEN_CONST				// fixed color
 } colorGen_t;
@@ -260,6 +264,7 @@ typedef enum {
 	TCGEN_LIGHTMAP,
 	TCGEN_TEXTURE,
 	TCGEN_ENVIRONMENT_MAPPED,
+	TCGEN_ENVIRONMENT_CELSHADE_MAPPED,
 	TCGEN_FOG,
 	TCGEN_VECTOR			// S and T from world coordinates
 } texCoordGen_t;
@@ -452,6 +457,9 @@ typedef struct shader_s {
 	int			contentFlags;
 
 	qboolean	entityMergable;			// merge across entites optimizable (smoke, blood)
+	// <-- RiO_Outlines
+	qboolean	hasOutlines;
+	// -->
 
 	qboolean	isSky;
 	skyParms_t	sky;
@@ -661,6 +669,7 @@ typedef enum
 	UNIFORM_LIGHTRADIUS,
 	UNIFORM_AMBIENTLIGHT,
 	UNIFORM_DIRECTEDLIGHT,
+	UNIFORM_DYNAMICLIGHT,
 
 	UNIFORM_PORTALRANGE,
 
@@ -1750,7 +1759,12 @@ extern	cvar_t	*r_clear;						// force screen clear every frame
 
 extern	cvar_t	*r_shadows;						// controls shadows: 0 = none, 1 = blur, 2 = stencil, 3 = black planar projection
 extern	cvar_t	*r_flares;						// light flares
-
+extern	cvar_t	*r_outlines;
+extern	cvar_t	*r_outlinesAlpha;
+extern	cvar_t	*r_outlinesType;
+extern	cvar_t	*r_outlinesSmooth;
+extern	cvar_t	*r_outlinesPattern;
+extern	cvar_t	*r_outlinesPatternFactor;
 extern	cvar_t	*r_intensity;
 
 extern	cvar_t	*r_lockpvs;

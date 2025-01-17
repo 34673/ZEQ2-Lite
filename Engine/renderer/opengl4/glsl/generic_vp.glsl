@@ -29,6 +29,7 @@ uniform vec4   u_DiffuseTexMatrix7;
 
 #if defined(USE_TCGEN) || defined(USE_RGBAGEN)
 uniform vec3   u_LocalViewOrigin;
+uniform vec3   u_ModelLightDir;
 #endif
 
 #if defined(USE_TCGEN)
@@ -59,7 +60,7 @@ uniform int    u_ColorGen;
 uniform int    u_AlphaGen;
 uniform vec3   u_AmbientLight;
 uniform vec3   u_DirectedLight;
-uniform vec3   u_ModelLightDir;
+uniform vec3   u_DynamicLight;
 uniform float  u_PortalRange;
 #endif
 
@@ -138,6 +139,12 @@ vec2 GenTexCoords(int TCGen, vec3 position, vec3 normal, vec3 TCGenVector0, vec3
 		tex.s = ref.x * -0.5 + 0.5;
 		tex.t = ref.y *  0.5 + 0.5;
 	}
+	else if (TCGen == TCGEN_ENVIRONMENT_CELSHADE_MAPPED)
+	{
+		float dot = dot(normal, normalize(u_ModelLightDir));
+		tex.s = 0.5 + dot * 0.5;
+		tex.t = 0.5;
+	}
 	else if (TCGen == TCGEN_VECTOR)
 	{
 		tex = vec2(dot(position, TCGenVector0), dot(position, TCGenVector1));
@@ -184,7 +191,14 @@ vec4 CalcColor(vec3 position, vec3 normal)
 
 		color.rgb = clamp(u_DirectedLight * incoming + u_AmbientLight, 0.0, 1.0);
 	}
-	
+	else if (u_ColorGen == CGEN_LIGHTING_UNIFORM)
+	{
+		color.rgb = clamp(u_AmbientLight, 0.0, 1.0);
+	}
+	else if (u_ColorGen == CGEN_LIGHTING_DYNAMIC)
+	{
+		color.rgb = clamp(u_DynamicLight, 0.0, 1.0);
+	}
 	vec3 viewer = u_LocalViewOrigin - position;
 
 	if (u_AlphaGen == AGEN_LIGHTING_SPECULAR)

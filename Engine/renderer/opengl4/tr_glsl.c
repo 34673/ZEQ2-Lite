@@ -119,6 +119,7 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_LightRadius",   GLSL_FLOAT },
 	{ "u_AmbientLight",  GLSL_VEC3 },
 	{ "u_DirectedLight", GLSL_VEC3 },
+	{ "u_DynamicLight",  GLSL_VEC3 },
 
 	{ "u_PortalRange", GLSL_FLOAT },
 
@@ -354,12 +355,14 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
 						"#define TCGEN_LIGHTMAP %i\n"
 						"#define TCGEN_TEXTURE %i\n"
 						"#define TCGEN_ENVIRONMENT_MAPPED %i\n"
+						"#define TCGEN_ENVIRONMENT_CELSHADE_MAPPED %i\n"
 						"#define TCGEN_FOG %i\n"
 						"#define TCGEN_VECTOR %i\n"
 						"#endif\n",
 						TCGEN_LIGHTMAP,
 						TCGEN_TEXTURE,
 						TCGEN_ENVIRONMENT_MAPPED,
+						TCGEN_ENVIRONMENT_CELSHADE_MAPPED,
 						TCGEN_FOG,
 						TCGEN_VECTOR));
 
@@ -367,8 +370,12 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
 					 va("#ifndef colorGen_t\n"
 						"#define colorGen_t\n"
 						"#define CGEN_LIGHTING_DIFFUSE %i\n"
+						"#define CGEN_LIGHTING_UNIFORM %i\n"
+						"#define CGEN_LIGHTING_DYNAMIC %i\n"
 						"#endif\n",
-						CGEN_LIGHTING_DIFFUSE));
+						CGEN_LIGHTING_DIFFUSE,
+						CGEN_LIGHTING_UNIFORM,
+						CGEN_LIGHTING_DYNAMIC));
 
 	Q_strcat(dest, size,
 							 va("#ifndef alphaGen_t\n"
@@ -1610,6 +1617,8 @@ shaderProgram_t *GLSL_GetGenericShaderProgram(int stage)
 	switch (pStage->rgbGen)
 	{
 		case CGEN_LIGHTING_DIFFUSE:
+		case CGEN_LIGHTING_UNIFORM:
+		case CGEN_LIGHTING_DYNAMIC:
 			shaderAttribs |= GENERICDEF_USE_RGBAGEN;
 			break;
 		default:

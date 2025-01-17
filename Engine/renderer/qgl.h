@@ -264,6 +264,8 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 #define QGL_3_2_PROCS \
 	GLE(void, MultiDrawElementsBaseVertex, GLenum mode, const GLsizei* count, GLenum type, const void** indices, GLsizei drawcount, const GLint* basevertex) \
 	GLE(void, DrawElementsInstancedBaseVertex, GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei instancecount, GLint basevertex) \
+	GLE(GLenum, ClientWaitSync, GLsync sync, GLbitfield flags, GLuint64 timeout) \
+	GLE(GLsync, FenceSync, GLenum condition, GLbitfield flags) \
 
 // OpenGL 4.0 specific
 #define QGL_4_0_PROCS \
@@ -293,6 +295,8 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 // OpenGL 4.5 specific
 #define QGL_4_5_PROCS \
 	GLE(void, CreateBuffers, GLsizei n, GLuint* buffers) \
+	GLE(void*, MapNamedBufferRange, GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access) \
+	GLE(GLboolean, UnmapNamedBuffer, GLuint buffer) \
 	GLE(void, NamedBufferData, GLuint buffer, GLsizeiptr size, const void* data, GLenum usage) \
 	GLE(void, NamedBufferSubData, GLuint buffer, GLintptr offset, GLsizeiptr size, const void* data) \
 	GLE(void, NamedBufferStorage, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags) \

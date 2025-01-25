@@ -439,13 +439,11 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 		qglGetBooleanv(GL_DEBUG_OUTPUT,&enabled);
 		if(r_glDebugging->integer){
 			if(!enabled){
-				qglEnable(GL_DEBUG_OUTPUT);
 				qglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 				qglDebugMessageCallback(RE_GLDebugCallback,NULL);
 			}
 		}
 		else if(enabled){
-			qglDisable(GL_DEBUG_OUTPUT);
 			qglDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		}
 	}

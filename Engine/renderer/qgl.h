@@ -303,6 +303,7 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 	GLE(void, CreateVertexArrays, GLsizei n, GLuint* arrays) \
 	GLE(void, VertexArrayVertexBuffer, GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) \
 	GLE(void, VertexArrayElementBuffer, GLuint vaobj, GLuint buffer) \
+	GLE(void, DisableVertexArrayAttrib, GLuint vaobj, GLuint index) \
 	GLE(void, EnableVertexArrayAttrib, GLuint vaobj, GLuint index) \
 	GLE(void, VertexArrayAttribFormat, GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset) \
 	GLE(void, VertexArrayAttribIFormat, GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset) \

@@ -999,8 +999,7 @@ void GL_SetDefaultState( void )
 
 	GL_BindNullProgram();
 
-	if (glRefConfig.vertexArrayObject)
-		qglBindVertexArray(0);
+	qglBindVertexArray(0);
 
 	qglBindBuffer(GL_ARRAY_BUFFER, 0);
 	qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -1445,8 +1444,7 @@ void R_ShutDownQueries(void)
 R_Init
 ===============
 */
-void R_Init( void ) {	
-	int	err;
+void R_Init( void ) {
 	int i;
 	byte *ptr;
 
@@ -1534,11 +1532,6 @@ void R_Init( void ) {
 	R_InitFreeType();
 
 	R_InitQueries();
-
-
-	err = qglGetError();
-	if ( err != GL_NO_ERROR )
-		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
 
 	// print info
 	GfxInfo_f();

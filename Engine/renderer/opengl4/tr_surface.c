@@ -1248,10 +1248,7 @@ void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
 
 		glState.vertexAnimation = qtrue;
 
-		if (glRefConfig.vertexArrayObject)
-		{
-			qglBindBuffer(GL_ARRAY_BUFFER, surface->vao->vertexesVBO);
-		}
+		qglBindBuffer(GL_ARRAY_BUFFER, surface->vao->vertexesVBO);
 
 		frameOffset    = refEnt->frame * surface->vao->frameSize;
 
@@ -1281,13 +1278,6 @@ void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
 		vAtb = &surface->vao->attribs[attribIndex];
 		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
 
-
-		if (!glRefConfig.vertexArrayObject)
-		{
-			attribIndex = ATTR_INDEX_TEXCOORD;
-			vAtb = &surface->vao->attribs[attribIndex];
-			qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset));
-		}
 	}
 
 	RB_EndSurface();

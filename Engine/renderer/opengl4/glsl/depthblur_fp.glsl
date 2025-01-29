@@ -2,7 +2,7 @@ uniform sampler2D u_ScreenImageMap;
 uniform sampler2D u_ScreenDepthMap;
 
 uniform vec4   u_ViewInfo; // zfar / znear, zfar, 1/width, 1/height
-varying vec2   var_ScreenTex;
+in vec2   var_ScreenTex;
 
 //float gauss[8] = float[8](0.17, 0.17, 0.16, 0.14, 0.12, 0.1, 0.08, 0.06);
 //float gauss[5] = float[5](0.30, 0.23, 0.097, 0.024, 0.0033);

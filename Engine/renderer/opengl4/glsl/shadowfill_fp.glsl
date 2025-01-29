@@ -1,7 +1,7 @@
 uniform vec4  u_LightOrigin;
 uniform float u_LightRadius;
 
-varying vec3  var_Position;
+in vec3  var_Position;
 
 void main()
 {

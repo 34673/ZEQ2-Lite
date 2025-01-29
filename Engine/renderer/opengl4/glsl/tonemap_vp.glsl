@@ -4,8 +4,8 @@ attribute vec4 attr_TexCoord0;
 uniform mat4   u_ModelViewProjectionMatrix;
 uniform vec3   u_ToneMinAvgMaxLinear;
 
-varying vec2   var_TexCoords;
-varying float  var_InvWhite;
+out vec2   var_TexCoords;
+out float  var_InvWhite;
 
 float FilmicTonemap(float x)
 {

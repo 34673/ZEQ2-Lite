@@ -7,8 +7,8 @@ uniform vec4      u_Color;
 uniform vec2      u_AutoExposureMinMax;
 uniform vec3      u_ToneMinAvgMaxLinear;
 
-varying vec2      var_TexCoords;
-varying float     var_InvWhite;
+in vec2      var_TexCoords;
+in float     var_InvWhite;
 
 const vec3  LUMINANCE_VECTOR =   vec3(0.2125, 0.7154, 0.0721); //vec3(0.299, 0.587, 0.114);
 

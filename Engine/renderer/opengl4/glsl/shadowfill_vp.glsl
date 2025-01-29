@@ -26,7 +26,7 @@ uniform float   u_VertexLerp;
 uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 #endif
 
-varying vec3    var_Position;
+out vec3    var_Position;
 
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)
 {

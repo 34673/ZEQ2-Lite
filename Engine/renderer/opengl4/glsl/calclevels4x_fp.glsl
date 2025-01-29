@@ -3,7 +3,7 @@ uniform sampler2D u_TextureMap;
 uniform vec4      u_Color;
 
 uniform vec2      u_InvTexRes;
-varying vec2      var_TexCoords;
+in vec2      var_TexCoords;
 
 const vec3  LUMINANCE_VECTOR =   vec3(0.2125, 0.7154, 0.0721); //vec3(0.299, 0.587, 0.114);
 

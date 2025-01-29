@@ -5,8 +5,8 @@ uniform vec3      u_LightUp;
 uniform vec3      u_LightRight;
 uniform vec4      u_LightOrigin;
 uniform float     u_LightRadius;
-varying vec3      var_Position;
-varying vec3      var_Normal;
+in vec3      var_Position;
+in vec3      var_Normal;
 
 void main()
 {

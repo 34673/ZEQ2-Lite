@@ -47,25 +47,25 @@ uniform vec4      u_CubeMapInfo;
 
 uniform int       u_AlphaTest;
 
-varying vec4      var_TexCoords;
+in vec4      var_TexCoords;
 
-varying vec4      var_Color;
+in vec4      var_Color;
 #if (defined(USE_LIGHT) && !defined(USE_FAST_LIGHT))
-varying vec4      var_ColorAmbient;
+in vec4      var_ColorAmbient;
 #endif
 
 #if (defined(USE_LIGHT) && !defined(USE_FAST_LIGHT))
-varying vec4   var_Normal;
-varying vec4   var_Tangent;
-varying vec4   var_Bitangent;
+in vec4   var_Normal;
+in vec4   var_Tangent;
+in vec4   var_Bitangent;
 #endif
 
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
-varying vec4      var_LightDir;
+in vec4      var_LightDir;
 #endif
 
 #if defined(USE_PRIMARY_LIGHT) || defined(USE_SHADOWMAP)
-varying vec4      var_PrimaryLightDir;
+in vec4      var_PrimaryLightDir;
 #endif
 
 

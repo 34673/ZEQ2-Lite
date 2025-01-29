@@ -3,7 +3,7 @@ attribute vec4 attr_TexCoord0;
 
 uniform mat4   u_ModelViewProjectionMatrix;
 
-varying vec2   var_TexCoords;
+out vec2   var_TexCoords;
 
 
 void main()

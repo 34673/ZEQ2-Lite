@@ -1,19 +1,19 @@
-attribute vec3 attr_Position;
-attribute vec3 attr_Normal;
+in vec3 attr_Position;
+in vec3 attr_Normal;
 
 #if defined(USE_VERTEX_ANIMATION)
-attribute vec3 attr_Position2;
-attribute vec3 attr_Normal2;
+in vec3 attr_Position2;
+in vec3 attr_Normal2;
 #elif defined(USE_BONE_ANIMATION)
-attribute vec4 attr_BoneIndexes;
-attribute vec4 attr_BoneWeights;
+in vec4 attr_BoneIndexes;
+in vec4 attr_BoneWeights;
 #endif
 
-attribute vec4 attr_Color;
-attribute vec4 attr_TexCoord0;
+in vec4 attr_Color;
+in vec4 attr_TexCoord0;
 
 #if defined(USE_TCGEN)
-attribute vec4 attr_TexCoord1;
+in vec4 attr_TexCoord1;
 #endif
 
 #if defined(USE_TCMOD)
@@ -70,8 +70,8 @@ uniform float  u_VertexLerp;
 uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 #endif
 
-varying vec2   var_DiffuseTex;
-varying vec4   var_Color;
+out vec2   var_DiffuseTex;
+out vec4   var_Color;
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)

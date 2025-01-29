@@ -1,7 +1,7 @@
 uniform sampler2D u_TextureMap;
 
 uniform vec2      u_InvTexRes;
-varying vec2      var_TexCoords;
+in vec2      var_TexCoords;
 
 void main()
 {

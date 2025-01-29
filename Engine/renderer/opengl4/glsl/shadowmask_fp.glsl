@@ -17,8 +17,8 @@ uniform mat4      u_ShadowMvp4;
 uniform vec3   u_ViewOrigin;
 uniform vec4   u_ViewInfo; // zfar / znear, zfar
 
-varying vec2   var_DepthTex;
-varying vec3   var_ViewDir;
+in vec2   var_DepthTex;
+in vec3   var_ViewDir;
 
 // depth is GL_DEPTH_COMPONENT24
 // so the maximum error is 1.0 / 2^24

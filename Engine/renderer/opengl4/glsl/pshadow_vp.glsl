@@ -2,8 +2,8 @@ attribute vec3 attr_Position;
 attribute vec3 attr_Normal;
 
 uniform mat4   u_ModelViewProjectionMatrix;
-varying vec3   var_Position;
-varying vec3   var_Normal;
+out vec3   var_Position;
+out vec3   var_Normal;
 
 
 void main()

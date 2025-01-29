@@ -31,7 +31,7 @@ uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 
 uniform vec4  u_Color;
 
-varying float   var_Scale;
+out float   var_Scale;
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)

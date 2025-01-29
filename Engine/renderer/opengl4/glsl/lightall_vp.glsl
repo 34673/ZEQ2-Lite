@@ -73,25 +73,25 @@ uniform vec4  u_PrimaryLightOrigin;
 uniform float u_PrimaryLightRadius;
 #endif
 
-varying vec4   var_TexCoords;
+out vec4   var_TexCoords;
 
-varying vec4   var_Color;
+out vec4   var_Color;
 #if defined(USE_LIGHT_VECTOR) && !defined(USE_FAST_LIGHT)
-varying vec4   var_ColorAmbient;
+out vec4   var_ColorAmbient;
 #endif
 
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
-varying vec4   var_Normal;
-varying vec4   var_Tangent;
-varying vec4   var_Bitangent;
+out vec4   var_Normal;
+out vec4   var_Tangent;
+out vec4   var_Bitangent;
 #endif
 
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
-varying vec4   var_LightDir;
+out vec4   var_LightDir;
 #endif
 
 #if defined(USE_PRIMARY_LIGHT) || defined(USE_SHADOWMAP)
-varying vec4   var_PrimaryLightDir;
+out vec4   var_PrimaryLightDir;
 #endif
 
 #if defined(USE_TCGEN)
@@ -279,7 +279,7 @@ void main()
 
 #if defined(USE_LIGHT) && !defined(USE_FAST_LIGHT)
 	vec3 viewDir = u_ViewOrigin - position;
-	// store view direction in tangent space to save on varyings
+	// store view direction in tangent space to save on outs
 	var_Normal    = vec4(normal,    viewDir.x);
 	var_Tangent   = vec4(tangent,   viewDir.y);
 	var_Bitangent = vec4(bitangent, viewDir.z);

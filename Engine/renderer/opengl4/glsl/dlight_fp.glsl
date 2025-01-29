@@ -2,8 +2,8 @@ uniform sampler2D u_DiffuseMap;
 
 uniform int       u_AlphaTest;
 
-varying vec2      var_Tex1;
-varying vec4      var_Color;
+in vec2      var_Tex1;
+in vec4      var_Color;
 
 
 void main()

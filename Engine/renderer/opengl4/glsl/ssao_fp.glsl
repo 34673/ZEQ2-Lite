@@ -2,7 +2,7 @@ uniform sampler2D u_ScreenDepthMap;
 
 uniform vec4   u_ViewInfo; // zfar / znear, zfar, 1/width, 1/height
 
-varying vec2   var_ScreenTex;
+in vec2   var_ScreenTex;
 
 #if 0
 vec2 poissonDisc[9] = vec2[9](

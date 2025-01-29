@@ -1,6 +1,6 @@
 uniform vec4  u_Color;
 
-varying float var_Scale;
+in float var_Scale;
 
 void main()
 {

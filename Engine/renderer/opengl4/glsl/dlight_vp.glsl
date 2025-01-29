@@ -13,8 +13,8 @@ uniform float  u_Time;
 uniform vec4   u_Color;
 uniform mat4   u_ModelViewProjectionMatrix;
 
-varying vec2   var_Tex1;
-varying vec4   var_Color;
+out vec2   var_Tex1;
+out vec4   var_Color;
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)

@@ -3,7 +3,7 @@ attribute vec4 attr_TexCoord0;
 
 uniform vec4   u_ViewInfo; // zfar / znear, zfar, 1/width, 1/height
 
-varying vec2   var_ScreenTex;
+out vec2   var_ScreenTex;
 
 void main()
 {

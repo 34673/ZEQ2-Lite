@@ -102,7 +102,7 @@ vao_t *R_CreateVao(const char *name, byte *vertexes, int vertexesSize, byte *ind
 {
 	vao_t          *vao;
 	int				glUsage;
-
+	char label[MAX_QPATH] = {0};
 	switch (usage)
 	{
 		case VAO_USAGE_STATIC:
@@ -134,24 +134,29 @@ vao_t *R_CreateVao(const char *name, byte *vertexes, int vertexesSize, byte *ind
 
 	memset(vao, 0, sizeof(*vao));
 
-	Q_strncpyz(vao->name, name, sizeof(vao->name));
+	Com_sprintf(vao->name, sizeof(vao->name), "%s %s", name, "VAO");
 
 	qglGenVertexArrays(1, &vao->vao);
 	qglBindVertexArray(vao->vao);
+	qglObjectLabel(GL_VERTEX_ARRAY,vao->vao,strlen(vao->name),vao->name);
 
 	vao->vertexesSize = vertexesSize;
 
+	Com_sprintf(label, sizeof(label), "%s %s", name, "VBO");
 	qglGenBuffers(1, &vao->vertexesVBO);
 
 	qglBindBuffer(GL_ARRAY_BUFFER, vao->vertexesVBO);
+	qglObjectLabel(GL_BUFFER,vao->vertexesVBO,strlen(label),label);
 	qglBufferData(GL_ARRAY_BUFFER, vertexesSize, vertexes, glUsage);
 
 
 	vao->indexesSize = indexesSize;
 
+	Com_sprintf(label, sizeof(label), "%s %s", name, "IBO");
 	qglGenBuffers(1, &vao->indexesIBO);
 
 	qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->indexesIBO);
+	qglObjectLabel(GL_BUFFER,vao->indexesIBO,strlen(label),label);
 	qglBufferData(GL_ELEMENT_ARRAY_BUFFER, indexesSize, indexes, glUsage);
 
 
@@ -176,6 +181,7 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	int             dataOfs;
 
 	int				glUsage = GL_STATIC_DRAW;
+	char label[MAX_QPATH] = {0};
 
 	if(!numVertexes || !numIndexes)
 		return NULL;
@@ -196,7 +202,7 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 
 	memset(vao, 0, sizeof(*vao));
 
-	Q_strncpyz(vao->name, name, sizeof(vao->name));
+	Com_sprintf(vao->name, sizeof(vao->name), "%s %s", name, "VAO");
 
 	// since these vertex attributes are never altered, interleave them
 	vao->attribs[ATTR_INDEX_POSITION      ].enabled = 1;
@@ -249,6 +255,7 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 
 	qglGenVertexArrays(1, &vao->vao);
 	qglBindVertexArray(vao->vao);
+	qglObjectLabel(GL_VERTEX_ARRAY,vao->vao,strlen(vao->name),vao->name);
 
 	// create VBO
 	dataSize *= numVertexes;
@@ -288,18 +295,22 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 
 	vao->vertexesSize = dataSize;
 
+	Com_sprintf(label, sizeof(label), "%s %s", name, "VBO");
 	qglGenBuffers(1, &vao->vertexesVBO);
 
 	qglBindBuffer(GL_ARRAY_BUFFER, vao->vertexesVBO);
+	qglObjectLabel(GL_BUFFER,vao->vertexesVBO,strlen(label),label);
 	qglBufferData(GL_ARRAY_BUFFER, vao->vertexesSize, data, glUsage);
 
 
 	// create IBO
 	vao->indexesSize = numIndexes * sizeof(glIndex_t);
 
+	Com_sprintf(label, sizeof(label), "%s %s", name, "IBO");
 	qglGenBuffers(1, &vao->indexesIBO);
 
 	qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->indexesIBO);
+	qglObjectLabel(GL_BUFFER,vao->indexesIBO,strlen(label),label);
 	qglBufferData(GL_ELEMENT_ARRAY_BUFFER, vao->indexesSize, indexes, glUsage);
 
 
@@ -400,7 +411,7 @@ void R_InitVaos(void)
 
 	indexesSize = sizeof(tess.indexes[0]) * SHADER_MAX_INDEXES;
 
-	tess.vao = R_CreateVao("tessVertexArray_VAO", NULL, vertexesSize, NULL, indexesSize, VAO_USAGE_DYNAMIC);
+	tess.vao = R_CreateVao("tess", NULL, vertexesSize, NULL, indexesSize, VAO_USAGE_DYNAMIC);
 
 	offset = 0;
 
@@ -798,7 +809,7 @@ void VaoCache_Init(void)
 		indexBufferSize = VAOCACHE_INDEX_BUFFER_SIZE;
 	}
 
-	vc.vao = R_CreateVao("VaoCache", NULL, vertexBufferSize, NULL, indexBufferSize, VAO_USAGE_DYNAMIC);
+	vc.vao = R_CreateVao("Cache", NULL, vertexBufferSize, NULL, indexBufferSize, VAO_USAGE_DYNAMIC);
 
 	vc.vao->attribs[ATTR_INDEX_POSITION].enabled       = 1;
 	vc.vao->attribs[ATTR_INDEX_TEXCOORD].enabled       = 1;

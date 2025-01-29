@@ -1059,7 +1059,7 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 			vaoSurf->numIndexes = surf->num_triangles * 3;
 			vaoSurf->numVerts = surf->num_vertexes;
 
-			vaoSurf->vao = R_CreateVao(va("staticIQMMesh_VAO '%s'", surf->name), data, dataSize, (byte *)indexes, surf->num_triangles * 3 * sizeof(indexes[0]), VAO_USAGE_STATIC);
+			vaoSurf->vao = R_CreateVao(va("'%s' IQM", surf->name), data, dataSize, (byte *)indexes, surf->num_triangles * 3 * sizeof(indexes[0]), VAO_USAGE_STATIC);
 
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].enabled = 1;

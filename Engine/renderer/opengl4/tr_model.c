@@ -770,7 +770,7 @@ static qboolean R_LoadMD3(model_t * mod, int lod, void *buffer, int bufferSize, 
 			vaoSurf->numIndexes = surf->numIndexes;
 			vaoSurf->numVerts = surf->numVerts;
 			
-			vaoSurf->vao = R_CreateVao(va("staticMD3Mesh_VAO '%s'", surf->name), data, dataSize, (byte *)surf->indexes, surf->numIndexes * sizeof(*surf->indexes), VAO_USAGE_STATIC);
+			vaoSurf->vao = R_CreateVao(va("'%s' MD3", surf->name), data, dataSize, (byte *)surf->indexes, surf->numIndexes * sizeof(*surf->indexes), VAO_USAGE_STATIC);
 
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].enabled = 1;

@@ -108,7 +108,7 @@ FBO_t          *FBO_Create(const char *name, int width, int height)
 	fbo->height = height;
 
 	qglGenFramebuffers(1, &fbo->frameBuffer);
-
+	qglObjectLabel(GL_FRAMEBUFFER, fbo->frameBuffer, strlen(fbo->name), fbo->name);
 	return fbo;
 }
 
@@ -175,6 +175,7 @@ void FBO_CreateBuffer(FBO_t *fbo, int format, int index, int multisample)
 
 		// workaround AMD Windows driver requiring bind to create renderbuffer
 		GL_BindRenderbuffer(*pRenderBuffer);
+		qglObjectLabel(GL_RENDERBUFFER, *pRenderBuffer, strlen(fbo->name),fbo->name);
 	}
 
 	if (multisample && glRefConfig.framebufferMultisample)

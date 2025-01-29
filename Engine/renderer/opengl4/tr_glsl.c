@@ -413,13 +413,15 @@ static void GLSL_GetShaderHeader( GLenum shaderType, const GLchar *extra, char *
 	Q_strcat(dest, size, "#line 0\n");
 }
 
-static int GLSL_CompileGPUShader(GLuint program, GLuint *prevShader, const GLchar *buffer, int size, GLenum shaderType)
+static int GLSL_CompileGPUShader(shaderProgram_t* program, GLuint *prevShader, const GLchar *buffer, int size, GLenum shaderType)
 {
 	GLint           compiled;
 	GLuint          shader;
-
+	char name[MAX_QPATH];
+	char* typeSuffix = shaderType == GL_VERTEX_SHADER ? "Vertex Shader" : "Fragment Shader";
+	Com_sprintf(name, sizeof(name), "%s %s", program->name, typeSuffix);
 	shader = qglCreateShader(shaderType);
-
+	qglObjectLabel(GL_SHADER, shader, strlen(name), name);
 	qglShaderSource(shader, 1, (const GLchar **)&buffer, &size);
 
 	// compile shader
@@ -437,12 +439,12 @@ static int GLSL_CompileGPUShader(GLuint program, GLuint *prevShader, const GLcha
 
 	if (*prevShader)
 	{
-		qglDetachShader(program, *prevShader);
+		qglDetachShader(program->program, *prevShader);
 		qglDeleteShader(*prevShader);
 	}
 
 	// attach shader to program
-	qglAttachShader(program, shader);
+	qglAttachShader(program->program, shader);
 
 	*prevShader = shader;
 
@@ -557,8 +559,9 @@ static int GLSL_InitGPUShader2(shaderProgram_t * program, const char *name, int 
 
 	program->program = qglCreateProgram();
 	program->attribs = attribs;
+	qglObjectLabel(GL_PROGRAM, program->program, strlen(program->name), program->name);
 
-	if (!(GLSL_CompileGPUShader(program->program, &program->vertexShader, vpCode, strlen(vpCode), GL_VERTEX_SHADER)))
+	if (!(GLSL_CompileGPUShader(program, &program->vertexShader, vpCode, strlen(vpCode), GL_VERTEX_SHADER)))
 	{
 		ri.Printf(PRINT_ALL, "GLSL_InitGPUShader2: Unable to load \"%s\" as GL_VERTEX_SHADER\n", name);
 		qglDeleteProgram(program->program);
@@ -567,7 +570,7 @@ static int GLSL_InitGPUShader2(shaderProgram_t * program, const char *name, int 
 
 	if(fpCode)
 	{
-		if(!(GLSL_CompileGPUShader(program->program, &program->fragmentShader, fpCode, strlen(fpCode), GL_FRAGMENT_SHADER)))
+		if(!(GLSL_CompileGPUShader(program, &program->fragmentShader, fpCode, strlen(fpCode), GL_FRAGMENT_SHADER)))
 		{
 			ri.Printf(PRINT_ALL, "GLSL_InitGPUShader2: Unable to load \"%s\" as GL_FRAGMENT_SHADER\n", name);
 			qglDeleteProgram(program->program);

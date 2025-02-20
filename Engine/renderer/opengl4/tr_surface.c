@@ -1243,41 +1243,13 @@ void RB_SurfaceVaoMdvMesh(srfVaoMdvMesh_t * surface)
 
 	if (surface->mdvModel->numFrames > 1)
 	{
-		int frameOffset, attribIndex;
-		vaoAttrib_t *vAtb;
-
+		int stride = surface->vao->attribs[ATTR_INDEX_POSITION].stride;
+		int baseOffset = surface->vao->attribs[ATTR_INDEX_POSITION].offset;
+		int frameOffset = refEnt->frame * surface->vao->frameSize;
 		glState.vertexAnimation = qtrue;
-
-		qglBindBuffer(GL_ARRAY_BUFFER, surface->vao->vertexesVBO);
-
-		frameOffset    = refEnt->frame * surface->vao->frameSize;
-
-		attribIndex = ATTR_INDEX_POSITION;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
-		attribIndex = ATTR_INDEX_NORMAL;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
-		attribIndex = ATTR_INDEX_TANGENT;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
+		qglVertexArrayVertexBuffer(surface->vao->vao, 0, surface->vao->vertexesVBO, baseOffset + frameOffset, stride);
 		frameOffset = refEnt->oldframe * surface->vao->frameSize;
-
-		attribIndex = ATTR_INDEX_POSITION2;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
-		attribIndex = ATTR_INDEX_NORMAL2;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
-		attribIndex = ATTR_INDEX_TANGENT2;
-		vAtb = &surface->vao->attribs[attribIndex];
-		qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset + frameOffset));
-
+		qglVertexArrayVertexBuffer(surface->vao->vao, 1, surface->vao->vertexesVBO, baseOffset + frameOffset, stride);
 	}
 
 	RB_EndSurface();

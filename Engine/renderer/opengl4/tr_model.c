@@ -777,6 +777,8 @@ static qboolean R_LoadMD3(model_t * mod, int lod, void *buffer, int bufferSize, 
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].enabled = 1;
 
+			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].bindingIndex = mdvModel->numFrames > 1 ? 2 : 0;
+
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].count = 3;
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].count = 2;
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].count = 4;
@@ -797,6 +799,11 @@ static qboolean R_LoadMD3(model_t * mod, int lod, void *buffer, int bufferSize, 
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].offset = offset_normal;
 			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].offset = offset_tangent;
 
+			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].relativeOffset = offset_xyz - offset_xyz;
+			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].relativeOffset = offset_st;
+			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].relativeOffset = offset_normal - offset_xyz;
+			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].relativeOffset = offset_tangent - offset_xyz;
+
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].stride = stride_xyz;
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].stride = stride_st;
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].stride = stride_normal;
@@ -808,10 +815,14 @@ static qboolean R_LoadMD3(model_t * mod, int lod, void *buffer, int bufferSize, 
 				vaoSurf->vao->attribs[ATTR_INDEX_NORMAL2  ] = vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ];
 				vaoSurf->vao->attribs[ATTR_INDEX_TANGENT2 ] = vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ];
 
+				vaoSurf->vao->attribs[ATTR_INDEX_POSITION2].bindingIndex = 1;
+				vaoSurf->vao->attribs[ATTR_INDEX_NORMAL2  ].bindingIndex = 1;
+				vaoSurf->vao->attribs[ATTR_INDEX_TANGENT2 ].bindingIndex = 1;
+
 				vaoSurf->vao->frameSize = stride_xyz    * surf->numVerts;
 			}
 
-			Vao_SetVertexPointers(vaoSurf->vao);
+			Vao_SetVertexFormat(vaoSurf->vao);
 
 			ri.Free(data);
 		}

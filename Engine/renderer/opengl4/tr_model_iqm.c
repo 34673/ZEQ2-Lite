@@ -1062,7 +1062,6 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 			vaoSurf->vao = R_CreateVao(va("'%s' IQM", surf->name), data, dataSize, (byte *)indexes, surf->num_triangles * 3 * sizeof(indexes[0]), VAO_USAGE_STATIC);
 
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].enabled = 1;
-			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].enabled = 1;
 			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].enabled = 1;
@@ -1086,6 +1085,11 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].offset = offset_st;
 			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].offset = offset_normal;
 			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].offset = offset_tangent;
+
+			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].relativeOffset = offset_xyz;
+			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].relativeOffset = offset_st;
+			vaoSurf->vao->attribs[ATTR_INDEX_NORMAL  ].relativeOffset = offset_normal;
+			vaoSurf->vao->attribs[ATTR_INDEX_TANGENT ].relativeOffset = offset_tangent;
 
 			vaoSurf->vao->attribs[ATTR_INDEX_POSITION].stride = stride;
 			vaoSurf->vao->attribs[ATTR_INDEX_TEXCOORD].stride = stride;
@@ -1113,12 +1117,15 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 
 				vaoSurf->vao->attribs[ATTR_INDEX_BONE_INDEXES].offset = offset_blendindexes;
 				vaoSurf->vao->attribs[ATTR_INDEX_BONE_WEIGHTS].offset = offset_blendweights;
+				
+				vaoSurf->vao->attribs[ATTR_INDEX_BONE_INDEXES].relativeOffset = offset_blendindexes;
+				vaoSurf->vao->attribs[ATTR_INDEX_BONE_WEIGHTS].relativeOffset = offset_blendweights;
 
 				vaoSurf->vao->attribs[ATTR_INDEX_BONE_INDEXES].stride = stride;
 				vaoSurf->vao->attribs[ATTR_INDEX_BONE_WEIGHTS].stride = stride;
 			}
 
-			Vao_SetVertexPointers(vaoSurf->vao);
+			Vao_SetVertexFormat(vaoSurf->vao);
 
 			ri.Free(data);
 		}

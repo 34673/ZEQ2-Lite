@@ -122,7 +122,9 @@ typedef struct vaoAttrib_s
 	uint32_t type;
 	uint32_t normalized;
 	uint32_t stride;
-	uint32_t offset;
+	uint32_t offset;			//Relative to start of buffer
+	uint32_t relativeOffset;	//Relative to offset
+	uint32_t bindingIndex;
 }
 vaoAttrib_t;
 
@@ -2222,7 +2224,7 @@ vao_t          *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts
 void            R_BindVao(vao_t *vao);
 void            R_BindNullVao(void);
 
-void Vao_SetVertexPointers(vao_t *vao);
+void Vao_SetVertexFormat(vao_t *vao);
 
 void            R_InitVaos(void);
 void            R_ShutdownVaos(void);

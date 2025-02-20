@@ -62,33 +62,33 @@ void R_VaoUnpackNormal(vec3_t v, int16_t *pack)
 	v[2] = pack[2] / 32767.0f;
 }
 
-void Vao_SetVertexPointers(vao_t *vao)
+void Vao_SetVertexFormat(vao_t *vao)
 {
 	int attribIndex;
-
+	int bindingFlags = 0;
 	// set vertex pointers
 	for (attribIndex = 0; attribIndex < ATTR_INDEX_COUNT; attribIndex++)
 	{
-		uint32_t attribBit = 1 << attribIndex;
 		vaoAttrib_t *vAtb = &vao->attribs[attribIndex];
+		uint32_t attribBit = 1 << attribIndex;
+		uint32_t bindingBit = 1 << vAtb->bindingIndex;
 
 		if (vAtb->enabled)
 		{
-			qglVertexAttribPointer(attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->stride, BUFFER_OFFSET(vAtb->offset));
+			qboolean usedBinding = bindingFlags & bindingBit;
+			if(!usedBinding){
+				qglVertexArrayVertexBuffer(vao->vao, vAtb->bindingIndex, vao->vertexesVBO, vAtb->offset, vAtb->stride);
+				bindingFlags |= bindingBit;
+			}
+			qglVertexArrayAttribFormat(vao->vao, attribIndex, vAtb->count, vAtb->type, vAtb->normalized, vAtb->relativeOffset);
+			qglVertexArrayAttribBinding(vao->vao, attribIndex, vAtb->bindingIndex);
 			qglEnableVertexAttribArray(attribIndex);
 
 			if (vao == tess.vao)
 				glState.vertexAttribsEnabled |= attribBit;
 		}
-		else
-		{
-			// don't disable vertex attribs when using vertex array objects
-			// Vao_SetVertexPointers is only called during init when using VAOs, and vertex attribs start disabled anyway
-			if (glState.vertexAttribsEnabled & attribBit)
-				qglDisableVertexAttribArray(attribIndex);
-
-			if (vao == tess.vao)
-				glState.vertexAttribsEnabled &= ~attribBit;
+		else if (vao == tess.vao){
+			glState.vertexAttribsEnabled &= ~attribBit;
 		}
 	}
 }
@@ -245,6 +245,14 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	vao->attribs[ATTR_INDEX_COLOR         ].offset = dataSize; dataSize += sizeof(verts[0].color);
 	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].offset = dataSize; dataSize += sizeof(verts[0].lightdir);
 
+	vao->attribs[ATTR_INDEX_POSITION      ].relativeOffset = vao->attribs[ATTR_INDEX_POSITION      ].offset;
+	vao->attribs[ATTR_INDEX_NORMAL        ].relativeOffset = vao->attribs[ATTR_INDEX_NORMAL        ].offset;
+	vao->attribs[ATTR_INDEX_TANGENT       ].relativeOffset = vao->attribs[ATTR_INDEX_TANGENT       ].offset;
+	vao->attribs[ATTR_INDEX_TEXCOORD      ].relativeOffset = vao->attribs[ATTR_INDEX_TEXCOORD      ].offset;
+	vao->attribs[ATTR_INDEX_LIGHTCOORD    ].relativeOffset = vao->attribs[ATTR_INDEX_LIGHTCOORD    ].offset;
+	vao->attribs[ATTR_INDEX_COLOR         ].relativeOffset = vao->attribs[ATTR_INDEX_COLOR         ].offset;
+	vao->attribs[ATTR_INDEX_LIGHTDIRECTION].relativeOffset = vao->attribs[ATTR_INDEX_LIGHTDIRECTION].offset;
+
 	vao->attribs[ATTR_INDEX_POSITION      ].stride = dataSize;
 	vao->attribs[ATTR_INDEX_NORMAL        ].stride = dataSize;
 	vao->attribs[ATTR_INDEX_TANGENT       ].stride = dataSize;
@@ -314,7 +322,7 @@ vao_t *R_CreateVao2(const char *name, int numVertexes, srfVert_t *verts, int num
 	qglBufferData(GL_ELEMENT_ARRAY_BUFFER, vao->indexesSize, indexes, glUsage);
 
 
-	Vao_SetVertexPointers(vao);
+	Vao_SetVertexFormat(vao);
 
 
 	glState.currentVao = vao;
@@ -423,6 +431,14 @@ void R_InitVaos(void)
 	tess.vao->attribs[ATTR_INDEX_COLOR         ].enabled = 1;
 	tess.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].enabled = 1;
 
+	tess.vao->attribs[ATTR_INDEX_POSITION      ].bindingIndex = ATTR_INDEX_POSITION;
+	tess.vao->attribs[ATTR_INDEX_NORMAL        ].bindingIndex = ATTR_INDEX_NORMAL;
+	tess.vao->attribs[ATTR_INDEX_TANGENT       ].bindingIndex = ATTR_INDEX_TANGENT;
+	tess.vao->attribs[ATTR_INDEX_TEXCOORD      ].bindingIndex = ATTR_INDEX_TEXCOORD;
+	tess.vao->attribs[ATTR_INDEX_LIGHTCOORD    ].bindingIndex = ATTR_INDEX_LIGHTCOORD;
+	tess.vao->attribs[ATTR_INDEX_COLOR         ].bindingIndex = ATTR_INDEX_COLOR;
+	tess.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].bindingIndex = ATTR_INDEX_LIGHTDIRECTION;
+
 	tess.vao->attribs[ATTR_INDEX_POSITION      ].count = 3;
 	tess.vao->attribs[ATTR_INDEX_NORMAL        ].count = 4;
 	tess.vao->attribs[ATTR_INDEX_TANGENT       ].count = 4;
@@ -471,7 +487,7 @@ void R_InitVaos(void)
 	tess.attribPointers[ATTR_INDEX_COLOR]          = tess.color;
 	tess.attribPointers[ATTR_INDEX_LIGHTDIRECTION] = tess.lightdir;
 
-	Vao_SetVertexPointers(tess.vao);
+	Vao_SetVertexFormat(tess.vao);
 
 	R_BindNullVao();
 
@@ -851,6 +867,14 @@ void VaoCache_Init(void)
 	vc.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].offset = offsetof(srfVert_t, lightdir);
 	vc.vao->attribs[ATTR_INDEX_COLOR].offset          = offsetof(srfVert_t, color);
 
+	vc.vao->attribs[ATTR_INDEX_POSITION].relativeOffset       = offsetof(srfVert_t, xyz);
+	vc.vao->attribs[ATTR_INDEX_TEXCOORD].relativeOffset       = offsetof(srfVert_t, st);
+	vc.vao->attribs[ATTR_INDEX_LIGHTCOORD].relativeOffset     = offsetof(srfVert_t, lightmap);
+	vc.vao->attribs[ATTR_INDEX_NORMAL].relativeOffset         = offsetof(srfVert_t, normal);
+	vc.vao->attribs[ATTR_INDEX_TANGENT].relativeOffset        = offsetof(srfVert_t, tangent);
+	vc.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].relativeOffset = offsetof(srfVert_t, lightdir);
+	vc.vao->attribs[ATTR_INDEX_COLOR].relativeOffset          = offsetof(srfVert_t, color);
+
 	vc.vao->attribs[ATTR_INDEX_POSITION].stride       = sizeof(srfVert_t);
 	vc.vao->attribs[ATTR_INDEX_TEXCOORD].stride       = sizeof(srfVert_t);
 	vc.vao->attribs[ATTR_INDEX_LIGHTCOORD].stride     = sizeof(srfVert_t);
@@ -859,7 +883,7 @@ void VaoCache_Init(void)
 	vc.vao->attribs[ATTR_INDEX_LIGHTDIRECTION].stride = sizeof(srfVert_t);
 	vc.vao->attribs[ATTR_INDEX_COLOR].stride          = sizeof(srfVert_t);
 
-	Vao_SetVertexPointers(vc.vao);
+	Vao_SetVertexFormat(vc.vao);
 
 	vc.numSurfaces = 0;
 	vc.numBatches = 0;

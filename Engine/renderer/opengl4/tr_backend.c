@@ -338,7 +338,6 @@ void RB_BeginDrawingView (void) {
 	// 2D images again
 	backEnd.projection2D = qfalse;
 
-	if (glRefConfig.framebufferObject)
 	{
 		FBO_t *fbo = backEnd.viewParms.targetFbo;
 
@@ -590,8 +589,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		RB_EndSurface();
 	}
 
-	if (glRefConfig.framebufferObject)
-		FBO_Bind(fbo);
+	FBO_Bind(fbo);
 
 	// go back to the world modelview matrix
 
@@ -706,10 +704,7 @@ void RE_StretchRaw (int x, int y, int w, int h, int cols, int rows, const byte *
 		ri.Printf( PRINT_ALL, "qglTexSubImage2D %i, %i: %i msec\n", cols, rows, end - start );
 	}
 
-	if (glRefConfig.framebufferObject)
-	{
-		FBO_Bind(tr.renderFbo);
-	}
+	FBO_Bind(tr.renderFbo);
 
 	RB_SetGL2D();
 
@@ -813,8 +808,7 @@ const void *RB_StretchPic ( const void *data ) {
 
 	cmd = (const stretchPicCommand_t *)data;
 
-	if (glRefConfig.framebufferObject)
-		FBO_Bind(tr.renderFbo);
+	FBO_Bind(tr.renderFbo);
 
 	RB_SetGL2D();
 
@@ -909,12 +903,12 @@ const void	*RB_DrawSurfs( const void *data ) {
 	// clear the z buffer, set the modelview, etc
 	RB_BeginDrawingView ();
 
-	if (glRefConfig.framebufferObject && (backEnd.viewParms.flags & VPF_DEPTHCLAMP) && glRefConfig.depthClamp)
+	if (backEnd.viewParms.flags & VPF_DEPTHCLAMP)
 	{
 		qglEnable(GL_DEPTH_CLAMP);
 	}
 
-	if (glRefConfig.framebufferObject && !(backEnd.refdef.rdflags & RDF_NOWORLDMODEL) && (r_depthPrepass->integer || isShadowView))
+	if (!(backEnd.refdef.rdflags & RDF_NOWORLDMODEL) && (r_depthPrepass->integer || isShadowView))
 	{
 		FBO_t *oldFbo = glState.currentFBO;
 		vec4_t viewInfo;
@@ -1136,7 +1130,7 @@ const void	*RB_DrawSurfs( const void *data ) {
 		SetViewportAndScissor();
 	}
 
-	if (glRefConfig.framebufferObject && (backEnd.viewParms.flags & VPF_DEPTHCLAMP) && glRefConfig.depthClamp)
+	if (backEnd.viewParms.flags & VPF_DEPTHCLAMP)
 	{
 		qglDisable(GL_DEPTH_CLAMP);
 	}
@@ -1150,7 +1144,7 @@ const void	*RB_DrawSurfs( const void *data ) {
 			RB_DrawSun(0.1, tr.sunShader);
 		}
 
-		if (glRefConfig.framebufferObject && r_drawSunRays->integer)
+		if (r_drawSunRays->integer)
 		{
 			FBO_t *oldFbo = glState.currentFBO;
 			FBO_Bind(tr.sunRaysFbo);
@@ -1181,7 +1175,7 @@ const void	*RB_DrawSurfs( const void *data ) {
 		RB_RenderFlares();
 	}
 
-	if (glRefConfig.framebufferObject && tr.renderCubeFbo && backEnd.viewParms.targetFbo == tr.renderCubeFbo)
+	if (tr.renderCubeFbo && backEnd.viewParms.targetFbo == tr.renderCubeFbo)
 	{
 		cubemap_t *cubemap = &tr.cubemaps[backEnd.viewParms.targetFboCubemapIndex];
 
@@ -1216,14 +1210,13 @@ const void	*RB_DrawBuffer( const void *data ) {
 	if(tess.numIndexes)
 		RB_EndSurface();
 
-	if (glRefConfig.framebufferObject)
-		FBO_Bind(NULL);
+	FBO_Bind(NULL);
 
 	qglDrawBuffer( cmd->buffer );
 
 	// clear screen for debugging
 	if ( r_clear->integer ) {
-		if (glRefConfig.framebufferObject && tr.renderFbo) {
+		if (tr.renderFbo) {
 			FBO_Bind(tr.renderFbo);
 		}
 
@@ -1307,14 +1300,11 @@ const void *RB_ColorMask(const void *data)
 	if(tess.numIndexes)
 		RB_EndSurface();
 
-	if (glRefConfig.framebufferObject)
-	{
-		// reverse color mask, so 0 0 0 0 is the default
-		backEnd.colorMask[0] = !cmd->rgba[0];
-		backEnd.colorMask[1] = !cmd->rgba[1];
-		backEnd.colorMask[2] = !cmd->rgba[2];
-		backEnd.colorMask[3] = !cmd->rgba[3];
-	}
+	// reverse color mask, so 0 0 0 0 is the default
+	backEnd.colorMask[0] = !cmd->rgba[0];
+	backEnd.colorMask[1] = !cmd->rgba[1];
+	backEnd.colorMask[2] = !cmd->rgba[2];
+	backEnd.colorMask[3] = !cmd->rgba[3];
 
 	qglColorMask(cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3]);
 	
@@ -1339,10 +1329,7 @@ const void *RB_ClearDepth(const void *data)
 	if (r_showImages->integer)
 		RB_ShowImages();
 
-	if (glRefConfig.framebufferObject)
-	{
-		FBO_Bind(tr.renderFbo);
-	}
+	FBO_Bind(tr.renderFbo);
 
 	qglClear(GL_DEPTH_BUFFER_BIT);
 
@@ -1397,18 +1384,15 @@ const void	*RB_SwapBuffers( const void *data ) {
 		ri.Hunk_FreeTempMemory( stencilReadback );
 	}
 
-	if (glRefConfig.framebufferObject)
+	if (tr.msaaResolveFbo && r_hdr->integer)
 	{
-		if (tr.msaaResolveFbo && r_hdr->integer)
-		{
-			// Resolving an RGB16F MSAA FBO to the screen messes with the brightness, so resolve to an RGB16F FBO first
-			FBO_FastBlit(tr.renderFbo, NULL, tr.msaaResolveFbo, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-			FBO_FastBlit(tr.msaaResolveFbo, NULL, NULL, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		}
-		else if (tr.renderFbo)
-		{
-			FBO_FastBlit(tr.renderFbo, NULL, NULL, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		}
+		// Resolving an RGB16F MSAA FBO to the screen messes with the brightness, so resolve to an RGB16F FBO first
+		FBO_FastBlit(tr.renderFbo, NULL, tr.msaaResolveFbo, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		FBO_FastBlit(tr.msaaResolveFbo, NULL, NULL, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+	else if (tr.renderFbo)
+	{
+		FBO_FastBlit(tr.renderFbo, NULL, NULL, NULL, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 
 	if ( !glState.finishCalled ) {
@@ -1477,7 +1461,7 @@ const void *RB_PostProcess(const void *data)
 	if(tess.numIndexes)
 		RB_EndSurface();
 
-	if (!glRefConfig.framebufferObject || !r_postProcess->integer)
+	if (!r_postProcess->integer)
 	{
 		// do nothing
 		return (const void *)(cmd + 1);
@@ -1697,7 +1681,7 @@ const void *RB_ExportCubemaps(const void *data)
 	if (tess.numIndexes)
 		RB_EndSurface();
 
-	if (!glRefConfig.framebufferObject || !tr.world || tr.numCubemaps == 0)
+	if (!tr.world || tr.numCubemaps == 0)
 	{
 		// do nothing
 		ri.Printf(PRINT_ALL, "Nothing to export!\n");

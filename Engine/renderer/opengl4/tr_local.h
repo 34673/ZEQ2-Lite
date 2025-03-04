@@ -1418,18 +1418,13 @@ typedef struct {
 
 	memInfo_t   memInfo;
 
-	qboolean framebufferObject;
 	int maxRenderbufferSize;
 	int maxColorAttachments;
 
 	qboolean textureFloat;
 	textureCompressionRef_t textureCompression;
 	qboolean swizzleNormalmap;
-	
-	qboolean framebufferMultisample;
-	qboolean framebufferBlit;
 
-	qboolean depthClamp;
 	qboolean seamlessCubeMap;
 
 	qboolean vertexArrayObject;
@@ -1731,11 +1726,9 @@ extern	cvar_t	*r_showcluster;
 extern cvar_t	*r_gamma;
 extern cvar_t	*r_displayRefresh;		// optional display refresh option
 
-extern  cvar_t  *r_ext_framebuffer_object;
 extern  cvar_t  *r_ext_texture_float;
 extern  cvar_t  *r_ext_framebuffer_multisample;
 extern  cvar_t  *r_arb_seamless_cube_map;
-extern  cvar_t  *r_arb_vertex_array_object;
 extern  cvar_t  *r_ext_direct_state_access;
 
 extern	cvar_t	*r_nobind;						// turns off binding to appropriate textures

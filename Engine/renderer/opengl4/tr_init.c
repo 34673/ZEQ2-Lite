@@ -99,11 +99,9 @@ cvar_t	*r_ext_texture_env_add;
 cvar_t	*r_ext_texture_filter_anisotropic;
 cvar_t	*r_ext_max_anisotropy;
 
-cvar_t  *r_ext_framebuffer_object;
 cvar_t  *r_ext_texture_float;
 cvar_t  *r_ext_framebuffer_multisample;
 cvar_t  *r_arb_seamless_cube_map;
-cvar_t  *r_arb_vertex_array_object;
 cvar_t  *r_ext_direct_state_access;
 
 cvar_t  *r_cameraExposure;
@@ -981,8 +979,7 @@ void GL_SetDefaultState( void )
 
 	GL_BindNullTextures();
 
-	if (glRefConfig.framebufferObject)
-		GL_BindNullFramebuffers();
+	GL_BindNullFramebuffers();
 
 	GL_TextureMode( r_textureMode->string );
 
@@ -1199,11 +1196,9 @@ void R_Register( void )
 	r_ext_compiled_vertex_array = ri.Cvar_Get( "r_ext_compiled_vertex_array", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_texture_env_add = ri.Cvar_Get( "r_ext_texture_env_add", "1", CVAR_ARCHIVE | CVAR_LATCH);
 
-	r_ext_framebuffer_object = ri.Cvar_Get( "r_ext_framebuffer_object", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_texture_float = ri.Cvar_Get( "r_ext_texture_float", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_framebuffer_multisample = ri.Cvar_Get( "r_ext_framebuffer_multisample", "0", CVAR_ARCHIVE | CVAR_LATCH);
 	r_arb_seamless_cube_map = ri.Cvar_Get( "r_arb_seamless_cube_map", "0", CVAR_ARCHIVE | CVAR_LATCH);
-	r_arb_vertex_array_object = ri.Cvar_Get( "r_arb_vertex_array_object", "1", CVAR_ARCHIVE | CVAR_LATCH);
 	r_ext_direct_state_access = ri.Cvar_Get("r_ext_direct_state_access", "1", CVAR_ARCHIVE | CVAR_LATCH);
 
 	r_ext_texture_filter_anisotropic = ri.Cvar_Get( "r_ext_texture_filter_anisotropic",
@@ -1516,8 +1511,7 @@ void R_Init( void ) {
 
 	R_InitImages();
 
-	if (glRefConfig.framebufferObject)
-		FBO_Init();
+	FBO_Init();
 
 	GLSL_InitGPUShaders();
 
@@ -1563,8 +1557,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	if ( tr.registered ) {
 		R_IssuePendingRenderCommands();
 		R_ShutDownQueries();
-		if (glRefConfig.framebufferObject)
-			FBO_Shutdown();
+		FBO_Shutdown();
 		R_DeleteTextures();
 		R_ShutdownVaos();
 		GLSL_ShutdownGPUShaders();

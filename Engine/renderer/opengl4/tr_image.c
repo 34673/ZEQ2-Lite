@@ -2087,18 +2087,8 @@ static void RawImage_UploadTexture(GLuint texture, byte *data, int x, int y, int
 
 		if (!lastMip && numMips < 2)
 		{
-			if (glRefConfig.framebufferObject)
-			{
-				qglGenerateTextureMipmapEXT(texture, target);
-				break;
-			}
-			else if (rgba8)
-			{
-				if (type == IMGTYPE_NORMAL || type == IMGTYPE_NORMALHEIGHT)
-					R_MipMapNormalHeight(data, data, width, height, glRefConfig.swizzleNormalmap);
-				else
-					R_MipMapsRGB(data, width, height);
-			}
+			qglGenerateTextureMipmapEXT(texture, target);
+			break;
 		}
 
 		x >>= 1;
@@ -2912,7 +2902,6 @@ void R_CreateBuiltinImages( void ) {
 	R_CreateDlightImage();
 	R_CreateFogImage();
 
-	if (glRefConfig.framebufferObject)
 	{
 		int width, height, hdrFormat, rgbFormat;
 

@@ -266,6 +266,7 @@ static void InitOpenGL( void )
 		GLint		temp;
 		
 		GLimp_Init( qfalse );
+		GLimp_InitExtensions( qfalse );
 		GLimp_InitExtraExtensions();
 
 		glConfig.textureEnvAddAvailable = qtrue;

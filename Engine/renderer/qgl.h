@@ -32,14 +32,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #	include <SDL_opengl.h>
 #endif
 
-extern void (APIENTRYP qglActiveTextureARB) (GLenum texture);
-extern void (APIENTRYP qglClientActiveTextureARB) (GLenum texture);
-extern void (APIENTRYP qglMultiTexCoord2fARB) (GLenum target, GLfloat s, GLfloat t);
-
-extern void (APIENTRYP qglLockArraysEXT) (GLint first, GLsizei count);
-extern void (APIENTRYP qglUnlockArraysEXT) (void);
-
-
 //===========================================================================
 
 // GL function loader, based on https://gist.github.com/rygorous/16796a0c876cf8a5f542caddb55bce8a
@@ -383,6 +375,17 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 #define GL_TEXTURE_CUBE_MAP_SEAMLESS               0x884F
 #endif
 
+// GL_ARB_multitexture
+#define QGL_ARB_multitexture \
+	GLE(void, ActiveTextureARB, GLenum texture) \
+	GLE(void, ClientActiveTextureARB, GLenum texture) \
+	GLE(void, MultiTexCoord2fARB, GLenum target, GLfloat s, GLfloat t) \
+
+// GL_EXT_compiled_vertex_array
+#define QGL_EXT_compiled_vertex_array \
+	GLE(void, LockArraysEXT, GLint first, GLsizei count) \
+	GLE(void, UnlockArraysEXT, void) \
+
 // GL_EXT_direct_state_access
 #define QGL_EXT_direct_state_access_PROCS \
 	GLE(GLvoid, BindMultiTextureEXT, GLenum texunit, GLenum target, GLuint texture) \
@@ -408,29 +411,31 @@ extern void (APIENTRYP qglUnlockArraysEXT) (void);
 	GLE(GLvoid, NamedFramebufferRenderbufferEXT, GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) \
 
 #define QGL_ALL_PROCS \
-QGL_1_1_PROCS; \
-QGL_1_1_FIXED_FUNCTION_PROCS; \
-QGL_DESKTOP_1_1_PROCS; \
-QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS; \
-QGL_ES_1_1_PROCS; \
-QGL_ES_1_1_FIXED_FUNCTION_PROCS; \
-QGL_1_3_PROCS; \
-QGL_1_4_PROCS; \
-QGL_1_5_PROCS; \
-QGL_2_0_PROCS; \
-QGL_3_0_PROCS; \
-QGL_3_1_PROCS; \
-QGL_3_2_PROCS; \
-QGL_4_0_PROCS; \
-QGL_4_1_PROCS; \
-QGL_4_2_PROCS; \
-QGL_4_3_PROCS; \
-QGL_4_5_PROCS; \
-QGL_4_6_PROCS; \
-QGL_ARB_occlusion_query_PROCS; \
-QGL_ARB_framebuffer_object_PROCS; \
-QGL_ARB_vertex_array_object_PROCS; \
-QGL_EXT_direct_state_access_PROCS;
+	QGL_1_1_PROCS; \
+	QGL_1_1_FIXED_FUNCTION_PROCS; \
+	QGL_DESKTOP_1_1_PROCS; \
+	QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS; \
+	QGL_ES_1_1_PROCS; \
+	QGL_ES_1_1_FIXED_FUNCTION_PROCS; \
+	QGL_1_3_PROCS; \
+	QGL_1_4_PROCS; \
+	QGL_1_5_PROCS; \
+	QGL_2_0_PROCS; \
+	QGL_3_0_PROCS; \
+	QGL_3_1_PROCS; \
+	QGL_3_2_PROCS; \
+	QGL_4_0_PROCS; \
+	QGL_4_1_PROCS; \
+	QGL_4_2_PROCS; \
+	QGL_4_3_PROCS; \
+	QGL_4_5_PROCS; \
+	QGL_4_6_PROCS; \
+	QGL_ARB_occlusion_query_PROCS; \
+	QGL_ARB_framebuffer_object_PROCS; \
+	QGL_ARB_vertex_array_object_PROCS; \
+	QGL_ARB_multitexture; \
+	QGL_EXT_compiled_vertex_array; \
+	QGL_EXT_direct_state_access_PROCS; \
 
 #define GLE(ret, name, ...) typedef ret APIENTRY name##proc(__VA_ARGS__);
 QGL_ALL_PROCS

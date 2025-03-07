@@ -1427,7 +1427,6 @@ typedef struct {
 
 	qboolean seamlessCubeMap;
 
-	qboolean vertexArrayObject;
 	qboolean directStateAccess;
 
 	int maxVertexAttribs;
@@ -2024,6 +2023,7 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 ====================================================================
 */
 
+void		GLimp_InitExtensions( qboolean fixedFunction );
 void		GLimp_InitExtraExtensions( void );
 
 /*

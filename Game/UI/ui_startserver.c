@@ -596,7 +596,7 @@ static void StartServer_MenuInit( void ) {
 	s_startserver.next.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_startserver.next.generic.id			= ID_STARTSERVERNEXT;
 	s_startserver.next.generic.callback		= StartServer_MenuEvent;
-	s_startserver.next.generic.x			= 28;
+	s_startserver.next.generic.x			= (int)(-uis.biasX / uis.scaleX) + 28;
 	s_startserver.next.generic.y			= 119;
 	s_startserver.next.string				= "FIGHT!";
 	s_startserver.next.style				= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;
@@ -606,7 +606,7 @@ static void StartServer_MenuInit( void ) {
 	s_startserver.back.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_startserver.back.generic.id			= ID_STARTSERVERBACK;
 	s_startserver.back.generic.callback		= StartServer_MenuEvent;
-	s_startserver.back.generic.x			= 28;
+	s_startserver.back.generic.x			= (int)(-uis.biasX / uis.scaleX) + 28;
 	s_startserver.back.generic.y			= 157;
 	s_startserver.back.string				= "BACK";
 	s_startserver.back.style				= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;

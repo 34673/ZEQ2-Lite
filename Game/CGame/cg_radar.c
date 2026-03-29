@@ -147,6 +147,6 @@ void CG_DrawRadar () {
 	playerState_t	*ps;
 	ps = &cg.predictedPlayerState;
 	if(!(ps->lockedTarget>0)){
-		CG_DrawRadarBlips( 512, 0, 128, 128 );
+		CG_DrawRadarBlips( 640.0f + ( cgs.screenXBias / cgs.screenXScale ) - 128, 0, 128, 128 );
 	}
 }

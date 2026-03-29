@@ -524,7 +524,7 @@ static void PlayerModel_MenuInit( void )
 	static char	skinname[32];
 
 	// zero set all our globals
-	int xmenu = 28;
+	int xmenu = (int)(-uis.biasX / uis.scaleX) + 28;
 	int	ymenu = 119;
 	int	offset = 38;
 	int	style = UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;

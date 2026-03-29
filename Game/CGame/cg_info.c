@@ -24,6 +24,36 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 
+static float CG_InfoWideVirtualLeft( void ) {
+	if ( cgs.screenXScale <= 0.0f ) {
+		return 0.0f;
+	}
+	return -cgs.screenXBias / cgs.screenXScale;
+}
+
+static void CG_DrawPicFill( qhandle_t shader ) {
+	float s0 = 0.0f, s1 = 1.0f;
+	float t0 = 0.0f, t1 = 1.0f;
+	float screenAspect = (float)cgs.glconfig.vidWidth / (float)cgs.glconfig.vidHeight;
+	float imageAspect = 4.0f / 3.0f;
+
+	if ( screenAspect > imageAspect ) {
+		float visibleHeight = imageAspect / screenAspect;
+		float crop = 0.5f * ( 1.0f - visibleHeight );
+		t0 += crop;
+		t1 -= crop;
+	}
+	else if ( screenAspect < imageAspect ) {
+		float visibleWidth = screenAspect / imageAspect;
+		float crop = 0.5f * ( 1.0f - visibleWidth );
+		s0 += crop;
+		s1 -= crop;
+	}
+
+	trap_R_DrawStretchPic( 0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, s0, t0, s1, t1, shader );
+}
+
+
 #define MAX_LOADING_PLAYER_ICONS	16
 
 static int			loadingPlayerIconCount;
@@ -38,12 +68,15 @@ CG_DrawLoadingIcons
 static void CG_DrawLoadingIcons( void ) {
 	int		n;
 	int		y;
+	float	baseX;
+
+	baseX = CG_InfoWideVirtualLeft() + 24.0f;
 	cgs.media.chatBackgroundShader = trap_R_RegisterShaderNoMip("chatBox");
 	for( n = 0; n < loadingPlayerIconCount; n++ ) {
 		y = 80 + (40 * n);
-		CG_DrawPic(qfalse,-25,y-22,369,75,cgs.media.chatBackgroundShader );
-		CG_DrawPic(qfalse,5,y,32,32,loadingPlayerIcons[n] );
-		CG_DrawSmallStringCustom(42,y+10,11,11,loadingPlayerNames[n],1.0,6);
+		CG_DrawPic(qfalse,baseX - 30.0f,y - 22.0f,369,75,cgs.media.chatBackgroundShader );
+		CG_DrawPic(qfalse,baseX,y,32,32,loadingPlayerIcons[n] );
+		CG_DrawSmallStringCustom(baseX + 37.0f,y + 10.0f,11,11,loadingPlayerNames[n],1.0,6);
 		//cgs.clientinfo[clientNum].name
 	}
 }
@@ -119,6 +152,7 @@ void CG_DrawInformation( void ) {
 	const char	*s;
 	const char	*info;
 	qhandle_t	levelshot,text,dots;
+	float		leftX;
 
 	info = CG_ConfigString( CS_SERVERINFO );
 	s = Info_ValueForKey(info,"mapname");
@@ -126,16 +160,17 @@ void CG_DrawInformation( void ) {
 	dots = trap_R_RegisterShaderNoMip("dots");
 	if(!levelshot){levelshot = trap_R_RegisterShaderNoMip("menuback");}
 	trap_R_SetColor(NULL);
-	CG_DrawPic(qfalse,0,0,SCREEN_WIDTH,SCREEN_HEIGHT,levelshot);
+	leftX = CG_InfoWideVirtualLeft();
+	CG_DrawPicFill(levelshot);
 	CG_DrawLoadingIcons();
 	if(cg.infoScreenText[0]){
 		text = trap_R_RegisterShaderNoMip("loading");
-		CG_DrawPic(qfalse,0,18,127,64,text);
-		CG_DrawPic(qfalse,64,52,8,4,dots);
+		CG_DrawPic(qfalse,leftX,18,127,64,text);
+		CG_DrawPic(qfalse,leftX + 64.0f,52,8,4,dots);
 	}
 	else{
 		text = trap_R_RegisterShaderNoMip("ready");
-		CG_DrawPic(qfalse,0,18,127,64,text);
+		CG_DrawPic(qfalse,leftX,18,127,64,text);
 	}
 	// Remote Server only
 }

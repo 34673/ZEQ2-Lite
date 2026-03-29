@@ -1,7 +1,7 @@
 #include "ui_local.h"
 void Menu_Common(int amount){
 	int current;
-	int x = 16;
+	int x = (int)(-uis.biasX / uis.scaleX) + 16;
 	int y = 112;
 	current = 1;
 	UI_MenuLogo();

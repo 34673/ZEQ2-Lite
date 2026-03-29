@@ -36,6 +36,10 @@ menufield_s passwordField;
 static connstate_t	lastConnState;
 static char			lastLoadingText[MAX_INFO_VALUE];
 
+static float UI_ConnectWideLeftVirtual( void ) {
+	return -uis.biasX / uis.scaleX;
+}
+
 static void UI_ReadableSize ( char *buf, int bufsize, int value )
 {
 	if (value > 1024*1024*1024 ) { // gigs
@@ -77,6 +81,9 @@ static void UI_DisplayDownloadInfo( const char *downloadName ) {
 	int width, leftWidth;
 	int style = UI_LEFT|UI_SMALLFONT|UI_DROPSHADOW;
 	const char *s;
+	float baseX;
+
+	baseX = UI_ConnectWideLeftVirtual();
 
 	downloadSize = trap_Cvar_VariableValue( "cl_downloadSize" );
 	downloadCount = trap_Cvar_VariableValue( "cl_downloadCount" );
@@ -89,9 +96,9 @@ static void UI_DisplayDownloadInfo( const char *downloadName ) {
 	if (width > leftWidth) leftWidth = width;
 	leftWidth += 16;
 
-	UI_DrawProportionalString( 8, 128, dlText, style, color_white );
-	UI_DrawProportionalString( 8, 160, etaText, style, color_white );
-	UI_DrawProportionalString( 8, 224, xferText, style, color_white );
+	UI_DrawProportionalString( baseX + 8, 128, dlText, style, color_white );
+	UI_DrawProportionalString( baseX + 8, 160, etaText, style, color_white );
+	UI_DrawProportionalString( baseX + 8, 224, xferText, style, color_white );
 
 	if (downloadSize > 0) {
 		s = va( "%s (%d%%)", downloadName, (int)( (float)downloadCount * 100.0f / downloadSize ) );
@@ -99,14 +106,14 @@ static void UI_DisplayDownloadInfo( const char *downloadName ) {
 		s = downloadName;
 	}
 
-	UI_DrawProportionalString( leftWidth, 128, s, style, color_white );
+	UI_DrawProportionalString( baseX + leftWidth, 128, s, style, color_white );
 
 	UI_ReadableSize( dlSizeBuf,		sizeof dlSizeBuf,		downloadCount );
 	UI_ReadableSize( totalSizeBuf,	sizeof totalSizeBuf,	downloadSize );
 
 	if (downloadCount < 4096 || !downloadTime) {
-		UI_DrawProportionalString( leftWidth, 160, "estimating", style, color_white );
-		UI_DrawProportionalString( leftWidth, 192, 
+		UI_DrawProportionalString( baseX + leftWidth, 160, "estimating", style, color_white );
+		UI_DrawProportionalString( baseX + leftWidth, 192, 
 			va("(%s of %s copied)", dlSizeBuf, totalSizeBuf), style, color_white );
 	} else {
 	  if ( (uis.realtime - downloadTime) / 1000) {
@@ -128,24 +135,24 @@ static void UI_DisplayDownloadInfo( const char *downloadName ) {
 			UI_PrintTime ( dlTimeBuf, sizeof dlTimeBuf, n );
 				//(n - (((downloadCount/1024) * n) / (downloadSize/1024))) * 1000);
 
-			UI_DrawProportionalString( leftWidth, 160, 
+			UI_DrawProportionalString( baseX + leftWidth, 160, 
 				dlTimeBuf, style, color_white );
-			UI_DrawProportionalString( leftWidth, 192, 
+			UI_DrawProportionalString( baseX + leftWidth, 192, 
 				va("(%s of %s copied)", dlSizeBuf, totalSizeBuf), style, color_white );
 		} else {
-			UI_DrawProportionalString( leftWidth, 160, 
+			UI_DrawProportionalString( baseX + leftWidth, 160, 
 				"estimating", style, color_white );
 			if (downloadSize) {
-				UI_DrawProportionalString( leftWidth, 192, 
+				UI_DrawProportionalString( baseX + leftWidth, 192, 
 					va("(%s of %s copied)", dlSizeBuf, totalSizeBuf), style, color_white );
 			} else {
-				UI_DrawProportionalString( leftWidth, 192, 
+				UI_DrawProportionalString( baseX + leftWidth, 192, 
 					va("(%s copied)", dlSizeBuf), style, color_white );
 			}
 		}
 
 		if (xferRate) {
-			UI_DrawProportionalString( leftWidth, 224, 
+			UI_DrawProportionalString( baseX + leftWidth, 224, 
 				va("%s/Sec", xferRateBuf), style, color_white );
 		}
 	}
@@ -162,6 +169,7 @@ to prevent it from blinking away too rapidly on local or lan games.
 void UI_DrawConnectScreen( qboolean overlay ) {
 	char			*s;
 	float x,y,w,h;
+	float baseX;
 	qhandle_t		text,dots;
 	uiClientState_t	cstate;
 	char			info[MAX_INFO_VALUE];
@@ -175,6 +183,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	}
 	trap_GetClientState( &cstate );
 	info[0] = '\0';
+	baseX = UI_ConnectWideLeftVirtual();
 
 #if 0
 	// display password field
@@ -206,49 +215,56 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	lastConnState = cstate.connState;
 	text = trap_R_RegisterShaderNoMip("connecting");
 	dots = trap_R_RegisterShaderNoMip("dots");
-	x = 0;
-	y = 18;
-	w = 127;
-	h = 64;
-	UI_AdjustFrom640(&x,&y,&w,&h);
+
 	switch ( cstate.connState ) {
 		case CA_CONNECTING:
 			text = trap_R_RegisterShaderNoMip("searching");
+			x = baseX;
+			y = 18;
+			w = 127;
+			h = 64;
+			UI_AdjustFrom640(&x,&y,&w,&h);
 			trap_R_DrawStretchPic(x,y,w,h, 0, 0, 1, 1, text);
-			x = 70;
+
+			x = baseX + 70;
 			y = 52;
 			w = 8;
 			h = 4;
+			UI_AdjustFrom640(&x,&y,&w,&h);
+			trap_R_DrawStretchPic(x,y,w,h, 0, 0, 1, 1, dots);
 			break;
+
 		case CA_CHALLENGING:
+			x = baseX;
+			y = 18;
+			w = 127;
+			h = 64;
+			UI_AdjustFrom640(&x,&y,&w,&h);
 			trap_R_DrawStretchPic(x,y,w,h, 0, 0, 1, 1, text);
-			x = -100;
-			y = -100;
-			w = 0;
-			h = 0;
 			break;
+
 		case CA_CONNECTED: {
 			char downloadName[MAX_INFO_VALUE];
 
-				trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof(downloadName) );
-				if (*downloadName) {
-					UI_DisplayDownloadInfo( downloadName );
-					return;
-				}
+			trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof(downloadName) );
+			if (*downloadName) {
+				UI_DisplayDownloadInfo( downloadName );
+				return;
 			}
+
+			x = baseX;
+			y = 18;
+			w = 127;
+			h = 64;
+			UI_AdjustFrom640(&x,&y,&w,&h);
 			trap_R_DrawStretchPic(x,y,w,h, 0, 0, 1, 1, text);
-			x = -100;
-			y = -100;
-			w = 0;
-			h = 0;
 			break;
-		break;
+		}
+	break;
 	default:
 		return;
 	}
 
-	UI_AdjustFrom640(&x,&y,&w,&h);
-	trap_R_DrawStretchPic(x,y,w,h, 0, 0, 1, 1, dots);
 	//UI_DrawProportionalString( 320, 128, s, UI_CENTER|UI_SMALLFONT|UI_DROPSHADOW, color_white );
 
 	// password required / connection rejected information goes here

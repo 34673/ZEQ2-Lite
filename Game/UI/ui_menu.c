@@ -61,6 +61,15 @@ typedef struct {
 static mainmenu_t s_main;
 void MainMenu_Save(void);
 
+static int UI_MenuWideLeftVirtual( void ) {
+	return (int)(-uis.biasX / uis.scaleX);
+}
+
+static int UI_WideRightVirtual( void ) {
+	return (int)(640.0f + (uis.biasX / uis.scaleX));
+}
+
+
 typedef struct {
 	menuframework_s menu;	
 	char errorMessage[4096];
@@ -69,29 +78,7 @@ typedef struct {
 static errorMessage_t s_errorMessage;
 
 int aspectRatioCorrectedY(int ycoord){
-	char heightCvar[8];
-	char widthCvar[8];
-	char modeCvar[8];
-	float height;
-	float width;
-	float ratio;
-	float percentage;
-	int ret = ycoord;
-	trap_Cvar_VariableStringBuffer("r_customheight", heightCvar, sizeof(heightCvar));
-	trap_Cvar_VariableStringBuffer("r_customwidth", widthCvar, sizeof(widthCvar));
-	trap_Cvar_VariableStringBuffer("r_mode", modeCvar, sizeof(modeCvar));
-	height = atof(heightCvar);
-	width = atof(widthCvar);
-	if(height > 0 && width > 0 && atoi(modeCvar) == -1){
-		ratio = height / width;
-		if(ratio < 3.0f / 4.0f){
-			ratio *= 0.95f;
-			percentage = 3.0f / (4.0f * ratio);
-			ret = percentage * ycoord;
-		}
-	}
-
-	return ret;
+	return ycoord;
 }
 
 /*
@@ -228,6 +215,7 @@ TTimo: this function is common to the main menu and errorMessage menu
 static void Main_MenuDraw( void ) {
 	char *result;
 	char segment[6400];
+	int right;
 	if(uis.menuamount != 3){
 		//trap_HTTPGet("http://zeq2.com/lite/forums/");		
 		//trap_Cvar_VariableStringBuffer("httpContents",segment,sizeof(segment));
@@ -235,8 +223,9 @@ static void Main_MenuDraw( void ) {
 	uis.menuamount = 3;
 	uis.hideEarth = qfalse;
 	uis.showFrame = qfalse;
-	UI_DrawHandlePic(464,390,149,49,uis.blobShadow);
-	UI_DrawHandlePic(474,430,132,21,uis.nameArea);
+	right = UI_WideRightVirtual();
+	UI_DrawHandlePic(right - 176,390,149,49,uis.blobShadow);
+	UI_DrawHandlePic(right - 166,430,132,21,uis.nameArea);
 	Menu_Draw(&s_main.menu);
 }
 
@@ -253,6 +242,8 @@ and that local cinematics are killed
 void UI_MainMenu( void ) {
 	qboolean teamArena = qfalse;
 	int		style = UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;
+	int		wideLeft;
+	int		wideRight;
 
 	trap_S_StopBackgroundTrack();
 	trap_S_StartBackgroundTrack("music/menu.ogg", "music/menu.ogg");
@@ -288,6 +279,12 @@ void UI_MainMenu( void ) {
 	s_main.menu.wrapAround = qtrue;
 	s_main.menu.showlogo = qtrue;
 
+	wideLeft = UI_MenuWideLeftVirtual();
+	wideRight = UI_WideRightVirtual();
+	multiXpos = wideLeft + 28;
+	setupXpos = wideLeft + 28;
+	exitXpos = wideLeft + 28;
+
 	s_main.multiplayer.generic.type			= MTYPE_PTEXT;
 	s_main.multiplayer.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_main.multiplayer.generic.x			= multiXpos;
@@ -299,35 +296,35 @@ void UI_MainMenu( void ) {
 	s_main.multiplayer.style				= style;
 
 	s_main.setup.generic.type				= MTYPE_PTEXT;
-	s_main.setup.generic.flags				= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
+	s_main.setup.generic.flags			= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_main.setup.generic.x					= setupXpos;
 	s_main.setup.generic.y					= setupYpos;
-	s_main.setup.generic.id					= ID_SETUP;
+	s_main.setup.generic.id				= ID_SETUP;
 	s_main.setup.generic.callback			= Main_MenuEvent; 
-	s_main.setup.string						= "SETUP";
-	s_main.setup.color						= color_white;
-	s_main.setup.style						= style;
+	s_main.setup.string					= "SETUP";
+	s_main.setup.color					= color_white;
+	s_main.setup.style					= style;
 
 	s_main.exit.generic.type				= MTYPE_PTEXT;
 	s_main.exit.generic.flags				= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	s_main.exit.generic.x					= exitXpos;
 	s_main.exit.generic.y					= exitYpos;
-	s_main.exit.generic.id					= ID_EXIT;
+	s_main.exit.generic.id				= ID_EXIT;
 	s_main.exit.generic.callback			= Main_MenuEvent; 
-	s_main.exit.string						= "EXIT";
-	s_main.exit.color						= color_white;
-	s_main.exit.style						= style;
+	s_main.exit.string					= "EXIT";
+	s_main.exit.color					= color_white;
+	s_main.exit.style					= style;
 
 	s_main.name.generic.type				= MTYPE_FIELD;
 	s_main.name.generic.flags				= QMF_NODEFAULTINIT;
 	s_main.name.generic.ownerdraw			= MainMenu_DrawName;
 	s_main.name.field.widthInChars			= 14;
 	s_main.name.field.maxchars				= 14;
-	s_main.name.generic.x					= 454;
+	s_main.name.generic.x					= wideRight - 186;
 	s_main.name.generic.y					= 405;
-	s_main.name.generic.left				= 474;
+	s_main.name.generic.left				= wideRight - 166;
 	s_main.name.generic.top					= 430;
-	s_main.name.generic.right				= 610;
+	s_main.name.generic.right				= wideRight - 30;
 	s_main.name.generic.bottom				= 455;
 
 	s_main.player.generic.type				= MTYPE_BITMAP;
@@ -335,7 +332,7 @@ void UI_MainMenu( void ) {
 	s_main.player.generic.ownerdraw			= MainMenu_DrawPlayer;
 	s_main.player.generic.id				= ID_MODEL;
 	s_main.player.generic.callback			= Main_MenuEvent;
-	s_main.player.generic.x					= 380;
+	s_main.player.generic.x					= wideRight - 260;
 	s_main.player.generic.y					= aspectRatioCorrectedY(-118);
 	s_main.player.width						= 320;
 	s_main.player.height					= 810;

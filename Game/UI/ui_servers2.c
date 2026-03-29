@@ -1338,7 +1338,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.go.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	g_arenaservers.go.generic.id		= ID_CONNECT;
 	g_arenaservers.go.generic.callback	= ArenaServers_Event;
-	g_arenaservers.go.generic.x			= 28;
+	g_arenaservers.go.generic.x			= (int)(-uis.biasX / uis.scaleX) + 28;
 	g_arenaservers.go.generic.y			= 119;
 	g_arenaservers.go.string			= "FIGHT!";
 	g_arenaservers.go.style				= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;
@@ -1348,7 +1348,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.create.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	g_arenaservers.create.generic.id		= ID_CREATE;
 	g_arenaservers.create.generic.callback	= ArenaServers_Event;
-	g_arenaservers.create.generic.x			= 28;
+	g_arenaservers.create.generic.x			= (int)(-uis.biasX / uis.scaleX) + 28;
 	g_arenaservers.create.generic.y			= 157;
 	g_arenaservers.create.string			= "CREATE";
 	g_arenaservers.create.style				= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;
@@ -1358,7 +1358,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.refresh.generic.flags	= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	g_arenaservers.refresh.generic.id		= ID_REFRESH;
 	g_arenaservers.refresh.generic.callback	= ArenaServers_Event;
-	g_arenaservers.refresh.generic.x		= 28;
+	g_arenaservers.refresh.generic.x		= (int)(-uis.biasX / uis.scaleX) + 28;
 	g_arenaservers.refresh.generic.y		= 195;
 	g_arenaservers.refresh.string			= "REFRESH";
 	g_arenaservers.refresh.style			= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;
@@ -1369,7 +1369,7 @@ static void ArenaServers_MenuInit( void ) {
 	g_arenaservers.back.generic.flags		= QMF_LEFT_JUSTIFY|QMF_PULSEIFFOCUS;
 	g_arenaservers.back.generic.id			= ID_BACK;
 	g_arenaservers.back.generic.callback	= ArenaServers_Event;
-	g_arenaservers.back.generic.x			= 28;
+	g_arenaservers.back.generic.x			= (int)(-uis.biasX / uis.scaleX) + 28;
 	g_arenaservers.back.generic.y			= 233;
 	g_arenaservers.back.string				= "BACK";
 	g_arenaservers.back.style				= UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;

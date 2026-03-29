@@ -943,7 +943,7 @@ static void Controls_MenuInit( void )
 	static char playername[32];
 
 	// zero set all our globals
-	int x = 28;
+	int x = (int)(-uis.biasX / uis.scaleX) + 28;
 	int	y = 119;
 	int	offset = 38;
 	int	style = UI_LEFT | UI_DROPSHADOW | UI_TINYFONT;	

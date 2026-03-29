@@ -34,6 +34,153 @@ char systemChat[256];
 char teamChat1[256];
 char teamChat2[256];
 
+void CG_DrawHorGauge( float x, float y, float w, float h, vec4_t color_bar, vec4_t color_empty, int value, int maxvalue, qboolean reversed);
+void CG_DrawDiffGauge(float x,float y,float width,float height,vec4_t color,vec4_t empty,int base,int value,int maxValue,int direction);
+void CG_DrawRightGauge(float x,float y,float width,float height,vec4_t color,vec4_t empty,int value,int maxValue);
+
+static float CG_WideLeftVirtual( void ) {
+	return -cgs.screenXBias / cgs.screenXScale;
+}
+
+static float CG_WideRightVirtual( void ) {
+	return 640.0f + ( cgs.screenXBias / cgs.screenXScale );
+}
+
+static float CG_WideVirtualWidth( void ) {
+	if ( cgs.screenYScale <= 0.0f ) {
+		return 640.0f;
+	}
+	return (float)cgs.glconfig.vidWidth / cgs.screenYScale;
+}
+
+static float CG_WideCenterBias( void ) {
+	return ( (float)cgs.glconfig.vidWidth - ( 640.0f * cgs.screenYScale ) ) * 0.5f;
+}
+
+static void CG_BeginUniformHudScale( float *oldScreenXScale, float *oldScreenXBias ) {
+	*oldScreenXScale = cgs.screenXScale;
+	*oldScreenXBias = cgs.screenXBias;
+	cgs.screenXScale = cgs.screenYScale;
+	cgs.screenXBias = 0.0f;
+}
+
+static void CG_EndUniformHudScale( float oldScreenXScale, float oldScreenXBias ) {
+	cgs.screenXScale = oldScreenXScale;
+	cgs.screenXBias = oldScreenXBias;
+}
+
+static void CG_BeginUniformCenteredScale( float *oldScreenXScale, float *oldScreenXBias ) {
+	*oldScreenXScale = cgs.screenXScale;
+	*oldScreenXBias = cgs.screenXBias;
+	cgs.screenXScale = cgs.screenYScale;
+	cgs.screenXBias = CG_WideCenterBias();
+}
+
+static void CG_DrawPicMirrorX( float x, float y, float width, float height, qhandle_t hShader ) {
+	float ax, ay, aw, ah;
+	ax = x;
+	ay = y;
+	aw = width;
+	ah = height;
+	CG_AdjustFrom640( &ax, &ay, &aw, &ah, qfalse );
+	trap_R_DrawStretchPic( ax, ay, aw, ah, 1, 0, 0, 1, hShader );
+}
+
+static void CG_DrawPicMirrored( float x, float y, float width, float height, qhandle_t hShader ) {
+	CG_AdjustFrom640( &x, &y, &width, &height, qtrue );
+	trap_R_DrawStretchPic( x, y, width, height, 1, 0, 0, 1, hShader );
+}
+
+static void CG_DrawPicHud( float x, float y, float width, float height, qhandle_t hShader ) {
+	float oldScreenXScale;
+	float oldScreenXBias;
+	CG_BeginUniformHudScale( &oldScreenXScale, &oldScreenXBias );
+	CG_DrawPic( qfalse, x, y, width, height, hShader );
+	CG_EndUniformHudScale( oldScreenXScale, oldScreenXBias );
+}
+
+static void CG_DrawLeftGauge( float x, float y, float width, float height, vec4_t color, vec4_t empty, int value, int maxValue ) {
+	float percent;
+	int newWidth;
+
+	percent = (float)value / (float)maxValue;
+	newWidth = width - ( width * percent );
+	CG_DrawHorGauge( x, y, newWidth, height, color, empty, 1, 1, qfalse );
+}
+
+static void CG_DrawRightGaugeAligned(float x,float y,float width,float height,vec4_t color,vec4_t empty,int value,int maxValue,qboolean reversed){
+	float percent;
+	int newWidth, change;
+	percent = ((float)value / (float)maxValue);
+	change = width * percent;
+	newWidth = width - change;
+	if(!reversed){
+		CG_DrawRightGauge(x,y,width,height,color,empty,value,maxValue);
+		return;
+	}
+	CG_DrawHorGauge(x,y,newWidth,height,color,empty,1,1,qfalse);
+}
+
+static void CG_DrawDiffGaugeAligned(float x,float y,float width,float height,vec4_t color,vec4_t empty,int base,int value,int maxValue,int direction,qboolean reversed){
+	float percent;
+	int newWidth,newX,difference;
+	if(!reversed){
+		CG_DrawDiffGauge(x,y,width,height,color,empty,base,value,maxValue,direction);
+		return;
+	}
+	difference = base - value;
+	if(difference > 0 && direction <= 0){return;}
+	if(difference < 0 && direction >= 0){return;}
+	percent = ((float)value / (float)maxValue);
+	newWidth = ((float)difference / (float)maxValue) * width;
+	newX = x + width - ((float)(width * percent)) - newWidth;
+	CG_DrawHorGauge(newX,y,newWidth,height,color,empty,1,1,qfalse);
+}
+
+static void CG_DrawDiffGaugeMirrored( float x, float y, float width, float height, vec4_t color, vec4_t empty, int base, int value, int maxValue, int direction ) {
+	float percentBase;
+	int difference;
+	int newWidth;
+	int newX;
+
+	difference = base - value;
+	if ( difference > 0 && direction <= 0 ) {
+		return;
+	}
+	if ( difference < 0 && direction >= 0 ) {
+		return;
+	}
+
+	percentBase = (float)base / (float)maxValue;
+	newWidth = fabs( ( (float)difference / (float)maxValue ) * width );
+	newX = x + width - ( width * percentBase );
+	CG_DrawHorGauge( newX, y, newWidth, height, color, empty, 1, 1, qfalse );
+}
+
+static void CG_DrawPicFill4x3( qhandle_t shader ) {
+	float s0 = 0.0f;
+	float s1 = 1.0f;
+	float t0 = 0.0f;
+	float t1 = 1.0f;
+	float screenAspect = (float)cgs.glconfig.vidWidth / (float)cgs.glconfig.vidHeight;
+	float imageAspect = 4.0f / 3.0f;
+
+	if ( screenAspect > imageAspect ) {
+		float visibleHeight = imageAspect / screenAspect;
+		float crop = 0.5f * ( 1.0f - visibleHeight );
+		t0 += crop;
+		t1 -= crop;
+	}
+	else if ( screenAspect < imageAspect ) {
+		float visibleWidth = screenAspect / imageAspect;
+		float crop = 0.5f * ( 1.0f - visibleWidth );
+		s0 += crop;
+		s1 -= crop;
+	}
+
+	trap_R_DrawStretchPic( 0, 0, cgs.glconfig.vidWidth, cgs.glconfig.vidHeight, s0, t0, s1, t1, shader );
+}
+
 /*
 =================
 CG_DrawHorGauge
@@ -52,7 +199,7 @@ void CG_DrawHorGauge( float x, float y, float w, float h, vec4_t color_bar, vec4
 		if (!reversed) {
 			CG_DrawPic(qfalse, x + bar_w, y, w - bar_w, h, cgs.media.whiteShader );
 		} else {
-			CG_DrawPic(qfalse, x - bar_w, y, w + bar_w, h, cgs.media.whiteShader );
+			CG_DrawPic(qfalse, x, y, w - bar_w, h, cgs.media.whiteShader );
 		}
 	}
 	trap_R_SetColor( color_bar );
@@ -258,14 +405,15 @@ void strrep(char *str, char old, char new)  {
 void CG_CheckChat(void){
 	int index;
 	vec3_t angles;
+	float leftX = CG_WideLeftVirtual();
 	int yStart = cg.predictedPlayerState.lockedTarget ? 330 : 0;
 	int yOffset = cg.predictedPlayerState.lockedTarget ? -40 : 40;
 	if(cg.time < cgs.chatTimer){
 		for(index=0;index<3;++index){
 			if(cgs.messageClient[index] >= 0){
-				CG_DrawPic(qfalse,-15,-15+yStart+(yOffset*index),369,75,cgs.media.chatBackgroundShader);
-				CG_DrawHead(7,7+yStart+(yOffset*index),32,32,cgs.messageClient[index],angles);
-				CG_DrawSmallStringCustom(45,16+yStart+(yOffset*index),8,8,cgs.messages[index],1.0,4);
+				CG_DrawPic(qfalse,leftX - 15.0f,-15+yStart+(yOffset*index),369,75,cgs.media.chatBackgroundShader);
+				CG_DrawHead(leftX + 7.0f,7+yStart+(yOffset*index),32,32,cgs.messageClient[index],angles);
+				CG_DrawSmallStringCustom(leftX + 45.0f,16+yStart+(yOffset*index),8,8,cgs.messages[index],1.0,4);
 			}
 		}
 	}
@@ -319,7 +467,7 @@ void CG_DrawScreenEffects(void){
 	else if(ps->bitFlags & isTransforming && tier->screenEffectTransforming){
 		effect = tier->screenEffectTransforming;
 	}
-	CG_DrawPic(qfalse,0,0,640,480,effect);
+	CG_DrawPicFill4x3(effect);
 }
 /*================
 CG_Scoreboard
@@ -348,7 +496,10 @@ void CG_DrawHUD(playerState_t *ps,int clientNum,int x,int y,qboolean flipped){
 	cg_userWeapon_t	*skill;
 	int			chargePercent;
 	int			chargeReady;
+	int			markerX;
 	qboolean charging = ps->weaponstate == WEAPON_CHARGING || ps->weaponstate == WEAPON_ALTCHARGING ? qtrue : qfalse;
+	float		oldScreenXScale;
+	float		oldScreenXBias;
 	vec4_t	powerColor = {0.0f,0.588f,1.0f,1.0f};
 	vec4_t	dullColor = {0.188f,0.278f,0.345f,1.0f};
 	vec4_t	limitColor = {1.0f,0.1f,0.0f,1.0f};
@@ -360,15 +511,32 @@ void CG_DrawHUD(playerState_t *ps,int clientNum,int x,int y,qboolean flipped){
 	vec4_t	readyColor = {0.588f,1.0f,0.0,1.0f};
 	vec4_t	*chargeColor;
 	vec3_t	angles;
+
+	CG_BeginUniformHudScale( &oldScreenXScale, &oldScreenXBias );
+
 	if(!charging){
-		CG_DrawHorGauge(x+60,y+41,200,16,powerColor,dullColor,ps->powerLevel[plCurrent],ps->powerLevel[plMaximum],qfalse);
-		CG_DrawRightGauge(x+60,y+41,200,16,plFatigueColor,plFatigueColor,ps->powerLevel[plFatigue],ps->powerLevel[plMaximum]);
-		CG_DrawRightGauge(x+60,y+41,200,16,limitColor,limitColor,ps->powerLevel[plHealth],ps->powerLevel[plMaximum]);
-		CG_DrawDiffGauge(x+60,y+41,200,16,beyondFatigueColor,beyondFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
-		CG_DrawDiffGauge(x+60,y+41,200,16,plFatigueHealthColor,plFatigueHealthColor,ps->powerLevel[plFatigue],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
-		CG_DrawDiffGauge(x+60,y+41,200,16,beyondHealthColor,beyondHealthColor,ps->powerLevel[plCurrent],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
-		if((ps->powerLevel[plCurrent] > ps->powerLevel[plFatigue]) && (ps->powerLevel[plFatigue] > ps->powerLevel[plHealth])){
-			CG_DrawDiffGauge(x+60,y+41,200,16,healthFatigueColor,healthFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
+		if ( !flipped ) {
+			CG_DrawHorGauge(x+60,y+41,200,16,powerColor,dullColor,ps->powerLevel[plCurrent],ps->powerLevel[plMaximum],qfalse);
+			CG_DrawRightGauge(x+60,y+41,200,16,plFatigueColor,plFatigueColor,ps->powerLevel[plFatigue],ps->powerLevel[plMaximum]);
+			CG_DrawRightGauge(x+60,y+41,200,16,limitColor,limitColor,ps->powerLevel[plHealth],ps->powerLevel[plMaximum]);
+			CG_DrawDiffGauge(x+60,y+41,200,16,beyondFatigueColor,beyondFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
+			CG_DrawDiffGauge(x+60,y+41,200,16,plFatigueHealthColor,plFatigueHealthColor,ps->powerLevel[plFatigue],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
+			CG_DrawDiffGauge(x+60,y+41,200,16,beyondHealthColor,beyondHealthColor,ps->powerLevel[plCurrent],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
+			if((ps->powerLevel[plCurrent] > ps->powerLevel[plFatigue]) && (ps->powerLevel[plFatigue] > ps->powerLevel[plHealth])){
+				CG_DrawDiffGauge(x+60,y+41,200,16,healthFatigueColor,healthFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
+			}
+			CG_DrawPic(qfalse,x,y,288,72,cgs.media.hudShader);
+		} else {
+			CG_DrawHorGauge(x+28,y+41,200,16,powerColor,dullColor,ps->powerLevel[plCurrent],ps->powerLevel[plMaximum],qtrue);
+			CG_DrawLeftGauge(x+28,y+41,200,16,plFatigueColor,plFatigueColor,ps->powerLevel[plFatigue],ps->powerLevel[plMaximum]);
+			CG_DrawLeftGauge(x+28,y+41,200,16,limitColor,limitColor,ps->powerLevel[plHealth],ps->powerLevel[plMaximum]);
+			CG_DrawDiffGaugeMirrored(x+28,y+41,200,16,beyondFatigueColor,beyondFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
+			CG_DrawDiffGaugeMirrored(x+28,y+41,200,16,plFatigueHealthColor,plFatigueHealthColor,ps->powerLevel[plFatigue],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
+			CG_DrawDiffGaugeMirrored(x+28,y+41,200,16,beyondHealthColor,beyondHealthColor,ps->powerLevel[plCurrent],ps->powerLevel[plHealth],ps->powerLevel[plMaximum],1);
+			if((ps->powerLevel[plCurrent] > ps->powerLevel[plFatigue]) && (ps->powerLevel[plFatigue] > ps->powerLevel[plHealth])){
+				CG_DrawDiffGaugeMirrored(x+28,y+41,200,16,healthFatigueColor,healthFatigueColor,ps->powerLevel[plCurrent],ps->powerLevel[plFatigue],ps->powerLevel[plMaximum],1);
+			}
+			CG_DrawPicMirrored(x,y,288,72,cgs.media.hudShader);
 		}
 	}
 	else{
@@ -384,13 +552,24 @@ void CG_DrawHUD(playerState_t *ps,int clientNum,int x,int y,qboolean flipped){
 			chargeColor = chargePercent >= chargeReady ? &readyColor : &beyondFatigueColor;
 			powerLevelDisplay = ps->attackPower;
 		}
-		CG_DrawHorGauge(x+60,y+41,200,16,*chargeColor,dullColor,chargePercent,100,qfalse);
+		if ( !flipped ) {
+			CG_DrawHorGauge(x+60,y+41,200,16,*chargeColor,dullColor,chargePercent,100,qfalse);
+			CG_DrawPic(qfalse,x,y,288,72,cgs.media.hudShader);
+		} else {
+			CG_DrawHorGauge(x+28,y+41,200,16,*chargeColor,dullColor,chargePercent,100,qtrue);
+			CG_DrawPicMirrored(x,y,288,72,cgs.media.hudShader);
+		}
 	}
-	CG_DrawPic(qfalse,x,y,288,72,cgs.media.hudShader);
+
 	if(!charging){
-		CG_DrawHead(x+6,y+22,50,50,clientNum,angles);
-		if(ps->powerLevel[plCurrent] == ps->powerLevel[plMaximum] && ps->bitFlags & usingAlter){
-			CG_DrawPic(qfalse,x+243,y+25,40,44,cgs.media.breakLimitShader);
+		if ( !flipped ) {
+			CG_DrawHead(x+6,y+22,50,50,clientNum,angles);
+			
+		} else {
+			CG_DrawHead(x+232,y+22,50,50,clientNum,angles);
+			// if(ps->powerLevel[plCurrent] == ps->powerLevel[plMaximum] && ps->bitFlags & usingAlter){
+			// 	CG_DrawPic(qfalse,x+243,y+25,40,44,cgs.media.breakLimitShader);
+			// }
 		}
 		if(ps->powerLevel[plCurrent] == 9001){
 			powerLevelString = "Over ^3NINE-THOUSAND!!!";
@@ -399,30 +578,36 @@ void CG_DrawHUD(playerState_t *ps,int clientNum,int x,int y,qboolean flipped){
 		if(multiplier <= 0){
 			multiplier = 1.0;
 		}
-		if(ps->powerLevel[plCurrent] < 9001){
-			powerLevelDisplay = (float)ps->powerLevel[plCurrent] * multiplier;
-			powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil",(float)powerLevelDisplay / 1000000.0) : va("%ld",powerLevelDisplay);
-			powerLevelOffset = (Q_PrintStrlen(powerLevelString)-2)*8;
-		}
-		if(ps->powerLevel[plCurrent] > 9001){
-			powerLevelDisplay = (float)ps->powerLevel[plCurrent] * multiplier;
-			powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil",(float)powerLevelDisplay / 1000000.0) : va("%ld",powerLevelDisplay);
-			powerLevelOffset = (Q_PrintStrlen(powerLevelString)-2)*8;
-		}
 		powerLevelDisplay = (float)ps->powerLevel[plCurrent] * multiplier;
-		//powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil",(float)powerLevelDisplay / 1000000.0) : va("%i",powerLevelDisplay);
+		powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil",(float)powerLevelDisplay / 1000000.0) : va("%ld",powerLevelDisplay);
 		powerLevelOffset = (Q_PrintStrlen(powerLevelString)-2)*8;
 	}
 	else{
 		skill = CG_FindUserWeaponGraphics(cg.snap->ps.clientNum,cg.weaponSelect);
-		CG_DrawPic(qfalse,x+6,y+22,50,50,skill->weaponIcon);
+		if ( !flipped ) {
+			CG_DrawPic(qfalse,x+6,y+22,50,50,skill->weaponIcon);
+		} else {
+			CG_DrawPic(qfalse,x+232,y+22,50,50,skill->weaponIcon);
+		}
 		powerLevelString = powerLevelDisplay >= 1000000 ? va("%.1f ^3mil",(float)powerLevelDisplay / 1000000.0) : va("%ld",powerLevelDisplay);
 		powerLevelOffset = (Q_PrintStrlen(powerLevelString)-2)*8;
 		if(chargeReady){
-			CG_DrawPic(qfalse,x+(int)(198*(chargeReady/100.0))+55,y+25,13,38,cgs.media.markerAscendShader);
+			markerX = flipped ? ( x + 220 - (int)(198*(chargeReady/100.0f)) ) : ( x + (int)(198*(chargeReady/100.0f)) + 55 );
+			CG_DrawPic(qfalse,markerX,y+25,13,38,cgs.media.markerAscendShader);
 		}
 	}
-	CG_DrawSmallStringHalfHeight(x+239-powerLevelOffset,y+44,powerLevelString,1.0F);
+
+	if ( !flipped ) {
+		CG_DrawSmallStringHalfHeight(x+239-powerLevelOffset,y+44,powerLevelString,1.0F);
+		if(ps->powerLevel[plCurrent] == ps->powerLevel[plMaximum] && ps->bitFlags & usingAlter){
+			CG_DrawPic(qfalse,x+243,y+25,40,44,cgs.media.breakLimitShader);
+		}
+
+	} else {
+		CG_DrawSmallStringHalfHeight(x+33,y+44,powerLevelString,1.0F);
+	}
+
+	CG_EndUniformHudScale( oldScreenXScale, oldScreenXBias );
 }
 static void CG_DrawStatusBar( void ) {
 	playerState_t	*ps;
@@ -430,22 +615,22 @@ static void CG_DrawStatusBar( void ) {
 	clientInfo_t	*ci;
 	tierConfig_cg	*activeTier;
 	qboolean charging;
+	playerState_t	lockedTargetPS;
+
 	ci = &cgs.clientinfo[cg.snap->ps.clientNum];
 	ps = &cg.snap->ps;
 	charging = ps->weaponstate == WEAPON_CHARGING || ps->weaponstate == WEAPON_ALTCHARGING ? qtrue : qfalse;
 	if((ci->lockStartTimer > cg.time) /*(&& cg.time > ci->lockStartTimer - 500)*/){
-		CG_DrawPic(qfalse,0,0,640,480,cgs.media.speedLineSpinShader);
+		CG_DrawPicFill4x3(cgs.media.speedLineSpinShader);
 	}
 	if(ps->bitFlags & usingBoost){
-		CG_DrawPic(qfalse,0,0,640,480,cgs.media.speedLineShader);
+		CG_DrawPicFill4x3(cgs.media.speedLineShader);
 	}
 	if(cg_drawStatus.integer == 0){return;}
 	tier = (float)ps->powerLevel[plTierCurrent];
-	CG_CheckChat();	
-	//CG_DrawScoreboard();
+	CG_CheckChat();
 	CG_DrawScreenEffects();
 	if(ps->lockedTarget > 0 && cgs.clientinfo[ps->lockedTarget-1].infoValid){
-		playerState_t lockedTargetPS;
 		lockedTargetPS.clientNum = ps->lockedTarget-1;
 		lockedTargetPS.powerLevel[plCurrent] = ps->lockonData[lkPowerCurrent];
 		lockedTargetPS.powerLevel[plHealth] = ps->lockonData[lkPowerHealth];
@@ -453,7 +638,7 @@ static void CG_DrawStatusBar( void ) {
 		lockedTargetPS.powerLevel[plFatigue] = lockedTargetPS.powerLevel[plMaximum];
 		lockedTargetPS.powerLevel[plTierCurrent] = cgs.clientinfo[lockedTargetPS.clientNum].tierCurrent;
 		CG_DrawHUD(ps,ps->clientNum,0,0,qfalse);
-		CG_DrawHUD(&lockedTargetPS,lockedTargetPS.clientNum,320,0,qtrue);
+		CG_DrawHUD(&lockedTargetPS,lockedTargetPS.clientNum,(int)(CG_WideVirtualWidth() - 286.0f),0,qtrue);
 	}
 	else{
 		CG_DrawHUD(ps,ps->clientNum,0,408,qfalse);
@@ -467,7 +652,7 @@ static void CG_DrawStatusBar( void ) {
 			if(activeTier->sustainMaximum && activeTier->sustainMaximum < tierLast){tierLast = (float)activeTier->sustainMaximum;}
 			if(tierLast < 32767){
 				tierLast = tierLast / (float)ps->powerLevel[plMaximum];
-				CG_DrawPic(qfalse,(187*tierLast)+60,428,13,38,cgs.media.markerDescendShader);
+				CG_DrawPicHud((187*tierLast)+60,428,13,38,cgs.media.markerDescendShader);
 			}
 		}
 		if(tier < ps->powerLevel[plTierTotal]){
@@ -480,7 +665,7 @@ static void CG_DrawStatusBar( void ) {
 			if(tierNext){
 				tierNext = tierNext / (float)ps->powerLevel[plMaximum];
 				if(tierNext < 1.0){
-					CG_DrawPic(qfalse,(187*tierNext)+60,428,13,38,cgs.media.markerAscendShader);
+					CG_DrawPicHud((187*tierNext)+60,428,13,38,cgs.media.markerAscendShader);
 				}
 			}
 		}
@@ -726,6 +911,9 @@ static void CG_DrawCrosshairNames( void ) {
 	char		*name;
 	float		w;
 	if ( !cg_drawCrosshair.integer ) {
+		return;
+	}
+	if ( cg.snap->ps.lockedTarget > 0 ) {
 		return;
 	}
 	CG_ScanForCrosshairEntity();

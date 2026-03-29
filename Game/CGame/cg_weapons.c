@@ -21,6 +21,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 // cg_weapons.c -- events and effects dealing with weapons
 #include "cg_local.h"
+
+static float CG_WeaponsWideLeftVirtual( void ) {
+	return -cgs.screenXBias / cgs.screenXScale;
+}
 /*========================================================================================
 VIEW WEAPON
 ========================================================================================*/
@@ -203,13 +207,14 @@ static void CG_DrawWeaponSelectHorCenterBar(void){
 	int i;
 	int statBits = cg.snap->ps.stats[stSkills];
 	float* color = CG_FadeColor(cg.weaponSelectTime,WEAPON_SELECT_TIME,200);
-	vec2_t position = {70,418};
+	vec2_t position = {0,418};
 	cg_userWeapon_t* weaponInfo;
 	cg_userWeapon_t* alt_weaponInfo;
 	if(!color){
 		cg.drawWeaponBar = 0;
 		return;
 	}
+	position[0] = CG_WeaponsWideLeftVirtual() + 70.0f;
 	trap_R_SetColor(color);
 	for(i=1;i<(MAX_PLAYERWEAPONS * 2);++i){
 		qboolean exists = statBits & (1 << i);
@@ -229,7 +234,7 @@ static void CG_DrawWeaponSelectHorCenterBar(void){
 		if(alt_weaponInfo->weaponName[0]){
 			strcat(name,va(" / %s",alt_weaponInfo->weaponName));
 		}
-		CG_DrawSmallStringColor(6,position[1] - 30,name,color);
+		CG_DrawSmallStringColor(CG_WeaponsWideLeftVirtual() + 6.0f,position[1] - 30,name,color);
 	}
 	trap_R_SetColor(NULL);
 }

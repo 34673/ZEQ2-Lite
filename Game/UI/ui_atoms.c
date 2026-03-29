@@ -355,7 +355,7 @@ static void UI_DrawBannerString2( int x, int y, const char* str, vec4_t color )
 	ax = x * uis.scale + uis.bias;
 	ay = y * uis.scale;
 #else
-	ax = x * uis.scaleX;
+	ax = x * uis.scaleX + uis.biasX;
 	ay = y * uis.scaleY;
 #endif
 
@@ -487,7 +487,7 @@ static void UI_DrawProportionalString2( int x, int y, const char* str, vec4_t co
 	ax = x * uis.scale + uis.bias;
 	ay = y * uis.scale;
 #else
-	ax = x * uis.scaleX;
+	ax = x * uis.scaleX + uis.biasX;
 	ay = y * uis.scaleY;
 #endif
 
@@ -639,7 +639,7 @@ static void UI_DrawString2( int x, int y, const char* str, vec4_t color, int cha
 	aw = charw * uis.scale;
 	ah = charh * uis.scale;
 #else
-	ax = x * uis.scaleX;
+	ax = x * uis.scaleX + uis.biasX;
 	ay = y * uis.scaleY;
 	aw = charw * uis.scaleX;
 	ah = charh * uis.scaleY;
@@ -866,10 +866,10 @@ void UI_MouseEvent( int dx, int dy )
 
 	// update mouse screen position
 	uis.cursorx += dx;
-	if (uis.cursorx < 0)
-		uis.cursorx = 0;
-	else if (uis.cursorx > SCREEN_WIDTH)
-		uis.cursorx = SCREEN_WIDTH;
+	if (uis.cursorx < (int)(-uis.biasX / uis.scaleX))
+		uis.cursorx = (int)(-uis.biasX / uis.scaleX);
+	else if (uis.cursorx > (int)(640.0f + (uis.biasX / uis.scaleX)))
+		uis.cursorx = (int)(640.0f + (uis.biasX / uis.scaleX));
 
 	uis.cursory += dy;
 	if (uis.cursory < 0)
@@ -970,8 +970,9 @@ void UI_Init( void ) {
 	UI_RegisterCvars();
 	UI_InitGameinfo();
 	trap_GetGlconfig( &uis.glconfig );
-	uis.scaleX = uis.glconfig.vidWidth / 640.0;
-	uis.scaleY = uis.glconfig.vidHeight / 480.0;
+	uis.scaleY = uis.glconfig.vidHeight / 480.0f;
+	uis.scaleX = uis.scaleY;
+	uis.biasX = 0.5f * ( uis.glconfig.vidWidth - ( 640.0f * uis.scaleX ) );
 	Menu_Cache();
 	uis.activemenu = NULL;
 	uis.menusp = 0;
@@ -982,11 +983,10 @@ UI_AdjustFrom640
 Adjusted for resolution and screen aspect ratio
 ================*/
 void UI_AdjustFrom640( float *x, float *y, float *w, float *h ) {
-	qboolean stretch = qtrue;
-	*x *= uis.scaleX;
+	*x = ( *x * uis.scaleX ) + uis.biasX;
 	*y *= uis.scaleY;
-	*w *= stretch ? uis.scaleX : 1.6;
-	*h *= stretch ? uis.scaleY : 1.6;
+	*w *= uis.scaleX;
+	*h *= uis.scaleY;
 }
 
 void UI_DrawNamedPic(float x, float y, float width, float height, const char *picname){
@@ -1151,6 +1151,10 @@ void UI_MenuScene( void ) {
 UI_MenuLogo
 ===============
 */
+static float UI_WideLeftVirtual( void ) {
+	return -uis.biasX / uis.scaleX;
+}
+
 void UI_MenuLogo( void ) {
 	refdef_t		refdef;
 	refEntity_t		ent;
@@ -1171,7 +1175,7 @@ void UI_MenuLogo( void ) {
 
 	AxisClear( refdef.viewaxis );
 
-	x = -19;
+	x = UI_WideLeftVirtual() - 19;
 	y = -28;
 	w = 205;
 	h = 153;
@@ -1229,18 +1233,33 @@ JUHOX: UI_DrawBackPic
 =================
 */
 void UI_DrawBackPic(qboolean drawPic) {
-	float x, y, w, h;
+	float s0 = 0.0f, s1 = 1.0f;
+	float t0 = 0.0f, t1 = 768.0f / 1024.0f;
+	float screenAspect = (float)uis.glconfig.vidWidth / (float)uis.glconfig.vidHeight;
+	float imageAspect = 1024.0f / 768.0f;
+
 	if (!drawPic) {
-		UI_FillRect(0, 0, 640, 480, colorBlack);
+		trap_R_SetColor( colorBlack );
+		trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, 0, 0, 0, 0, uis.whiteShader );
+		trap_R_SetColor( NULL );
+		return;
 	}
-	else {
-		x = 0;
-		y = 0;
-		w = 640;
-		h = 480;
-		UI_AdjustFrom640(&x, &y, &w, &h);
-		trap_R_DrawStretchPic(x, y, w, h, 0, 0, 1, 768.0/1024.0, uis.menuBackShader);
+
+	if ( screenAspect > imageAspect ) {
+		float visibleHeight = imageAspect / screenAspect;
+		float texHeight = t1 - t0;
+		float crop = 0.5f * ( texHeight - ( texHeight * visibleHeight ) );
+		t0 += crop;
+		t1 -= crop;
 	}
+	else if ( screenAspect < imageAspect ) {
+		float visibleWidth = screenAspect / imageAspect;
+		float crop = 0.5f * ( 1.0f - visibleWidth );
+		s0 += crop;
+		s1 -= crop;
+	}
+
+	trap_R_DrawStretchPic( 0, 0, uis.glconfig.vidWidth, uis.glconfig.vidHeight, s0, t0, s1, t1, uis.menuBackShader );
 }
 
 /*
@@ -1257,7 +1276,7 @@ void UI_Refresh( int realtime ){
 	UI_UpdateCvars();
 	if(uis.activemenu){
 		if (uis.activemenu->fullscreen){
-			if(!uis.hideBack){UI_DrawHandlePic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, uis.menuBackShader);}
+			if(!uis.hideBack){UI_DrawBackPic(qtrue);}
 			if(!uis.hideEarth){UI_MenuScene();}
 			if(uis.showFrame){Menu_Frame();}
 			if(uis.showSide){Menu_Side();}

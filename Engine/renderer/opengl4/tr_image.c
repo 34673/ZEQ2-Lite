@@ -2223,7 +2223,8 @@ image_t *R_CreateImage2( const char *name, byte *pic, int width, int height, GLe
 	image = tr.images[tr.numImages] = ri.Hunk_Alloc( sizeof( image_t ), h_low );
 	strcpy (image->imgName, name);
 	qglGenTextures(1, &image->texnum);
-	qglObjectLabel(GL_TEXTURE,image->texnum,strlen(image->imgName),image->imgName);
+	//Uncomment when DSA is used. Requires knowing the texture type in advance.
+	//qglObjectLabel(GL_TEXTURE,image->texnum,strlen(image->imgName),image->imgName);
 	tr.numImages++;
 
 	image->type = type;

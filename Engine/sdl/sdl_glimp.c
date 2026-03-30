@@ -611,6 +611,10 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+			int contextFlags = 0;
+			SDL_GL_GetAttribute(SDL_GL_CONTEXT_FLAGS, &contextFlags);
+			contextFlags |= SDL_GL_CONTEXT_DEBUG_FLAG;
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, contextFlags);
 			if ((SDL_glContext = SDL_GL_CreateContext(SDL_window)) == NULL)
 			{
 				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());

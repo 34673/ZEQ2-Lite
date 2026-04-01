@@ -55,8 +55,8 @@ CG_CustomSound
 sfxHandle_t	CG_CustomSound(int clientNum, const char *soundName){
 	clientInfo_t* ci;
 	int i;
-	int nextIndex = (fabs(crandom())*MAX_TIERS-1)+1;
-	nextIndex = Com_Clamp(1,MAX_TIERS,nextIndex);
+	int nextIndex = (fabs(crandom()) * MAX_CUSTOM_SOUNDS_VARIANTS - 1) + 1;
+	nextIndex = Com_Clamp(1,MAX_CUSTOM_SOUNDS_VARIANTS,nextIndex);
 	if(clientNum < 0 || clientNum >= MAX_CLIENTS){
 		Com_Printf("^3CG_CustomSound(): invalid client number %d.\n",clientNum);
 		return cgs.media.nullSound;
@@ -68,7 +68,7 @@ sfxHandle_t	CG_CustomSound(int clientNum, const char *soundName){
 	}
 	for(i=0;i<MAX_CUSTOM_SOUNDS && cg_customSoundNames[i];i++){
 		qboolean foundType = !strcmp(soundName,cg_customSoundNames[i]);
-		if(foundType){return ci->sounds[ci->tierCurrent][(i*MAX_TIERS)+nextIndex];}
+		if(foundType){return ci->sounds[ci->tierCurrent][(i * MAX_CUSTOM_SOUNDS_VARIANTS) + nextIndex];}
 	}
 	Com_Printf("^3CG_CustomSound(): unknown sound type '%s' from '%d/%s'. Using default.\n",soundName,clientNum,ci->name);
 	return cgs.media.nullSound;
@@ -119,7 +119,7 @@ static void CG_LoadClientInfo( clientInfo_t *ci ) {
 	// sounds
 	dir = ci->modelName;
 	for (tier = 0 ; tier < MAX_TIERS ; tier++ ){
-		for(i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++){
+		for(i = 0 ; i < MAX_CUSTOM_SOUNDS * MAX_CUSTOM_SOUNDS_VARIANTS; i++){
 			ci->sounds[tier][i] = cgs.media.nullSound;
 		}
 	}
@@ -128,8 +128,8 @@ static void CG_LoadClientInfo( clientInfo_t *ci ) {
 			if(!cg_customSoundNames[i]){continue;}
 			loopIndex = 0;
 			currentIndex = 1;
-			for(count = 1;count <= MAX_TIERS;count++){
-				soundIndex = (i*MAX_TIERS)+(count-1);
+			for(count = 1;count <= MAX_CUSTOM_SOUNDS_VARIANTS;count++){
+				soundIndex = (i * MAX_CUSTOM_SOUNDS_VARIANTS) + (count - 1);
 				if(tier == 0){
 					Com_sprintf(singlePath,sizeof(singlePath),"players/%s/%s.ogg",dir,cg_customSoundNames[i]);
 					Com_sprintf(soundPath,sizeof(soundPath),"players/%s/%s%i.ogg",dir,cg_customSoundNames[i],count);

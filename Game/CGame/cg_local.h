@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 //
 #include "../../Shared/q_shared.h" 
-#include "../../Engine/renderer/tr_types.h"
+#include "../../Engine/renderercommon/tr_types.h"
 #include "../Game/bg_public.h"
 // ADDING FOR ZEQ2
 #include "../Game/bg_userweapons.h"
@@ -315,7 +315,8 @@ typedef struct {
 // client model and other color coded effects
 // this is regenerated each time a client's configstring changes,
 // usually as a result of a userinfo (name, model, etc) change
-#define	MAX_CUSTOM_SOUNDS	256
+#define	MAX_CUSTOM_SOUNDS	32
+#define MAX_CUSTOM_SOUNDS_VARIANTS 9
 
 typedef struct {
 	qboolean		infoValid;
@@ -360,7 +361,7 @@ typedef struct {
 	qhandle_t		modelIcon;
 	animation_t		animations[MAX_TOTALANIMATIONS];
 	animation_t		camAnimations[MAX_TOTALANIMATIONS];
-	sfxHandle_t		sounds[MAX_TIERS][MAX_CUSTOM_SOUNDS];
+	sfxHandle_t		sounds[MAX_TIERS][MAX_CUSTOM_SOUNDS * MAX_CUSTOM_SOUNDS_VARIANTS];
 	//ADDING FOR ZEQ2
 	int				damageModelState;
 	int				damageTextureState;
@@ -1359,7 +1360,7 @@ void		trap_SetUserCmdValue( int stateValue, float sensitivityScale, int tierStat
 void		testPrintInt( char *string, int i );
 void		testPrintFloat( char *string, float f );
 
-size_t		trap_MemoryRemaining( void );
+int			trap_MemoryRemaining( void );
 void		trap_R_RegisterFont(const char *fontName, int pointSize, fontInfo_t *font);
 qboolean	trap_Key_IsDown( int keynum );
 int			trap_Key_GetCatcher( void );

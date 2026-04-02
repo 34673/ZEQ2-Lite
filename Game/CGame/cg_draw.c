@@ -57,6 +57,10 @@ static float CG_WideCenterBias( void ) {
 	return ( (float)cgs.glconfig.vidWidth - ( 640.0f * cgs.screenYScale ) ) * 0.5f;
 }
 
+static int CG_WideRightAlignX( int width, int padding ) {
+	return (int)( CG_WideRightVirtual() - (float)padding - (float)width );
+}
+
 static void CG_BeginUniformHudScale( float *oldScreenXScale, float *oldScreenXBias ) {
 	*oldScreenXScale = cgs.screenXScale;
 	*oldScreenXBias = cgs.screenXBias;
@@ -97,6 +101,11 @@ static void CG_DrawPicHud( float x, float y, float width, float height, qhandle_
 	CG_BeginUniformHudScale( &oldScreenXScale, &oldScreenXBias );
 	CG_DrawPic( qfalse, x, y, width, height, hShader );
 	CG_EndUniformHudScale( oldScreenXScale, oldScreenXBias );
+}
+
+static void CG_DrawFullscreenColorOverlay( const float *color ) {
+	CG_DrawRect( CG_WideLeftVirtual(), 0, CG_WideVirtualWidth(), SCREEN_HEIGHT,
+		CG_WideVirtualWidth() * SCREEN_HEIGHT, color );
 }
 
 static void CG_DrawLeftGauge( float x, float y, float width, float height, vec4_t color, vec4_t empty, int value, int maxValue ) {
@@ -706,7 +715,7 @@ static float CG_DrawFPS(float y) {
 	if(previousCount < FPS_CRITICAL){color = "^1";}
 	displayString = va("%sFrame Rate: %ifps",color,previousCount);
 	width = CG_DrawStrlen(displayString) * SMALLCHAR_WIDTH;
-	CG_DrawSmallString(635 - width,y + 2,displayString,1.0f);
+	CG_DrawSmallString(CG_WideRightAlignX(width, 5), y + 2, displayString, 1.0f);
 	count += 1;
 	if(currentTime >= nextUpdate){
 		nextUpdate = currentTime + 1000;
@@ -726,7 +735,7 @@ static float CG_DrawFrameTime(float y){
 	if(frameTime >= 1.0f / FPS_CRITICAL * 1000){color = "^1";}
 	displayString = va("%sFrame Time: %ims",color,frameTime);
 	width = CG_DrawStrlen(displayString) * SMALLCHAR_WIDTH;
-	CG_DrawSmallString(635 - width,y + 2,displayString,1.0f);
+	CG_DrawSmallString(CG_WideRightAlignX(width, 5), y + 2, displayString, 1.0f);
 	previousFrame = currentTime;
 	return y + SMALLCHAR_HEIGHT + 4;
 }
@@ -750,7 +759,7 @@ static float CG_DrawTimer( float y ) {
 	s = va( "%i:%i%i", mins, tens, seconds );
 	w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
-	CG_DrawBigString( 635 - w, y + 2, s, 1.0F);
+	CG_DrawBigString( CG_WideRightAlignX( w, 5 ), y + 2, s, 1.0F);
 
 	return y + BIGCHAR_HEIGHT + 4;
 }
@@ -1088,7 +1097,7 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 	if(contents & CONTENTS_WATER){
 		float phase = cg.time / 1000.0 * 0.2f * M_PI * 2;
 		water[3] = 0.1f + (0.02f*sin( phase ));
-		CG_DrawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH*SCREEN_HEIGHT, water);
+		CG_DrawFullscreenColorOverlay( water );
 		//trap_R_AddFogToScene(0,5000,0,0,0,1,2,2);
 	}
 	else{
